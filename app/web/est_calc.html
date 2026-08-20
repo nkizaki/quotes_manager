@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>原価見積り計算</title>
+  <link rel="icon" type="image/png" sizes="256x256" href="icons/icon.ico">
+  <link rel="stylesheet" href="css/top.css">
+  <link rel="stylesheet" href="css/design.css">
+  <link rel="stylesheet" href="css/app-theme.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/quotes.css">
+  <script src="js/font_size_pref.js"></script>
+  <script src="js/font_scale_boot.js"></script>
+</head>
+<body class="search-page est-calc-page" data-rate-default-map="{}">
+  <header class="search-header ship-insp-header-bar est-calc-header">
+    <div class="search-header-inner ship-insp-sub-header-inner quotes-header-inner">
+      <a href="cost_quotes.html" class="ship-insp-back-btn">戻る</a>
+      <h1 class="search-header-title est-calc-header-title">原価見積り計算</h1>
+      <span class="search-header-version" id="app-version"></span>
+      <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
+      <div class="quotes-header-actions">
+        <button type="button" class="est-reset-inputs-btn search-btn">入力欄の初期化</button>
+        <button type="button" class="est-download-btn search-btn">xlsx形式で見積書をダウンロード</button>
+        <button type="button" class="est-save-btn search-btn">見積り保存</button>
+        <button type="button" class="est-add-btn search-btn">見積り追加</button>
+        <button type="button" class="est-delete-btn search-btn">見積り削除</button>
+      </div>
+    </div>
+  </header>
+  <div class="est-page-layout">
+  <div class="main-content-offset">
+  <section class="main-section">
+  <h2>基本情報</h2>
+
+  <div class="est-layout">
+    <div id="lot-result-area">
+      <div id="lot-table-wrapper">
+        <table id="lot-table">
+          <colgroup>
+            <col class="lot-table-col-1">
+            <col class="lot-table-col-2">
+            <col class="lot-table-col-3">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>ロットID</th>
+              <th>ロット数</th>
+              <th>見積単価</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <a href="#" class="lot-id-link" data-lot-id=""></a>
+              </td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="kihon-grid">
+      <!-- 1行目: est-1 品番, est-2 品名（文字列。数値の桁区切り・小数整形は est_calc.js で対象外） -->
+      <div class="kihon-item kihon-span-1-2">
+        <label for="est-1">品番</label>
+        <input type="text" id="est-1" name="est_kihon_1" value="" placeholder="" inputmode="text" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="kihon-item kihon-span-3-4">
+        <label for="est-2">品名</label>
+        <input type="text" id="est-2" name="est_kihon_2" value="" placeholder="" inputmode="text" autocomplete="off" spellcheck="false">
+      </div>
+
+      <!-- 2行目: est-3 客先名, est-4 営業担当 -->
+      <div class="kihon-item kihon-span-1-2 kihon-row-2">
+        <label for="est-3">客先名</label>
+        <input type="text" id="est-3" name="est_kihon_3" value="" placeholder="">
+      </div>
+      <div class="kihon-empty kihon-row-2 kihon-col-3"></div>
+      <div class="kihon-item kihon-col-4 kihon-row-2">
+        <label for="est-4">営業担当</label>
+        <input type="text" id="est-4" name="est_kihon_4" value="" placeholder="">
+      </div>
+
+      <!-- 3行目: est-5 原価見積りID, est-6 使用中ロットID, est-7 ロット数 -->
+      <div class="kihon-item kihon-row-3">
+        <label for="est-5">原価見積りID</label>
+        <input type="text" id="est-5" name="est_kihon_5" value="" placeholder="">
+      </div>
+      <div class="kihon-item kihon-row-3">
+        <label for="est-6">使用中ロットID</label>
+        <input type="text" id="est-6" name="est_kihon_6" value="" placeholder="">
+      </div>
+      <div class="kihon-empty kihon-row-3 kihon-col-3"></div>
+      <div class="kihon-item kihon-row-3">
+        <label for="est-7">ロット数</label>
+        <input type="text" id="est-7" name="est_kihon_7" value="" placeholder="">
+      </div>
+
+      <!-- 4行目: est-8 C/T, est-9〜est-10 日産数, est-11 日数 -->
+      <div class="kihon-item kihon-row-4">
+        <label for="est-8">C/T</label>
+        <input type="text" id="est-8" name="est_kihon_8" value="" placeholder="">
+      </div>
+      <div class="kihon-item kihon-row-4">
+        <label for="est-9">日産数</label>
+        <input type="text" id="est-9" name="est_kihon_9" value="" placeholder="">
+      </div>
+      <div class="kihon-item kihon-row-4">
+        <label for="est-10">日産数</label>
+        <input type="text" id="est-10" name="est_kihon_10" value="" placeholder="">
+      </div>
+      <div class="kihon-item kihon-row-4">
+        <label for="est-11">日数</label>
+        <input type="text" id="est-11" name="est_kihon_11" value="" placeholder="">
+      </div>
+
+      <!-- 5行目: est-12 補正用入力 -->
+      <div class="kihon-empty kihon-row-5 kihon-col-1"></div>
+      <div class="kihon-item kihon-row-5 kihon-span-2-3 kihon-hint-cell">
+        <span class="kihon-hint-right" aria-hidden="true">1以下の時に補正(小数点以下2桁まで)→</span>
+      </div>
+      <div class="kihon-item kihon-col-4 kihon-row-5">
+        <label for="est-12"></label>
+        <input type="text" id="est-12" name="est_kihon_12" value="" placeholder="">
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <section class="main-section">
+  <h2>材料費・真鍮</h2>
+  <div class="zairyo-grid">
+    <!-- 1行目 -->
+    <div class="zairyo-item zairyo-span-1-2">
+      <label for="mat-1">材質 径</label>
+      <input type="text" id="mat-1" name="est_zairyo_1" value="" placeholder="">
+    </div>
+    <div class="zairyo-empty"></div>
+    <div class="zairyo-item zairyo-span-4-5">
+      <label for="mat-2">材種</label>
+      <select id="mat-2" name="est_zairyo_2">
+        <option value="" selected>未選択</option>
+        <option value="" data-specgravity="" selected></option>
+      </select>
+    </div>
+    <div class="zairyo-empty"></div>
+    <div class="zairyo-item zairyo-col-8">
+      <label for="mat-3">単重(g)</label>
+      <input type="text" id="mat-3" name="est_zairyo_3" value="" placeholder="">
+    </div>
+
+    <!-- 2行目 -->
+    <div class="zairyo-item">
+      <label for="mat-4">形状</label>
+      <select id="mat-4" name="est_zairyo_4">
+        <option value="" selected>未選択</option>
+        <option value="1" selected>φ</option>
+        <option value="2" selected>Hex</option>
+        <option value="3" selected>□</option>
+      </select>
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-5">径</label>
+      <input type="text" id="mat-5" name="est_zairyo_5" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-6">長さ</label>
+      <input type="text" id="mat-6" name="est_zairyo_6" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-7">全長</label>
+      <input type="text" id="mat-7" name="est_zairyo_7" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-8">突切り</label>
+      <input type="text" id="mat-8" name="est_zairyo_8" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-9">取り数</label>
+      <input type="text" id="mat-9" name="est_zairyo_9" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-10">取り数入力</label>
+      <input type="text" id="mat-10" name="est_zairyo_10" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-11">材料費合計</label>
+      <input type="text" id="mat-11" name="est_zairyo_11" value="" placeholder="">
+    </div>
+
+    <!-- 3行目 -->
+    <div class="zairyo-item">
+      <label for="mat-12">比重</label>
+      <input type="text" id="mat-12" name="est_zairyo_12" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-13">一本重</label>
+      <input type="text" id="mat-13" name="est_zairyo_13" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-14">一個重(g)</label>
+      <input type="text" id="mat-14" name="est_zairyo_14" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-15">材料単価</label>
+      <input type="text" id="mat-15" name="est_zairyo_15" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-16">材料費</label>
+      <input type="text" id="mat-16" name="est_zairyo_16" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-17">歩留り(%)</label>
+      <input type="text" id="mat-17" name="est_zairyo_17" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-18">歩留り金額</label>
+      <input type="text" id="mat-18" name="est_zairyo_18" value="" placeholder="">
+    </div>
+    <div class="zairyo-item">
+      <label for="mat-19">材料費原価入力</label>
+      <input type="text" id="mat-19" name="est_zairyo_19" value="" placeholder="">
+    </div>
+  </div>
+  </section>
+
+  <section class="main-section">
+  <h2>真鍮詳細</h2>
+  <div class="shinchuu-grid">
+    <!-- 1行目: 1 有効化, 2-4 r1, 5-7 r2, 8 単重 -->
+    <div class="shinchuu-item shinchuu-row-1 shinchuu-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="br-cb-1" name="est_shinchuu_cb_1" value="1" checked>
+        <label for="br-cb-1">有効化</label>
+      </p>
+    </div>
+    <div class="shinchuu-item shinchuu-row-1 shinchuu-span-2-4">
+      <p class="est-radio-item">
+        <input type="radio" id="br-r1-125" name="est_shinchuu_r1" value="1" checked>
+        <label for="br-r1-125">RM 125</label>
+        <input type="radio" id="br-r1-97" name="est_shinchuu_r1" value="2" checked>
+        <label for="br-r1-97">不二工機 97</label>
+      </p>
+    </div>
+    <div class="shinchuu-item shinchuu-row-1 shinchuu-span-5-7">
+      <p class="est-radio-item">
+        <input type="radio" id="br-r2-tanjyu" name="est_shinchuu_r2" value="1" checked>
+        <label for="br-r2-tanjyu">単重</label>
+        <input type="radio" id="br-r2-scrap" name="est_shinchuu_r2" value="2" checked>
+        <label for="br-r2-scrap">スクラップ重</label>
+      </p>
+    </div>
+    <div class="shinchuu-item shinchuu-row-1 shinchuu-col-8">
+      <label for="br-1">素材単価</label>
+      <input type="text" id="br-1" name="est_shinchuu_1" value="" placeholder="">
+    </div>
+
+    <!-- 2行目: 1-8 左から順に N社価格, 建値, 増値, 単重(g), スクラップ重(g), スクラップベース, 切粉回収率, スクラップ単価 -->
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-1">
+      <label for="br-2">N社価格</label>
+      <input type="text" id="br-2" name="est_shinchuu_2" value="" placeholder="">
+    </div>
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-2">
+      <label for="br-3">建値</label>
+      <input type="text" id="br-3" name="est_shinchuu_3" value="" placeholder="">
+    </div>
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-3">
+      <label for="br-4">増値</label>
+      <input type="text" id="br-4" name="est_shinchuu_4" value="" placeholder="">
+    </div>
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-4">
+      <label for="br-5">単重(g)</label>
+      <input type="text" id="br-5" name="est_shinchuu_5" value="" placeholder="">
+    </div>
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-5">
+      <label for="br-6">スクラップ重(g)</label>
+      <input type="text" id="br-6" name="est_shinchuu_6" value="" placeholder="">
+    </div>
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-6">
+      <label for="br-7">スクラップベース</label>
+      <input type="text" id="br-7" name="est_shinchuu_7" value="" placeholder="">
+    </div>
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-7">
+      <label for="br-8">切粉回収率(%)</label>
+      <input type="text" id="br-8" name="est_shinchuu_8" value="" placeholder="">
+    </div>
+    <div class="shinchuu-item shinchuu-row-2 shinchuu-col-8">
+      <label for="br-9">スクラップ単価</label>
+      <input type="text" id="br-9" name="est_shinchuu_9" value="" placeholder="">
+    </div>
+
+    <!-- 3行目: 1-7 空白, 8 材料費 -->
+    <div class="shinchuu-empty shinchuu-row-3 shinchuu-span-1-7"></div>
+    <div class="shinchuu-item shinchuu-row-3 shinchuu-col-8">
+      <label for="br-10">材料費</label>
+      <input type="text" id="br-10" name="est_shinchuu_10" value="" placeholder="">
+    </div>
+  </div>
+  </section>
+
+  <section class="main-section">
+  <h2>加工費・管理費</h2>
+  <div class="kakou-grid">
+    <!-- 1行目（ヘッダー） -->
+    <div class="kakou-item kakou-row-1 kakou-col-6">
+      <span>サイクル</span>
+    </div>
+    <div class="kakou-item kakou-row-1 kakou-col-7">
+      <span>賃率</span>
+    </div>
+    <div class="kakou-item kakou-row-1 kakou-col-8">
+      <span>原価</span>
+    </div>
+
+    <!-- 2行目 -->
+    <div class="kakou-item kakou-row-2 kakou-col-2">
+      <label for="proc-1">刃工具価格</label>
+      <input type="text" id="proc-1" name="est_kakou_1" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-2 kakou-col-3">
+      <label for="proc-2">材質</label>
+      <select id="proc-2" name="est_kakou_2">
+        <option value="" selected>未選択</option>
+        <option value="" data-hiju="" data-weight="" data-cycle="" selected></option>
+      </select>
+    </div>
+    <div class="kakou-item kakou-row-2 kakou-col-4">
+      <label for="proc-3">交換サイクル(日)</label>
+      <input type="text" id="proc-3" name="est_kakou_3" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-2 kakou-col-5">
+      <span class="kakou-hint-text">←日数変更可能</span>
+    </div>
+    <div class="kakou-item kakou-row-2 kakou-col-8 kakou-hide-label">
+      <label for="proc-4">原価</label>
+      <input type="text" id="proc-4" name="est_kakou_4" value="" placeholder="">
+    </div>
+
+    <!-- 2行目（ここだけ 6-8列のラベルを表示） -->
+    <div class="kakou-item kakou-row-3 kakou-col-2">
+      <label for="proc-5">切削機械</label>
+      <select id="proc-5" name="est_kakou_5">
+        <option value="" selected>未選択</option>
+        <option value="" data-rate-sum="" selected></option>
+      </select>
+    </div>
+    <div class="kakou-item kakou-row-3 kakou-col-6 kakou-hide-label">
+      <label for="proc-6">サイクル</label>
+      <input type="text" id="proc-6" name="est_kakou_6" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-3 kakou-col-7 kakou-hide-label">
+      <label for="proc-7">賃率</label>
+      <input type="text" id="proc-7" name="est_kakou_7" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-3 kakou-col-8 kakou-hide-label">
+      <label for="proc-8">原価</label>
+      <input type="text" id="proc-8" name="est_kakou_8" value="" placeholder="">
+    </div>
+
+    <!-- 3行目 -->
+    <div class="kakou-item kakou-row-4 kakou-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="proc-cb-1" name="est_kakou_cb_1" value="-1" checked>
+        <label for="proc-cb-1">セット<br>ガイドブッシュレス</label>
+      </p>
+    </div>
+    <div class="kakou-item kakou-row-4 kakou-col-2">
+      <label for="proc-9">難易度</label>
+      <select id="proc-9" name="est_kakou_9">
+        <option value="" data-hours="" selected>未選択</option>
+        <option value="1" data-hours="10" selected>高</option>
+        <option value="2" data-hours="6" selected>中</option>
+        <option value="3" data-hours="4" selected>低</option>
+      </select>
+    </div>
+    <div class="kakou-item kakou-row-4 kakou-col-3">
+      <label for="proc-10">時間(H)</label>
+      <input type="text" id="proc-10" name="est_kakou_10" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-4 kakou-col-4">
+      <label for="proc-11">時間(S)</label>
+      <input type="text" id="proc-11" name="est_kakou_11" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-4 kakou-col-5">
+      <label for="proc-12">金額</label>
+      <input type="text" id="proc-12" name="est_kakou_12" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-4 kakou-span-6-7 kakou-hint-cell">
+      <span class="kakou-hint-text">←時間(s)×切削機械賃率</span>
+    </div>
+    <div class="kakou-item kakou-row-4 kakou-col-8 kakou-hide-label">
+      <label for="proc-13">原価</label>
+      <input type="text" id="proc-13" name="est_kakou_13" value="" placeholder="">
+    </div>
+
+    <!-- 4行目 -->
+    <div class="kakou-item kakou-row-5 kakou-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="proc-cb-2" name="est_kakou_cb_2" value="-1" checked>
+        <label for="proc-cb-2">バレル</label>
+      </p>
+    </div>
+    <div class="kakou-item kakou-row-5 kakou-col-2">
+      <label for="proc-14">種類</label>
+      <select id="proc-14" name="est_kakou_14">
+        <option value="" selected>未選択</option>
+        <option value="" data-rate-sum="" selected></option>
+      </select>
+    </div>
+    <div class="kakou-item kakou-row-5 kakou-col-6 kakou-hide-label">
+      <label for="proc-15">サイクル</label>
+      <input type="text" id="proc-15" name="est_kakou_15" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-5 kakou-col-7 kakou-hide-label">
+      <label for="proc-16">賃率</label>
+      <input type="text" id="proc-16" name="est_kakou_16" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-5 kakou-col-8 kakou-hide-label">
+      <label for="proc-17">原価</label>
+      <input type="text" id="proc-17" name="est_kakou_17" value="" placeholder="">
+    </div>
+
+    <!-- 5行目 -->
+    <div class="kakou-item kakou-row-6 kakou-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="proc-cb-3" name="est_kakou_cb_3" value="-1" checked>
+        <label for="proc-cb-3">ブラスト</label>
+      </p>
+    </div>
+    <div class="kakou-item kakou-row-6 kakou-col-6 kakou-hide-label">
+      <label for="proc-18">サイクル</label>
+      <input type="text" id="proc-18" name="est_kakou_18" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-6 kakou-col-7 kakou-hide-label">
+      <label for="proc-19">賃率</label>
+      <input type="text" id="proc-19" name="est_kakou_19" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-6 kakou-col-8 kakou-hide-label">
+      <label for="proc-20">原価</label>
+      <input type="text" id="proc-20" name="est_kakou_20" value="" placeholder="">
+    </div>
+
+    <!-- 6行目 -->
+    <div class="kakou-item kakou-row-7 kakou-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="proc-cb-4" name="est_kakou_cb_4" value="-1" checked>
+        <label for="proc-cb-4">圧入</label>
+      </p>
+    </div>
+    <div class="kakou-item kakou-row-7 kakou-col-6 kakou-hide-label">
+      <label for="proc-21">サイクル</label>
+      <input type="text" id="proc-21" name="est_kakou_21" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-7 kakou-col-7 kakou-hide-label">
+      <label for="proc-22">賃率</label>
+      <input type="text" id="proc-22" name="est_kakou_22" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-7 kakou-col-8 kakou-hide-label">
+      <label for="proc-23">原価</label>
+      <input type="text" id="proc-23" name="est_kakou_23" value="" placeholder="">
+    </div>
+
+    <!-- 7行目 -->
+    <div class="kakou-item kakou-row-8 kakou-col-2">
+      <label for="proc-24">洗浄(6kg以下・バッチ)</label>
+      <select id="proc-24" name="est_kakou_24">
+        <option value="" selected>未選択</option>
+        <option value="" data-rate-sum="" selected></option>
+      </select>
+    </div>
+    <div class="kakou-item kakou-row-8 kakou-col-6">
+      <label for="proc-25">900秒/入数</label>
+      <input type="text" id="proc-25" name="est_kakou_25" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-8 kakou-col-7 kakou-hide-label">
+      <label for="proc-26">賃率</label>
+      <input type="text" id="proc-26" name="est_kakou_26" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-8 kakou-col-8 kakou-hide-label">
+      <label for="proc-27">原価</label>
+      <input type="text" id="proc-27" name="est_kakou_27" value="" placeholder="">
+    </div>
+
+    <!-- 8行目 -->
+    <div class="kakou-item kakou-row-9 kakou-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="proc-cb-5" name="est_kakou_cb_5" value="-1" checked>
+        <label for="proc-cb-5">処理前検査</label>
+      </p>
+    </div>
+    <div class="kakou-item kakou-row-9 kakou-col-6 kakou-hide-label">
+      <label for="proc-28">サイクル</label>
+      <input type="text" id="proc-28" name="est_kakou_28" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-9 kakou-col-7 kakou-hide-label">
+      <label for="proc-29">賃率</label>
+      <input type="text" id="proc-29" name="est_kakou_29" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-9 kakou-col-8 kakou-hide-label">
+      <label for="proc-30">原価</label>
+      <input type="text" id="proc-30" name="est_kakou_30" value="" placeholder="">
+    </div>
+
+    <!-- 9行目 -->
+    <div class="kakou-item kakou-row-10 kakou-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="proc-cb-6" name="est_kakou_cb_6" value="-1" checked>
+        <label for="proc-cb-6">表面処理</label>
+      </p>
+    </div>
+    <div class="kakou-item kakou-row-10 kakou-col-2">
+      <label for="proc-31">ロット数</label>
+      <input type="text" id="proc-31" name="est_kakou_31" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-10 kakou-col-3">
+      <label for="proc-32">表面処理名1</label>
+      <select id="proc-32" name="est_kakou_32">
+        <option value="" selected>未選択</option>
+        <option value="" selected></option>
+      </select>
+    </div>
+    <div class="kakou-empty kakou-row-10 kakou-span-4-7"></div>
+    <div class="kakou-item kakou-row-10 kakou-col-8 kakou-hide-label">
+      <label for="proc-33">原価</label>
+      <input type="text" id="proc-33" name="est_kakou_33" value="" placeholder="">
+    </div>
+
+    <!-- 10行目 -->
+    <div class="kakou-item kakou-row-11 kakou-col-3">
+      <label for="proc-34">表面処理名2</label>
+      <select id="proc-34" name="est_kakou_34">
+        <option value="" selected>未選択</option>
+        <option value="" selected></option>
+      </select>
+    </div>
+    <div class="kakou-empty kakou-row-11 kakou-span-4-7"></div>
+    <div class="kakou-item kakou-row-11 kakou-col-8 kakou-hide-label">
+      <label for="proc-35">原価</label>
+      <input type="text" id="proc-35" name="est_kakou_35" value="" placeholder="">
+    </div>
+
+    <!-- 11行目 -->
+    <div class="kakou-item kakou-row-12 kakou-col-2">
+      <label for="proc-36">計量・梱包</label>
+      <select id="proc-36" name="est_kakou_36">
+        <option value="" selected>未選択</option>
+        <option value="" data-rate-sum="" selected></option>
+      </select>
+    </div>
+    <div class="kakou-item kakou-row-12 kakou-col-6 kakou-hide-label">
+      <label for="proc-37">サイクル</label>
+      <input type="text" id="proc-37" name="est_kakou_37" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-12 kakou-col-7 kakou-hide-label">
+      <label for="proc-38">賃率</label>
+      <input type="text" id="proc-38" name="est_kakou_38" value="" placeholder="">
+    </div>
+    <div class="kakou-item kakou-row-12 kakou-col-8 kakou-hide-label">
+      <label for="proc-39">原価</label>
+      <input type="text" id="proc-39" name="est_kakou_39" value="" placeholder="">
+    </div>
+  </div>
+  </section>
+
+  <section class="main-section">
+  <h2>検査</h2>
+  <div class="kensa-grid">
+    <!-- 1行目（ヘッダー）: 3-5 にテキスト -->
+    <div class="kensa-item kensa-row-1 kensa-col-3"><span>サイクル</span></div>
+    <div class="kensa-item kensa-row-1 kensa-col-4"><span>賃率</span></div>
+    <div class="kensa-item kensa-row-1 kensa-col-5"><span>原価</span></div>
+
+    <!-- 2行目 -->
+    <div class="kensa-item kensa-row-2 kensa-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="kensa-cb-1" name="est_kensa_cb_1" value="-1" checked>
+        <label for="kensa-cb-1">自動外観検査</label>
+      </p>
+    </div>
+    <div class="kensa-item kensa-row-2 kensa-col-3 kensa-hide-label">
+      <label for="kensa-1">サイクル</label>
+      <input type="text" id="kensa-1" name="est_kensa_1" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-2 kensa-col-4 kensa-hide-label">
+      <label for="kensa-2">賃率</label>
+      <input type="text" id="kensa-2" name="est_kensa_2" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-2 kensa-col-5 kensa-hide-label">
+      <label for="kensa-3">原価</label>
+      <input type="text" id="kensa-3" name="est_kensa_3" value="" placeholder="">
+    </div>
+
+    <!-- 3行目 -->
+    <div class="kensa-item kensa-row-3 kensa-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="kensa-cb-2" name="est_kensa_cb_2" value="-1" checked>
+        <label for="kensa-cb-2">数値</label>
+      </p>
+    </div>
+    <div class="kensa-item kensa-row-3 kensa-col-3 kensa-hide-label">
+      <label for="kensa-4">サイクル</label>
+      <input type="text" id="kensa-4" name="est_kensa_4" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-3 kensa-col-4 kensa-hide-label">
+      <label for="kensa-5">賃率</label>
+      <input type="text" id="kensa-5" name="est_kensa_5" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-3 kensa-col-5 kensa-hide-label">
+      <label for="kensa-6">原価</label>
+      <input type="text" id="kensa-6" name="est_kensa_6" value="" placeholder="">
+    </div>
+
+    <!-- 4行目 -->
+    <div class="kensa-item kensa-row-4 kensa-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="kensa-cb-3" name="est_kensa_cb_3" value="-1" checked>
+        <label for="kensa-cb-3">目視</label>
+      </p>
+    </div>
+    <div class="kensa-item kensa-row-4 kensa-col-3 kensa-hide-label">
+      <label for="kensa-7">サイクル</label>
+      <input type="text" id="kensa-7" name="est_kensa_7" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-4 kensa-col-4 kensa-hide-label">
+      <label for="kensa-8">賃率</label>
+      <input type="text" id="kensa-8" name="est_kensa_8" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-4 kensa-col-5 kensa-hide-label">
+      <label for="kensa-9">原価</label>
+      <input type="text" id="kensa-9" name="est_kensa_9" value="" placeholder="">
+    </div>
+
+    <!-- 5行目 -->
+    <div class="kensa-item kensa-row-5 kensa-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="kensa-cb-4" name="est_kensa_cb_4" value="-1" checked>
+        <label for="kensa-cb-4">顕微鏡</label>
+      </p>
+    </div>
+    <div class="kensa-item kensa-row-5 kensa-col-3 kensa-hide-label">
+      <label for="kensa-10">サイクル</label>
+      <input type="text" id="kensa-10" name="est_kensa_10" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-5 kensa-col-4 kensa-hide-label">
+      <label for="kensa-11">賃率</label>
+      <input type="text" id="kensa-11" name="est_kensa_11" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-5 kensa-col-5 kensa-hide-label">
+      <label for="kensa-12">原価</label>
+      <input type="text" id="kensa-12" name="est_kensa_12" value="" placeholder="">
+    </div>
+
+    <!-- 6行目 -->
+    <div class="kensa-item kensa-row-6 kensa-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="kensa-cb-5" name="est_kensa_cb_5" value="-1" checked>
+        <label for="kensa-cb-5">マイクロゲージ</label>
+      </p>
+    </div>
+    <div class="kensa-item kensa-row-6 kensa-col-3 kensa-hide-label">
+      <label for="kensa-13">サイクル</label>
+      <input type="text" id="kensa-13" name="est_kensa_13" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-6 kensa-col-4 kensa-hide-label">
+      <label for="kensa-14">賃率</label>
+      <input type="text" id="kensa-14" name="est_kensa_14" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-6 kensa-col-5 kensa-hide-label">
+      <label for="kensa-15">原価</label>
+      <input type="text" id="kensa-15" name="est_kensa_15" value="" placeholder="">
+    </div>
+
+    <!-- 7行目 -->
+    <div class="kensa-item kensa-row-7 kensa-col-1">
+      <p class="est-checkbox-item">
+        <input type="checkbox" id="kensa-cb-6" name="est_kensa_cb_6" value="-1" checked>
+        <label for="kensa-cb-6">その他検査</label>
+      </p>
+    </div>
+    <div class="kensa-item kensa-row-7 kensa-col-2">
+      <label for="kensa-16">検査名</label>
+      <input type="text" id="kensa-16" name="est_kensa_16" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-7 kensa-col-3 kensa-hide-label">
+      <label for="kensa-17">サイクル</label>
+      <input type="text" id="kensa-17" name="est_kensa_17" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-7 kensa-col-4 kensa-hide-label">
+      <label for="kensa-18">賃率</label>
+      <input type="text" id="kensa-18" name="est_kensa_18" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-7 kensa-col-5 kensa-hide-label">
+      <label for="kensa-19">原価</label>
+      <input type="text" id="kensa-19" name="est_kensa_19" value="" placeholder="">
+    </div>
+
+    <!-- 8行目 -->
+    <div class="kensa-item kensa-row-8 kensa-col-2">
+      <label for="kensa-20"></label>
+      <input type="text" id="kensa-20" name="est_kensa_20" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-8 kensa-col-3 kensa-hide-label">
+      <label for="kensa-21">サイクル</label>
+      <input type="text" id="kensa-21" name="est_kensa_21" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-8 kensa-col-5 kensa-hide-label">
+      <label for="kensa-22">原価</label>
+      <input type="text" id="kensa-22" name="est_kensa_22" value="" placeholder="">
+    </div>
+
+    <!-- 9行目 -->
+    <div class="kensa-item kensa-row-9 kensa-col-2">
+      <label for="kensa-23"></label>
+      <input type="text" id="kensa-23" name="est_kensa_23" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-9 kensa-col-3 kensa-hide-label">
+      <label for="kensa-24">サイクル</label>
+      <input type="text" id="kensa-24" name="est_kensa_24" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-9 kensa-col-5 kensa-hide-label">
+      <label for="kensa-25">原価</label>
+      <input type="text" id="kensa-25" name="est_kensa_25" value="" placeholder="">
+    </div>
+
+    <!-- 10行目 -->
+    <div class="kensa-item kensa-row-10 kensa-col-2">
+      <label for="kensa-26"></label>
+      <input type="text" id="kensa-26" name="est_kensa_26" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-10 kensa-col-3 kensa-hide-label">
+      <label for="kensa-27">サイクル</label>
+      <input type="text" id="kensa-27" name="est_kensa_27" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-10 kensa-col-5 kensa-hide-label">
+      <label for="kensa-28">原価</label>
+      <input type="text" id="kensa-28" name="est_kensa_28" value="" placeholder="">
+    </div>
+
+    <!-- 11行目 -->
+    <div class="kensa-item kensa-row-11 kensa-col-2">
+      <label for="kensa-29"></label>
+      <input type="text" id="kensa-29" name="est_kensa_29" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-11 kensa-col-3 kensa-hide-label">
+      <label for="kensa-30">サイクル</label>
+      <input type="text" id="kensa-30" name="est_kensa_30" value="" placeholder="">
+    </div>
+    <div class="kensa-item kensa-row-11 kensa-col-5 kensa-hide-label">
+      <label for="kensa-31">原価</label>
+      <input type="text" id="kensa-31" name="est_kensa_31" value="" placeholder="">
+    </div>
+  </div>
+  </section>
+
+  <section class="main-section">
+  <h2>送料・梱包</h2>
+  <div class="est-form-block">
+    <div class="est-form-row">
+      <p class="est-checkbox-item">
+        <span>使用する箱：</span>
+        <label><input type="radio" id="soryo-box-1" name="est_soryo_box" value="1" checked> 段ボール</label>
+        <label style="margin-left: 12px;"><input type="radio" id="soryo-box-2" name="est_soryo_box" value="2" checked> 樹脂箱</label>
+      </p>
+    </div>
+
+    <!-- 段ボール -->
+    <div class="est-form-row">
+      <p><strong>段ボール</strong></p>
+    </div>
+    <div class="soryo-card-grid">
+      <!-- 1行目: 1-7 -->
+      <div class="soryo-card-item soryo-card-row-1 soryo-card-col-1">
+        <label for="soryo-1">入数(個)</label>
+        <input type="text" id="soryo-1" name="est_soryo_1" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-1 soryo-card-col-2">
+        <label for="soryo-2">納入先</label>
+        <select id="soryo-2" name="est_soryo_2">
+          <option value="">未選択</option>
+          <option value="" data-reg="" selected></option>
+        </select>
+      </div>
+      <div class="soryo-card-item soryo-card-row-1 soryo-card-col-3">
+        <label for="soryo-3">梱包サイズ</label>
+        <select id="soryo-3" name="est_soryo_3">
+          <option value="">未選択</option>
+          <option value="" data-size="" data-weight="" selected></option>
+        </select>
+      </div>
+      <div class="soryo-card-item soryo-card-row-1 soryo-card-col-4">
+        <label for="soryo-4">箱サイズ</label>
+        <input type="text" id="soryo-4" name="est_soryo_4" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-1 soryo-card-col-5">
+        <label for="soryo-5">重量</label>
+        <input type="text" id="soryo-5" name="est_soryo_5" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-1 soryo-card-col-6">
+        <label for="soryo-6">送料</label>
+        <input type="text" id="soryo-6" name="est_soryo_6" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-1 soryo-card-col-7">
+        <label for="soryo-7">運賃単価</label>
+        <input type="text" id="soryo-7" name="est_soryo_7" value="" placeholder="">
+      </div>
+
+      <!-- 2行目: 1-7（5-6 空白） -->
+      <div class="soryo-card-item soryo-card-row-2 soryo-card-col-1">
+        <label for="soryo-8">箱規格</label>
+        <select id="soryo-8" name="est_soryo_8">
+          <option value="">未選択</option>
+          <option value="" data-price="" selected></option>
+        </select>
+      </div>
+      <div class="soryo-card-item soryo-card-row-2 soryo-card-col-2">
+        <label for="soryo-9">箱価格</label>
+        <input type="text" id="soryo-9" name="est_soryo_9" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-2 soryo-card-col-3">
+        <label for="soryo-10">箱入数</label>
+        <input type="text" id="soryo-10" name="est_soryo_10" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-2 soryo-card-col-4">
+        <label for="soryo-11">1箱重量(kg)</label>
+        <input type="text" id="soryo-11" name="est_soryo_11" value="" placeholder="">
+      </div>
+      <div class="soryo-card-empty soryo-card-row-2 soryo-card-col-5"></div>
+      <div class="soryo-card-empty soryo-card-row-2 soryo-card-col-6"></div>
+      <div class="soryo-card-item soryo-card-row-2 soryo-card-col-7">
+        <label for="soryo-12">箱単価</label>
+        <input type="text" id="soryo-12" name="est_soryo_12" value="" placeholder="">
+      </div>
+
+      <!-- 3行目: 1-3（4-7 空白） -->
+      <div class="soryo-card-item soryo-card-row-3 soryo-card-col-1">
+        <label for="soryo-13">使用トレー</label>
+        <select id="soryo-13" name="est_soryo_13">
+          <option value="">未選択</option>
+          <option value="" data-capacity="" data-price="" selected></option>
+        </select>
+      </div>
+      <div class="soryo-card-item soryo-card-row-3 soryo-card-col-2">
+        <label for="soryo-14">収容数</label>
+        <input type="text" id="soryo-14" name="est_soryo_14" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-3 soryo-card-col-3">
+        <label for="soryo-15">トレー価格</label>
+        <input type="text" id="soryo-15" name="est_soryo_15" value="" placeholder="">
+      </div>
+      <div class="soryo-card-empty soryo-card-row-3 soryo-card-col-4"></div>
+      <div class="soryo-card-empty soryo-card-row-3 soryo-card-col-5"></div>
+      <div class="soryo-card-empty soryo-card-row-3 soryo-card-col-6"></div>
+      <div class="soryo-card-empty soryo-card-row-3 soryo-card-col-7"></div>
+
+      <!-- 4行目: 1-7（2/5/6 空白） -->
+      <div class="soryo-card-item soryo-card-row-4 soryo-card-col-1">
+        <label for="soryo-16">天井フタ数</label>
+        <select id="soryo-16" name="est_soryo_16">
+          <option value="0" selected>0</option>
+          <option value="1" selected>1</option>
+          <option value="2" selected>2</option>
+        </select>
+      </div>
+      <div class="soryo-card-empty soryo-card-row-4 soryo-card-col-2"></div>
+      <div class="soryo-card-item soryo-card-row-4 soryo-card-col-3">
+        <label for="soryo-17">必要トレー数</label>
+        <input type="text" id="soryo-17" name="est_soryo_17" value="" placeholder="">
+      </div>
+      <div class="soryo-card-item soryo-card-row-4 soryo-card-col-4">
+        <label for="soryo-18">トレー合計額</label>
+        <input type="text" id="soryo-18" name="est_soryo_18" value="" placeholder="">
+      </div>
+      <div class="soryo-card-empty soryo-card-row-4 soryo-card-col-5"></div>
+      <div class="soryo-card-empty soryo-card-row-4 soryo-card-col-6"></div>
+      <div class="soryo-card-item soryo-card-row-4 soryo-card-col-7">
+        <label for="soryo-19">トレー単価</label>
+        <input type="text" id="soryo-19" name="est_soryo_19" value="" placeholder="">
+      </div>
+    </div>
+
+    <!-- 日当たり納入数(参考): 上に1行空け -->
+    <div class="soryo-nittou-spacer" aria-hidden="true"></div>
+    <div class="est-form-row">
+      <p><strong>日当たり納入数(参考)</strong></p>
+    </div>
+    <div class="soryo-nittou-grid">
+      <div class="soryo-nittou-item soryo-nittou-col-1">
+        <label for="soryo-36">納入日数</label>
+        <input type="text" id="soryo-36" name="est_soryo_36" value="" placeholder="">
+      </div>
+      <div class="soryo-nittou-item soryo-nittou-col-2">
+        <label for="soryo-37">納入数/日</label>
+        <input type="text" id="soryo-37" name="est_soryo_37" value="" placeholder="">
+      </div>
+      <div class="soryo-nittou-item soryo-nittou-col-3">
+        <label for="soryo-38">重量(kg)</label>
+        <input type="text" id="soryo-38" name="est_soryo_38" value="" placeholder="">
+      </div>
+      <div class="soryo-nittou-item soryo-nittou-col-4">
+        <label for="soryo-39">送料単価</label>
+        <input type="text" id="soryo-39" name="est_soryo_39" value="" placeholder="">
+      </div>
+    </div>
+
+    <div style="height: 16px;"></div>
+
+    <!-- 樹脂箱 -->
+    <div class="est-form-row">
+      <p><strong>樹脂箱</strong></p>
+    </div>
+    <div class="soryo-plastic-grid">
+      <!-- 1行目: 1-5 -->
+      <div class="soryo-plastic-item soryo-plastic-row-1 soryo-plastic-col-1">
+        <label for="soryo-20">単価/パレット</label>
+        <input type="text" id="soryo-20" name="est_soryo_20" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-1 soryo-plastic-col-2">
+        <label for="soryo-21">搭載箱数/パレット</label>
+        <input type="text" id="soryo-21" name="est_soryo_21" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-1 soryo-plastic-col-3">
+        <label for="soryo-22">搭載数/パレット</label>
+        <input type="text" id="soryo-22" name="est_soryo_22" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-empty soryo-plastic-row-1 soryo-plastic-col-4"></div>
+      <div class="soryo-plastic-item soryo-plastic-row-1 soryo-plastic-col-5">
+        <label for="soryo-23">運賃単価</label>
+        <input type="text" id="soryo-23" name="est_soryo_23" value="" placeholder="">
+      </div>
+
+      <!-- 2行目: 1-5 -->
+      <div class="soryo-plastic-item soryo-plastic-row-2 soryo-plastic-col-1">
+        <label for="soryo-24">箱負担</label>
+        <select id="soryo-24" name="est_soryo_24">
+          <option value="未選択" selected>未選択</option>
+          <option value="自達" selected>自達</option>
+          <option value="支給" selected>支給</option>
+        </select>
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-2 soryo-plastic-col-2">
+        <label for="soryo-25">箱規格</label>
+        <input type="text" id="soryo-25" name="est_soryo_25" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-2 soryo-plastic-col-3">
+        <label for="soryo-26">箱価格</label>
+        <input type="text" id="soryo-26" name="est_soryo_26" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-2 soryo-plastic-col-4">
+        <label for="soryo-27">箱入数</label>
+        <input type="text" id="soryo-27" name="est_soryo_27" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-2 soryo-plastic-col-5">
+        <label for="soryo-28">箱単価</label>
+        <input type="text" id="soryo-28" name="est_soryo_28" value="" placeholder="">
+      </div>
+
+      <!-- 3行目: 1-3（4-5 空白） -->
+      <div class="soryo-plastic-item soryo-plastic-row-3 soryo-plastic-col-1">
+        <label for="soryo-29">使用トレー</label>
+        <select id="soryo-29" name="est_soryo_29">
+          <option value="">未選択</option>
+          <option value="" data-capacity="" data-price="" selected></option>
+        </select>
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-3 soryo-plastic-col-2">
+        <label for="soryo-30">収容数</label>
+        <input type="text" id="soryo-30" name="est_soryo_30" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-3 soryo-plastic-col-3">
+        <label for="soryo-31">トレー価格</label>
+        <input type="text" id="soryo-31" name="est_soryo_31" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-empty soryo-plastic-row-3 soryo-plastic-col-4"></div>
+      <div class="soryo-plastic-empty soryo-plastic-row-3 soryo-plastic-col-5"></div>
+
+      <!-- 4行目: 1-5（2 空白） -->
+      <div class="soryo-plastic-item soryo-plastic-row-4 soryo-plastic-col-1">
+        <label for="soryo-32">天井フタ数</label>
+        <select id="soryo-32" name="est_soryo_32">
+          <option value="0" selected>0</option>
+          <option value="1" selected>1</option>
+          <option value="2" selected>2</option>
+        </select>
+      </div>
+      <div class="soryo-plastic-empty soryo-plastic-row-4 soryo-plastic-col-2"></div>
+      <div class="soryo-plastic-item soryo-plastic-row-4 soryo-plastic-col-3">
+        <label for="soryo-33">必要トレー数</label>
+        <input type="text" id="soryo-33" name="est_soryo_33" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-4 soryo-plastic-col-4">
+        <label for="soryo-34">トレー合計額</label>
+        <input type="text" id="soryo-34" name="est_soryo_34" value="" placeholder="">
+      </div>
+      <div class="soryo-plastic-item soryo-plastic-row-4 soryo-plastic-col-5">
+        <label for="soryo-35">トレー単価</label>
+        <input type="text" id="soryo-35" name="est_soryo_35" value="" placeholder="">
+      </div>
+    </div>
+  </div>
+  </section>
+  <section class="main-section">
+    <h2>初期費用</h2>
+    <div class="shoki-hiyou-block">
+      <div class="shoki-hiyou-grid">
+        <!-- 入力行: ID, 品名(2列), 数量, 単位, 単価, 金額 -->
+        <div class="shoki-hiyou-item shoki-hiyou-col-1">
+          <label for="shoki-hiyou-id">ID</label>
+          <input type="text" id="shoki-hiyou-id" name="shoki_hiyou_id" value="" readonly>
+        </div>
+        <div class="shoki-hiyou-item shoki-hiyou-span-2-3">
+          <label for="shoki-hiyou-hinmei">品名</label>
+          <input type="text" id="shoki-hiyou-hinmei" name="shoki_hiyou_hinmei" value="" inputmode="text" autocomplete="off">
+        </div>
+        <div class="shoki-hiyou-item shoki-hiyou-col-4">
+          <label for="shoki-hiyou-suryo">数量</label>
+          <input type="text" id="shoki-hiyou-suryo" name="shoki_hiyou_suryo" value="" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="shoki-hiyou-item shoki-hiyou-col-5">
+          <label for="shoki-hiyou-tani">単位</label>
+          <select id="shoki-hiyou-tani" name="shoki_hiyou_tani">
+            <option value="" selected></option>
+            <option value="個">個</option>
+            <option value="式">式</option>
+            <option value="セット">セット</option>
+          </select>
+        </div>
+        <div class="shoki-hiyou-item shoki-hiyou-col-6">
+          <label for="shoki-hiyou-tanka">単価</label>
+          <input type="text" id="shoki-hiyou-tanka" name="shoki_hiyou_tanka" value="" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="shoki-hiyou-item shoki-hiyou-col-7">
+          <label for="shoki-hiyou-kingaku">金額</label>
+          <input type="text" id="shoki-hiyou-kingaku" name="shoki_hiyou_kingaku" value="" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <div class="shoki-hiyou-actions">
+        <button type="button" id="shoki-hiyou-btn-register" class="est-save-btn">登録</button>
+        <button type="button" id="shoki-hiyou-btn-cancel" class="est-delete-muted-btn">取り消し</button>
+        <button type="button" id="shoki-hiyou-btn-delete" class="est-delete-btn">削除</button>
+      </div>
+      <div id="shoki-hiyou-table-wrapper">
+        <table id="shoki-hiyou-table">
+          <colgroup>
+            <col class="shoki-table-col-1">
+            <col class="shoki-table-col-2">
+            <col class="shoki-table-col-3">
+            <col class="shoki-table-col-4">
+            <col class="shoki-table-col-5">
+            <col class="shoki-table-col-6">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>品名</th>
+              <th>数量</th>
+              <th>単位</th>
+              <th>単価</th>
+              <th>金額</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td></td>
+              <td>
+                <a href="#" class="shoki-hiyou-hinmei-link" data-initial-cost-id=""></a>
+                
+              </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  </div>
+  <aside class="est-sidebar">
+  <div class="floating-window">
+    <div class="floating-window-content">
+      <div class="floating-window-title">単価計算等</div>
+      <div class="floating-grid-wrap">
+        <div class="floating-grid-panel">
+          <div class="floating-grid-heading">社内</div>
+          <div class="floating-input-grid floating-input-grid-left">
+            <div class="floating-input-row floating-input-row-spacer" aria-hidden="true"></div>
+            <div class="floating-input-row">
+              <label for="f-in-1">加工管理合計</label>
+              <input type="text" id="f-in-1" name="f_in_1" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-2">管理費率(%)</label>
+              <input type="text" id="f-in-2" name="f_in_2" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-3">管理費</label>
+              <input type="text" id="f-in-3" name="f_in_3" value="" placeholder="">
+            </div>
+          </div>
+        </div>
+        <div class="floating-grid-panel">
+          <div class="floating-grid-heading">社外</div>
+          <div class="floating-input-grid floating-input-grid-right">
+            <div class="floating-input-row">
+              <span class="floating-row-text">1</span>
+            </div>
+            <div class="floating-input-row">
+              <label for="f-out-1">表面処理費</label>
+              <input type="text" id="f-out-1" name="f_out_1" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-out-2">管理費率(%)</label>
+              <input type="text" id="f-out-2" name="f_out_2" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-out-3">管理費</label>
+              <input type="text" id="f-out-3" name="f_out_3" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <span class="floating-row-text">2</span>
+            </div>
+            <div class="floating-input-row">
+              <label for="f-out-4">表面処理費</label>
+              <input type="text" id="f-out-4" name="f_out_4" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-out-5">管理費率(%)</label>
+              <input type="text" id="f-out-5" name="f_out_5" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-out-6">管理費</label>
+              <input type="text" id="f-out-6" name="f_out_6" value="" placeholder="">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="floating-grid-wrap floating-grid-wrap-bottom">
+        <div class="floating-grid-panel">
+          <div class="floating-input-grid floating-input-grid-bottom-left">
+            <div class="floating-input-row floating-input-row-spacer" aria-hidden="true">
+              <br>
+              <br>
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-b1">原価合計</label>
+              <input type="text" id="f-in-b1" name="f_in_b1" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-b2">粗利率(%)</label>
+              <input type="text" id="f-in-b2" name="f_in_b2" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-b3">粗利</label>
+              <input type="text" id="f-in-b3" name="f_in_b3" value="" placeholder="">
+            </div>
+            <div>
+              <span class="floating-row-text">粗利に入力で粗利率を逆算↑</span>
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-b5">見積単価</label>
+              <input type="text" id="f-in-b4" name="f_in_b4" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-b6">送料単価</label>
+              <input type="text" id="f-in-b5" name="f_in_b5" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-in-b7">合計単価</label>
+              <input type="text" id="f-in-b6" name="f_in_b6" value="" placeholder="">
+            </div>
+          </div>
+        </div>
+        <div class="floating-grid-panel">
+          <div class="floating-grid-heading">チャージ</div>
+          <div class="floating-input-grid floating-input-grid-bottom-right">
+            <div class="floating-input-row floating-input-row-spacer"></div>
+            <div class="floating-input-row">
+              <label for="f-ch-1">材料費▲</label>
+              <input type="text" id="f-ch-1" name="f_ch_1" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-2">刃工具費▲</label>
+              <input type="text" id="f-ch-2" name="f_ch_2" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-3">表面処理費▲</label>
+              <input type="text" id="f-ch-3" name="f_ch_3" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-4">社外管理費▲</label>
+              <input type="text" id="f-ch-4" name="f_ch_4" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-5">検査費▲</label>
+              <input type="text" id="f-ch-5" name="f_ch_5" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-6">梱包費▲</label>
+              <input type="text" id="f-ch-6" name="f_ch_6" value="" placeholder="">
+            </div>
+            <div class="floating-input-row floating-input-row-spacer" aria-hidden="true"></div>
+            <div class="floating-input-row">
+              <label for="f-ch-7">機械チャージ</label>
+              <input type="text" id="f-ch-7" name="f_ch_7" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-8">検査チャージ</label>
+              <input type="text" id="f-ch-8" name="f_ch_8" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-9">梱包チャージ</label>
+              <input type="text" id="f-ch-9" name="f_ch_9" value="" placeholder="">
+            </div>
+            <div class="floating-input-row">
+              <label for="f-ch-10">チャージ金額</label>
+              <input type="text" id="f-ch-10" name="f_ch_10" value="" placeholder="">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </aside>
+  </div>
+
+
+  <footer class="app-footer">
+    <small>&copy; ARAISEIMITSU 2026 - Created By DIP Department</small>
+  </footer>
+  <script src="js/bridge.js"></script>
+  <script src="js/page_common.js"></script>
+  <script src="js/display_scale.js"></script>
+  <script src="js/est_calc_boot.js"></script>
+</body>
+</html>

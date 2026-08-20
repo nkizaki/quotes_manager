@@ -1,0 +1,268 @@
+/**
+ * 運賃表マスタ編集ページ
+ *
+ * 幅の調整は .freight-master-page 内の CSS 変数（--fm-table-col-* / --fm-form-max-*）を編集。
+ */
+
+.freight-master-page {
+  margin: 0;
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+  font-family: var(--ui-font-stack, sans-serif);
+
+  --fm-table-col-chiho-id: 72px;
+  --fm-table-col-chiho-name: 120px;
+  --fm-table-col-s: 88px;
+
+  --fm-form-max-chiho-id: 120px;
+  --fm-form-max-chiho-name: 160px;
+  --fm-form-max-s: 96px;
+
+  --fm-form-input-max-chiho-id: 100%;
+  --fm-form-input-max-chiho-name: 100%;
+  --fm-form-input-max-s: 100%;
+}
+
+.freight-master-header {
+  min-width: 1500px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--ui-surface-card);
+  border-bottom: 1px solid var(--ui-border-default);
+}
+
+.freight-master-header-inner {
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.freight-master-title {
+  margin: 0 0 0 100px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.freight-master-back-link {
+  color: var(--link-text, #00c);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.freight-master-back-link:hover {
+  color: var(--link-text-hover, #006);
+  text-decoration: underline;
+}
+
+.freight-master-main {
+  max-width: 1500px;
+  min-width: 1500px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.freight-master-message {
+  min-height: 1.25em;
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--ui-text-muted);
+}
+
+.freight-master-message.is-error {
+  color: var(--ui-danger, #9f403d);
+  font-weight: 600;
+}
+
+.freight-master-message.is-ok {
+  color: var(--ui-success, #006f1e);
+  font-weight: 600;
+}
+
+.freight-master-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  background: var(--ui-surface-card);
+  margin-bottom: 20px;
+}
+
+.freight-master-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  min-width: 1200px;
+  font-size: 13px;
+}
+
+.freight-master-table col.fm-col--chiho-id { width: var(--fm-table-col-chiho-id); }
+.freight-master-table col.fm-col--chiho-name { width: var(--fm-table-col-chiho-name); }
+.freight-master-table col.fm-col--s60,
+.freight-master-table col.fm-col--s80,
+.freight-master-table col.fm-col--s100,
+.freight-master-table col.fm-col--s120,
+.freight-master-table col.fm-col--s140,
+.freight-master-table col.fm-col--s160,
+.freight-master-table col.fm-col--s180,
+.freight-master-table col.fm-col--s200 { width: var(--fm-table-col-s); }
+
+.freight-master-table th,
+.freight-master-table td {
+  border: 1px solid var(--ui-divider-soft, #e0e0e0);
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.freight-master-table thead th {
+  background: var(--ui-surface-low, #f2f4f4);
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.freight-master-table tbody td {
+  background: var(--ui-surface-card);
+}
+
+.freight-master-td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.freight-master-id-btn {
+  margin: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 4px;
+  background: var(--ui-primary-soft, #d9e5fb);
+  color: var(--link-text, #00c);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  min-width: 48px;
+}
+
+.freight-master-id-btn:hover {
+  background: var(--ui-primary-soft);
+  filter: brightness(0.97);
+}
+
+.freight-master-form-section {
+  background: var(--ui-surface-card);
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.freight-master-form-heading {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.freight-master-form-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.freight-master-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.freight-master-field--chiho-id { width: var(--fm-form-max-chiho-id); }
+.freight-master-field--chiho-name { width: var(--fm-form-max-chiho-name); }
+.freight-master-field--s60,
+.freight-master-field--s80,
+.freight-master-field--s100,
+.freight-master-field--s120,
+.freight-master-field--s140,
+.freight-master-field--s160,
+.freight-master-field--s180,
+.freight-master-field--s200 { width: var(--fm-form-max-s); }
+
+.freight-master-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+}
+
+.freight-master-field input[type="text"] {
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 3px;
+  font-size: 14px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.freight-master-field--chiho-id input { max-width: var(--fm-form-input-max-chiho-id); }
+.freight-master-field--chiho-name input { max-width: var(--fm-form-input-max-chiho-name); }
+.freight-master-field--s60 input,
+.freight-master-field--s80 input,
+.freight-master-field--s100 input,
+.freight-master-field--s120 input,
+.freight-master-field--s140 input,
+.freight-master-field--s160 input,
+.freight-master-field--s180 input,
+.freight-master-field--s200 input { max-width: var(--fm-form-input-max-s); }
+
+.freight-master-int-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.freight-master-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.freight-master-action-btn {
+  min-width: 120px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--ui-border-strong, #767676);
+}
+
+.freight-master-action-btn-primary {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-bg);
+}
+
+.freight-master-action-btn-primary:hover {
+  background-color: var(--btn-primary-hover);
+}
+
+.freight-master-action-btn-danger {
+  background: var(--ui-surface-card);
+  color: var(--ui-danger, #9f403d);
+  border-color: var(--ui-danger, #9f403d);
+}
+
+.freight-master-action-btn-danger:hover {
+  background: rgba(159, 64, 61, 0.08);
+}

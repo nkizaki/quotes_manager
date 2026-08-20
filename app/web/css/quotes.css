@@ -1,0 +1,104 @@
+/* 見積り管理 — 参考プロジェクトに合わせたヘッダー/フッター/入力書式 */
+:root {
+  --app-footer-height: calc(40px * var(--ui-scale, 1));
+}
+
+body.search-page,
+body.est-calc-page,
+body.rate-master-page,
+body.freight-master-page,
+body.tray-master-page,
+body.dbox-master-page,
+body.quotes-placeholder-page {
+  font-family: var(--font-sans);
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+  padding-bottom: var(--app-footer-height);
+}
+
+.search-header.ship-insp-header-bar .search-header-inner::before,
+.quotes-header-inner::before {
+  content: "";
+  flex: 0 0 auto;
+  width: calc(112px * var(--ui-scale, 1));
+  height: calc(32px * var(--ui-scale, 1));
+  background: url("../icons/arai_logo.png") center / contain no-repeat;
+}
+
+.quotes-header-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.search-page input[type="text"],
+.search-page input[type="number"],
+.search-page input:not([type]),
+.search-page select,
+.search-page textarea,
+.est-calc-page input[type="text"],
+.est-calc-page input[type="number"],
+.est-calc-page input:not([type]),
+.est-calc-page select,
+.est-calc-page textarea,
+.rate-master-page input[type="text"],
+.rate-master-page select,
+.freight-master-page input[type="text"],
+.tray-master-page input[type="text"],
+.dbox-master-page input[type="text"] {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+}
+
+.search-page input:focus,
+.search-page select:focus,
+.search-page textarea:focus,
+.est-calc-page input:focus,
+.est-calc-page select:focus,
+.est-calc-page textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
+}
+
+.est-calc-page .est-calc-header,
+.rate-master-page .rate-master-header,
+.freight-master-page .freight-master-header,
+.tray-master-page .tray-master-header,
+.dbox-master-page .dbox-master-header,
+.search-page .search-header {
+  padding: 0;
+  min-width: 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.placeholder-card {
+  max-width: calc(520px * var(--ui-scale, 1));
+  padding: calc(24px * var(--ui-scale, 1));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.placeholder-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.quotes-page-error {
+  margin: calc(16px * var(--ui-scale, 1)) 0;
+  padding: calc(12px * var(--ui-scale, 1));
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}

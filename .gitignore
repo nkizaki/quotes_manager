@@ -1,0 +1,62 @@
+# Python cache / bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local configuration / secrets
+.env
+.env.*
+!.env.example
+config.env
+
+# IDE / editor
+.cursor/
+.vscode/
+.idea/
+
+# PyInstaller / build artifacts
+build/
+dist/
+release/
+tmp/
+temp/
+*.spec.bak
+*.toc
+*.pkg
+
+# Runtime / tool cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+
+# Spreadsheet scratch (keep bundled templates)
+*.xlsm
+*.xls
+~$*
+*.xlsx
+!app/exceltemplates/*.xlsx
+
+# Database dumps / backups
+*.bak
+*.backup
+*.old
+*.orig
+*.dump
+*.sql.gz
+*.zip
+*backup*/
+*Backup*/
+
+# OS files
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>運賃表マスタ編集</title>
+  <link rel="icon" type="image/png" sizes="256x256" href="icons/icon.ico">
+  <link rel="stylesheet" href="css/top.css">
+  <link rel="stylesheet" href="css/design.css">
+  <link rel="stylesheet" href="css/app-theme.css">
+  <link rel="stylesheet" href="css/search.css">
+  <link rel="stylesheet" href="css/freight_master.css">
+  <link rel="stylesheet" href="css/quotes.css">
+  <script src="js/font_size_pref.js"></script>
+  <script src="js/font_scale_boot.js"></script>
+</head>
+<body class="freight-master-page">
+  <header class="search-header ship-insp-header-bar freight-master-header">
+    <div class="search-header-inner ship-insp-sub-header-inner quotes-header-inner">
+      <a href="cost_quotes.html" class="ship-insp-back-btn">戻る</a>
+      <h1 class="search-header-title freight-master-title">運賃表マスタ編集</h1>
+      <span class="search-header-version" id="app-version"></span>
+      <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
+    </div>
+  </header>
+
+  <main class="freight-master-main">
+    <p id="freight-master-message" class="freight-master-message" aria-live="polite"></p>
+
+    <div class="freight-master-table-wrap">
+      <table class="freight-master-table" id="freight-master-table">
+        <colgroup>
+          <col class="fm-col fm-col--chiho-id" />
+          <col class="fm-col fm-col--chiho-name" />
+          <col class="fm-col fm-col--s60" />
+          <col class="fm-col fm-col--s80" />
+          <col class="fm-col fm-col--s100" />
+          <col class="fm-col fm-col--s120" />
+          <col class="fm-col fm-col--s140" />
+          <col class="fm-col fm-col--s160" />
+          <col class="fm-col fm-col--s180" />
+          <col class="fm-col fm-col--s200" />
+        </colgroup>
+        <thead>
+          <tr id="freight-master-thead-row"></tr>
+        </thead>
+        <tbody id="freight-master-tbody"></tbody>
+      </table>
+    </div>
+
+    <section class="freight-master-form-section" aria-labelledby="freight-master-form-title">
+      <h2 id="freight-master-form-title" class="freight-master-form-heading">入力</h2>
+      <div class="freight-master-form-grid">
+        <div class="freight-master-field freight-master-field--chiho-id">
+          <label for="fm-chiho-id">地方ID</label>
+          <input type="text" id="fm-chiho-id" autocomplete="off" placeholder="（新規時は空）">
+        </div>
+        <div class="freight-master-field freight-master-field--chiho-name">
+          <label for="fm-chiho-name">地方名</label>
+          <input type="text" id="fm-chiho-name" autocomplete="off">
+        </div>
+        <div class="freight-master-field freight-master-field--s60">
+          <label for="fm-s60">60サイズ</label>
+          <input type="text" id="fm-s60" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+        <div class="freight-master-field freight-master-field--s80">
+          <label for="fm-s80">80サイズ</label>
+          <input type="text" id="fm-s80" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+        <div class="freight-master-field freight-master-field--s100">
+          <label for="fm-s100">100サイズ</label>
+          <input type="text" id="fm-s100" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+        <div class="freight-master-field freight-master-field--s120">
+          <label for="fm-s120">120サイズ</label>
+          <input type="text" id="fm-s120" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+        <div class="freight-master-field freight-master-field--s140">
+          <label for="fm-s140">140サイズ</label>
+          <input type="text" id="fm-s140" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+        <div class="freight-master-field freight-master-field--s160">
+          <label for="fm-s160">160サイズ</label>
+          <input type="text" id="fm-s160" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+        <div class="freight-master-field freight-master-field--s180">
+          <label for="fm-s180">180サイズ</label>
+          <input type="text" id="fm-s180" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+        <div class="freight-master-field freight-master-field--s200">
+          <label for="fm-s200">200サイズ</label>
+          <input type="text" id="fm-s200" class="freight-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0,000">
+        </div>
+      </div>
+      <div class="freight-master-form-actions">
+        <button type="button" id="fm-btn-save" class="freight-master-action-btn freight-master-action-btn-primary">保存</button>
+        <button type="button" id="fm-btn-delete" class="freight-master-action-btn freight-master-action-btn-danger">削除</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="fm-save-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="fm-save-confirm-title">
+      <div class="search-dialog-head">
+        <span id="fm-save-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message" id="fm-save-confirm-message">保存しますか？</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="fm-save-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="fm-save-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="fm-save-done-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="fm-save-done-title">
+      <div class="search-dialog-head">
+        <span id="fm-save-done-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">保存しました。</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="fm-save-done-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="fm-delete-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="fm-delete-confirm-title">
+      <div class="search-dialog-head">
+        <span id="fm-delete-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message" id="fm-delete-confirm-message"></p>
+        <div class="search-dialog-actions">
+          <button type="button" id="fm-delete-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="fm-delete-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="fm-delete-done-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="fm-delete-done-title">
+      <div class="search-dialog-head">
+        <span id="fm-delete-done-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">削除しました。</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="fm-delete-done-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <footer class="app-footer">
+    <small>&copy; ARAISEIMITSU 2026 - Created By DIP Department</small>
+  </footer>
+  <script src="js/bridge.js"></script>
+  <script src="js/page_common.js"></script>
+  <script src="js/display_scale.js"></script>
+  <script src="js/freight_master.js"></script>
+</body>
+</html>

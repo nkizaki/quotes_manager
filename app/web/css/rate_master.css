@@ -1,0 +1,305 @@
+/**
+ * 賃率マスタ編集ページ
+ *
+ * 幅の調整は .rate-master-page 内の CSS 変数だけを編集してください。
+ *  - --rm-table-col-* … 上段テーブルの列幅（colgroup と連動）
+ *  - --rm-form-max-* … 下段フォームの各列の幅（1 行レイアウトの横幅）
+ *  - --rm-form-input-max-* … 必要なら input だけ別上限（未設定時はフィールド幅いっぱい）
+ */
+
+.rate-master-page {
+  margin: 0;
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+  font-family: var(--ui-font-stack, sans-serif);
+
+  /* --- テーブル列幅（HTML の col.rm-col--* と対応） --- */
+  --rm-table-col-id: 72px;
+  --rm-table-col-koubun: 112px;
+  --rm-table-col-setsubi: 160px;
+  --rm-table-col-roumu: 88px;
+  --rm-table-col-yu: 88px;
+  --rm-table-col-denki: 88px;
+  --rm-table-col-setsubihi: 92px;
+  --rm-table-col-tateya: 80px;
+  --rm-table-col-tochi: 80px;
+  --rm-table-col-goukei: 96px;
+
+  /* --- フォーム各ブロックの最大幅（.rate-master-field--*） --- */
+  --rm-form-max-id: 120px;
+  --rm-form-max-koubun: 160px;
+  --rm-form-max-setsubi: 200px;
+  --rm-form-max-roumu: 90px;
+  --rm-form-max-yu: 90px;
+  --rm-form-max-denki: 90px;
+  --rm-form-max-setsubihi: 90px;
+  --rm-form-max-tateya: 90px;
+  --rm-form-max-tochi: 90px;
+  --rm-form-max-goukei: 90px;
+
+  /* input だけ狭めたい場合に上書き（例: var(--rm-form-max-roumu) より小さく） */
+  --rm-form-input-max-id: 100%;
+  --rm-form-input-max-koubun: 100%;
+  --rm-form-input-max-setsubi: 100%;
+  --rm-form-input-max-roumu: 100%;
+  --rm-form-input-max-yu: 100%;
+  --rm-form-input-max-denki: 100%;
+  --rm-form-input-max-setsubihi: 100%;
+  --rm-form-input-max-tateya: 100%;
+  --rm-form-input-max-tochi: 100%;
+  --rm-form-input-max-goukei: 240px;
+}
+
+.rate-master-header {
+  min-width: 1300px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--ui-surface-card);
+  border-bottom: 1px solid var(--ui-border-default);
+}
+
+.rate-master-header-inner {
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rate-master-title {
+  margin: 0 0 0 100px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.rate-master-back-link {
+  color: var(--link-text, #00c);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.rate-master-back-link:hover {
+  color: var(--link-text-hover, #006);
+  text-decoration: underline;
+}
+
+.rate-master-main {
+  max-width: 1300px;
+  min-width: 1300px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.rate-master-message {
+  min-height: 1.25em;
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--ui-text-muted);
+}
+
+.rate-master-message.is-error {
+  color: var(--ui-danger, #9f403d);
+  font-weight: 600;
+}
+
+.rate-master-message.is-ok {
+  color: var(--ui-success, #006f1e);
+  font-weight: 600;
+}
+
+.rate-master-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  background: var(--ui-surface-card);
+  margin-bottom: 20px;
+}
+
+.rate-master-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  min-width: 1000px;
+  font-size: 13px;
+}
+
+/* colgroup 列幅（変数は .rate-master-page 先頭で定義） */
+.rate-master-table col.rm-col--id { width: var(--rm-table-col-id); }
+.rate-master-table col.rm-col--koubun { width: var(--rm-table-col-koubun); }
+.rate-master-table col.rm-col--setsubi { width: var(--rm-table-col-setsubi); }
+.rate-master-table col.rm-col--roumu { width: var(--rm-table-col-roumu); }
+.rate-master-table col.rm-col--yu { width: var(--rm-table-col-yu); }
+.rate-master-table col.rm-col--denki { width: var(--rm-table-col-denki); }
+.rate-master-table col.rm-col--setsubihi { width: var(--rm-table-col-setsubihi); }
+.rate-master-table col.rm-col--tateya { width: var(--rm-table-col-tateya); }
+.rate-master-table col.rm-col--tochi { width: var(--rm-table-col-tochi); }
+.rate-master-table col.rm-col--goukei { width: var(--rm-table-col-goukei); }
+
+.rate-master-table th,
+.rate-master-table td {
+  border: 1px solid var(--ui-divider-soft, #e0e0e0);
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.rate-master-table thead th {
+  background: var(--ui-surface-low, #f2f4f4);
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.rate-master-table tbody td {
+  background: var(--ui-surface-card);
+}
+
+.rate-master-td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rate-master-id-btn {
+  margin: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 4px;
+  background: var(--ui-primary-soft, #d9e5fb);
+  color: var(--link-text, #00c);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  min-width: 48px;
+}
+
+.rate-master-id-btn:hover {
+  background: var(--ui-primary-soft);
+  filter: brightness(0.97);
+}
+
+/* 入力フォーム */
+.rate-master-form-section {
+  background: var(--ui-surface-card);
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.rate-master-form-heading {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* ID～賃率計を 1 行（はみ出し時は横スクロール） */
+.rate-master-form-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.rate-master-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.rate-master-field--id { width: var(--rm-form-max-id); }
+.rate-master-field--koubun { width: var(--rm-form-max-koubun); }
+.rate-master-field--setsubi { width: var(--rm-form-max-setsubi); }
+.rate-master-field--roumu { width: var(--rm-form-max-roumu); }
+.rate-master-field--yu { width: var(--rm-form-max-yu); }
+.rate-master-field--denki { width: var(--rm-form-max-denki); }
+.rate-master-field--setsubihi { width: var(--rm-form-max-setsubihi); }
+.rate-master-field--tateya { width: var(--rm-form-max-tateya); }
+.rate-master-field--tochi { width: var(--rm-form-max-tochi); }
+.rate-master-field--goukei { width: var(--rm-form-max-goukei); }
+
+.rate-master-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+}
+
+.rate-master-field input[type="text"] {
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 3px;
+  font-size: 14px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.rate-master-field--id input { max-width: var(--rm-form-input-max-id); }
+.rate-master-field--koubun input { max-width: var(--rm-form-input-max-koubun); }
+.rate-master-field--setsubi input { max-width: var(--rm-form-input-max-setsubi); }
+.rate-master-field--roumu input { max-width: var(--rm-form-input-max-roumu); }
+.rate-master-field--yu input { max-width: var(--rm-form-input-max-yu); }
+.rate-master-field--denki input { max-width: var(--rm-form-input-max-denki); }
+.rate-master-field--setsubihi input { max-width: var(--rm-form-input-max-setsubihi); }
+.rate-master-field--tateya input { max-width: var(--rm-form-input-max-tateya); }
+.rate-master-field--tochi input { max-width: var(--rm-form-input-max-tochi); }
+.rate-master-field--goukei input { max-width: var(--rm-form-input-max-goukei); }
+
+.rate-master-num-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 賃率計（readonly）: 他の数値入力と同じ枠・文字サイズ。背景は入力欄と揃える */
+.rate-master-field--goukei input[readonly] {
+  background-color: var(--ui-surface-card, #fff);
+  cursor: default;
+  color: var(--ui-text);
+}
+
+.rate-master-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rate-master-action-btn {
+  min-width: 120px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--ui-border-strong, #767676);
+}
+
+.rate-master-action-btn-primary {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-bg);
+}
+
+.rate-master-action-btn-primary:hover {
+  background-color: var(--btn-primary-hover);
+}
+
+.rate-master-action-btn-danger {
+  background: var(--ui-surface-card);
+  color: var(--ui-danger, #9f403d);
+  border-color: var(--ui-danger, #9f403d);
+}
+
+.rate-master-action-btn-danger:hover {
+  background: rgba(159, 64, 61, 0.08);
+}

@@ -1,0 +1,1 @@
+window.__SHIP_INSP_FONT_SIZE_PERCENT__ = 100;

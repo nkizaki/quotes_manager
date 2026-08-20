@@ -1,0 +1,246 @@
+/**
+ * トレーマスタ編集ページ（--tm-table-col-* / --tm-form-max-* で幅調整）
+ */
+
+.tray-master-page {
+  margin: 0;
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+  font-family: var(--ui-font-stack, sans-serif);
+
+  --tm-table-col-id: 72px;
+  --tm-table-col-name: 200px;
+  --tm-table-col-material: 160px;
+  --tm-table-col-capacity: 96px;
+  --tm-table-col-price: 100px;
+
+  --tm-form-max-id: 120px;
+  --tm-form-max-name: 220px;
+  --tm-form-max-material: 180px;
+  --tm-form-max-capacity: 110px;
+  --tm-form-max-price: 110px;
+}
+
+.tray-master-header {
+  min-width: 960px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--ui-surface-card);
+  border-bottom: 1px solid var(--ui-border-default);
+}
+
+.tray-master-header-inner {
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tray-master-title {
+  margin: 0 0 0 100px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.tray-master-back-link {
+  color: var(--link-text, #00c);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tray-master-back-link:hover {
+  color: var(--link-text-hover, #006);
+  text-decoration: underline;
+}
+
+.tray-master-main {
+  max-width: 960px;
+  min-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.tray-master-message {
+  min-height: 1.25em;
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--ui-text-muted);
+}
+
+.tray-master-message.is-error {
+  color: var(--ui-danger, #9f403d);
+  font-weight: 600;
+}
+
+.tray-master-message.is-ok {
+  color: var(--ui-success, #006f1e);
+  font-weight: 600;
+}
+
+.tray-master-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  background: var(--ui-surface-card);
+  margin-bottom: 20px;
+}
+
+.tray-master-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  min-width: 720px;
+  font-size: 13px;
+}
+
+.tray-master-table col.tm-col--id { width: var(--tm-table-col-id); }
+.tray-master-table col.tm-col--name { width: var(--tm-table-col-name); }
+.tray-master-table col.tm-col--material { width: var(--tm-table-col-material); }
+.tray-master-table col.tm-col--capacity { width: var(--tm-table-col-capacity); }
+.tray-master-table col.tm-col--price { width: var(--tm-table-col-price); }
+
+.tray-master-table th,
+.tray-master-table td {
+  border: 1px solid var(--ui-divider-soft, #e0e0e0);
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.tray-master-table thead th {
+  background: var(--ui-surface-low, #f2f4f4);
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.tray-master-table tbody td {
+  background: var(--ui-surface-card);
+}
+
+.tray-master-td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tray-master-id-btn {
+  margin: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 4px;
+  background: var(--ui-primary-soft, #d9e5fb);
+  color: var(--link-text, #00c);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  min-width: 48px;
+}
+
+.tray-master-id-btn:hover {
+  background: var(--ui-primary-soft);
+  filter: brightness(0.97);
+}
+
+.tray-master-form-section {
+  background: var(--ui-surface-card);
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.tray-master-form-heading {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.tray-master-form-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.tray-master-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.tray-master-field--id { width: var(--tm-form-max-id); }
+.tray-master-field--name { width: var(--tm-form-max-name); }
+.tray-master-field--material { width: var(--tm-form-max-material); }
+.tray-master-field--capacity { width: var(--tm-form-max-capacity); }
+.tray-master-field--price { width: var(--tm-form-max-price); }
+
+.tray-master-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+}
+
+.tray-master-field input[type="text"] {
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 3px;
+  font-size: 14px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.tray-master-int-input,
+.tray-master-dec1-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tray-master-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tray-master-action-btn {
+  min-width: 120px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--ui-border-strong, #767676);
+}
+
+.tray-master-action-btn-primary {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-bg);
+}
+
+.tray-master-action-btn-primary:hover {
+  background-color: var(--btn-primary-hover);
+}
+
+.tray-master-action-btn-danger {
+  background: var(--ui-surface-card);
+  color: var(--ui-danger, #9f403d);
+  border-color: var(--ui-danger, #9f403d);
+}
+
+.tray-master-action-btn-danger:hover {
+  background: rgba(159, 64, 61, 0.08);
+}

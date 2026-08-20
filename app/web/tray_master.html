@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>トレーマスタ編集</title>
+  <link rel="icon" type="image/png" sizes="256x256" href="icons/icon.ico">
+  <link rel="stylesheet" href="css/top.css">
+  <link rel="stylesheet" href="css/design.css">
+  <link rel="stylesheet" href="css/app-theme.css">
+  <link rel="stylesheet" href="css/search.css">
+  <link rel="stylesheet" href="css/tray_master.css">
+  <link rel="stylesheet" href="css/quotes.css">
+  <script src="js/font_size_pref.js"></script>
+  <script src="js/font_scale_boot.js"></script>
+</head>
+<body class="tray-master-page">
+  <header class="search-header ship-insp-header-bar tray-master-header">
+    <div class="search-header-inner ship-insp-sub-header-inner quotes-header-inner">
+      <a href="cost_quotes.html" class="ship-insp-back-btn">戻る</a>
+      <h1 class="search-header-title tray-master-title">トレーマスタ編集</h1>
+      <span class="search-header-version" id="app-version"></span>
+      <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
+    </div>
+  </header>
+
+  <main class="tray-master-main">
+    <p id="tray-master-message" class="tray-master-message" aria-live="polite"></p>
+
+    <div class="tray-master-table-wrap">
+      <table class="tray-master-table" id="tray-master-table">
+        <colgroup>
+          <col class="tm-col tm-col--id" />
+          <col class="tm-col tm-col--name" />
+          <col class="tm-col tm-col--material" />
+          <col class="tm-col tm-col--capacity" />
+          <col class="tm-col tm-col--price" />
+        </colgroup>
+        <thead>
+          <tr id="tray-master-thead-row"></tr>
+        </thead>
+        <tbody id="tray-master-tbody"></tbody>
+      </table>
+    </div>
+
+    <section class="tray-master-form-section" aria-labelledby="tray-master-form-title">
+      <h2 id="tray-master-form-title" class="tray-master-form-heading">入力</h2>
+      <div class="tray-master-form-grid">
+        <div class="tray-master-field tray-master-field--id">
+          <label for="tm-id">ID</label>
+          <input type="text" id="tm-id" autocomplete="off" placeholder="（新規時は空）">
+        </div>
+        <div class="tray-master-field tray-master-field--name">
+          <label for="tm-name">トレー名</label>
+          <input type="text" id="tm-name" autocomplete="off">
+        </div>
+        <div class="tray-master-field tray-master-field--material">
+          <label for="tm-material">材質</label>
+          <input type="text" id="tm-material" autocomplete="off">
+        </div>
+        <div class="tray-master-field tray-master-field--capacity">
+          <label for="tm-capacity">収容数</label>
+          <input type="text" id="tm-capacity" class="tray-master-int-input" inputmode="numeric" autocomplete="off" placeholder="0">
+        </div>
+        <div class="tray-master-field tray-master-field--price">
+          <label for="tm-price">単価</label>
+          <input type="text" id="tm-price" class="tray-master-dec1-input" inputmode="decimal" autocomplete="off" placeholder="0.0">
+        </div>
+      </div>
+      <div class="tray-master-form-actions">
+        <button type="button" id="tm-btn-save" class="tray-master-action-btn tray-master-action-btn-primary">保存</button>
+        <button type="button" id="tm-btn-delete" class="tray-master-action-btn tray-master-action-btn-danger">削除</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="tm-save-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="tm-save-confirm-title">
+      <div class="search-dialog-head">
+        <span id="tm-save-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message" id="tm-save-confirm-message">保存しますか？</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="tm-save-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="tm-save-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tm-save-done-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="tm-save-done-title">
+      <div class="search-dialog-head">
+        <span id="tm-save-done-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">保存しました。</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="tm-save-done-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tm-delete-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="tm-delete-confirm-title">
+      <div class="search-dialog-head">
+        <span id="tm-delete-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message" id="tm-delete-confirm-message"></p>
+        <div class="search-dialog-actions">
+          <button type="button" id="tm-delete-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="tm-delete-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tm-delete-done-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="tm-delete-done-title">
+      <div class="search-dialog-head">
+        <span id="tm-delete-done-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">削除しました。</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="tm-delete-done-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <footer class="app-footer">
+    <small>&copy; ARAISEIMITSU 2026 - Created By DIP Department</small>
+  </footer>
+  <script src="js/bridge.js"></script>
+  <script src="js/page_common.js"></script>
+  <script src="js/display_scale.js"></script>
+  <script src="js/tray_master.js"></script>
+</body>
+</html>

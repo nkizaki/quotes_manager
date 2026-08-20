@@ -1,0 +1,237 @@
+/**
+ * 段ボール箱マスタ編集（--dbx-table-col-* / --dbx-form-max-*）
+ */
+
+.dbox-master-page {
+  margin: 0;
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+  font-family: var(--ui-font-stack, sans-serif);
+
+  --dbx-table-col-id: 72px;
+  --dbx-table-col-spec: 320px;
+  --dbx-table-col-price: 120px;
+
+  --dbx-form-max-id: 120px;
+  --dbx-form-max-spec: 360px;
+  --dbx-form-max-price: 120px;
+}
+
+.dbox-master-header {
+  min-width: 720px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--ui-surface-card);
+  border-bottom: 1px solid var(--ui-border-default);
+}
+
+.dbox-master-header-inner {
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dbox-master-title {
+  margin: 0 0 0 100px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.dbox-master-back-link {
+  color: var(--link-text, #00c);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.dbox-master-back-link:hover {
+  color: var(--link-text-hover, #006);
+  text-decoration: underline;
+}
+
+.dbox-master-main {
+  max-width: 720px;
+  min-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.dbox-master-message {
+  min-height: 1.25em;
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--ui-text-muted);
+}
+
+.dbox-master-message.is-error {
+  color: var(--ui-danger, #9f403d);
+  font-weight: 600;
+}
+
+.dbox-master-message.is-ok {
+  color: var(--ui-success, #006f1e);
+  font-weight: 600;
+}
+
+.dbox-master-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  background: var(--ui-surface-card);
+  margin-bottom: 20px;
+}
+
+.dbox-master-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  min-width: 520px;
+  font-size: 13px;
+}
+
+.dbox-master-table col.dbx-col--id { width: var(--dbx-table-col-id); }
+.dbox-master-table col.dbx-col--spec { width: var(--dbx-table-col-spec); }
+.dbox-master-table col.dbx-col--price { width: var(--dbx-table-col-price); }
+
+.dbox-master-table th,
+.dbox-master-table td {
+  border: 1px solid var(--ui-divider-soft, #e0e0e0);
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.dbox-master-table thead th {
+  background: var(--ui-surface-low, #f2f4f4);
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.dbox-master-table tbody td {
+  background: var(--ui-surface-card);
+}
+
+.dbox-master-td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dbox-master-id-btn {
+  margin: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 4px;
+  background: var(--ui-primary-soft, #d9e5fb);
+  color: var(--link-text, #00c);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  min-width: 48px;
+}
+
+.dbox-master-id-btn:hover {
+  background: var(--ui-primary-soft);
+  filter: brightness(0.97);
+}
+
+.dbox-master-form-section {
+  background: var(--ui-surface-card);
+  border: 1px solid var(--ui-border-default);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.dbox-master-form-heading {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.dbox-master-form-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.dbox-master-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.dbox-master-field--id { width: var(--dbx-form-max-id); }
+.dbox-master-field--spec { width: var(--dbx-form-max-spec); }
+.dbox-master-field--price { width: var(--dbx-form-max-price); }
+
+.dbox-master-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+}
+
+.dbox-master-field input[type="text"] {
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border-input);
+  border-radius: 3px;
+  font-size: 14px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dbox-master-dec1-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dbox-master-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dbox-master-action-btn {
+  min-width: 120px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--ui-border-strong, #767676);
+}
+
+.dbox-master-action-btn-primary {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-bg);
+}
+
+.dbox-master-action-btn-primary:hover {
+  background-color: var(--btn-primary-hover);
+}
+
+.dbox-master-action-btn-danger {
+  background: var(--ui-surface-card);
+  color: var(--ui-danger, #9f403d);
+  border-color: var(--ui-danger, #9f403d);
+}
+
+.dbox-master-action-btn-danger:hover {
+  background: rgba(159, 64, 61, 0.08);
+}

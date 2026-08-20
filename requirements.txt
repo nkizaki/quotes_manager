@@ -1,0 +1,8 @@
+# Runtime (Python 3.11+)
+psycopg2-binary>=2.9,<3
+openpyxl>=3.1,<4
+pywebview>=5.0
+pywin32>=306; sys_platform == "win32"
+
+# exe build (launcher.py / PyInstaller spec)
+PyInstaller>=6.0

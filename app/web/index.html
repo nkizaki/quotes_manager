@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>見積り管理</title>
+  <link rel="icon" type="image/png" sizes="256x256" href="icons/icon.ico">
+  <link rel="stylesheet" href="css/top.css">
+  <link rel="stylesheet" href="css/design.css">
+  <link rel="stylesheet" href="css/quotes.css">
+  <script src="js/font_size_pref.js"></script>
+  <script src="js/font_scale_boot.js"></script>
+</head>
+<body class="search-page">
+  <header class="search-header ship-insp-header-bar">
+    <div class="search-header-inner">
+      <h1 class="search-header-title">
+        <span class="search-header-version" id="app-version"></span>
+        見積り管理
+        <span id="app-dev-badge" hidden style="color: red; font-weight: bold; margin-left: 10px;">開発モード</span>
+        <span id="app-ui-scale"></span>
+      </h1>
+      <label class="font-size-setting" for="font-size-percent-input">
+        <span class="font-size-setting__label">文字サイズ</span>
+        <input type="number" id="font-size-percent-input" class="font-size-setting__input" min="50" max="300" step="5" value="100" inputmode="numeric" aria-label="文字サイズ（パーセント）">
+        <span class="font-size-setting__unit">%</span>
+      </label>
+    </div>
+  </header>
+
+  <main class="search-main">
+    <section class="search-section" id="search-section-top">
+      <nav class="ship-insp-nav" aria-label="見積り管理メニュー">
+        <a href="quotes.html" class="search-btn">見積り管理</a>
+        <a href="cost_quotes.html" class="search-btn">原価見積り管理</a>
+      </nav>
+      <p class="ship-insp-db-path" id="app-db-path" hidden></p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <small>&copy; ARAISEIMITSU 2026 - Created By DIP Department</small>
+  </footer>
+  <script src="js/bridge.js"></script>
+  <script src="js/page_common.js"></script>
+  <script src="js/display_scale.js"></script>
+  <script src="js/index.js"></script>
+</body>
+</html>

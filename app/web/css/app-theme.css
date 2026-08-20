@@ -1,0 +1,166 @@
+/**
+ * app-theme.css — 全ページ共通のデザイントークンと共有 UI 部品
+ *
+ * 読み込み順（必須）:
+ *   1. app-theme.css
+ *   2. search.css（検索ページ）または style.css（原価見積り計算）
+ *
+ * ページ固有のレイアウト・グリッド・コンポーネントは各 CSS に書き、
+ * 色・角丸・影・入力の下線ルールはここで定義した var(--...) を参照してください。
+ *
+ * 変更手順: まずこのファイルの :root の値だけを編集し、
+ * search.css / style.css には原則として生の色コードを書かない。
+ */
+
+:root {
+  /* ----- Surfaces & typography ----- */
+  --ui-surface: #f9f9f9;
+  --ui-surface-low: #f2f4f4;
+  --ui-surface-card: #ffffff;
+  --ui-text: #2d3335;
+  --ui-text-muted: #5f676b;
+  --ui-font-stack: Inter, "Meiryo", sans-serif;
+
+  --ui-primary: #335ea1;
+  --ui-primary-soft: #d9e5fb;
+  --ui-success: #006f1e;
+  --ui-danger: #9f403d;
+  --ui-outline-soft: rgba(45, 51, 53, 0.1);
+
+  /* ----- 境界・汎用ボーダー（レガシー枠線と整合） ----- */
+  --ui-border-default: #ccc;
+  --ui-border-input: #bfbfbf;
+  --ui-border-strong: #767676;
+  --ui-divider-soft: #e0e0e0;
+  --ui-footer-surface: #f7f7f7;
+
+  /* ----- リンク・アイコン ----- */
+  --link-text: #00c;
+  --link-text-hover: #006;
+  --icon-button-text: #333;
+  --icon-button-text-hover: #000;
+
+  /* 必須マーク等 */
+  --color-required: #c62828;
+
+  /* 強調セル（材料・真鍮の入力注意） */
+  --cell-highlight-bg: #ffffcc;
+
+  /* 無効・読み取り専用 */
+  --state-disabled-bg: #d8d8d8;
+  --state-disabled-text: #9e9e9e;
+  --input-readonly-bg: #f0f0f0;
+
+  /* グレー系セカンダリボタン（入力初期化のレガシー見た目） */
+  --btn-secondary-bg: #e8e8e8;
+  --btn-secondary-text: var(--ui-text);
+  --btn-secondary-border: #bdbdbd;
+  --btn-secondary-hover: #dedede;
+  --btn-secondary-active: #d0d0d0;
+
+  /* ダイアログの中立ボタン */
+  --dialog-btn-neutral-bg: #f0f0f0;
+  --dialog-btn-neutral-hover: #e4e4e4;
+  --dialog-btn-neutral-border: var(--ui-border-input);
+  --dialog-btn-neutral-text: var(--ui-text);
+
+  /* モーダルフォーカス（検索サブウィンドウ textarea 等） */
+  --modal-focus-ring: #92bfff;
+
+  /* 影（オーバーレイ・パネル） */
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-dialog: 0 8px 28px rgba(0, 0, 0, 0.2);
+  --shadow-floating-heavy: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+
+  /* オーバーレイ（モーダル背後のスクリム） */
+  --overlay-scrim-light: rgba(0, 0, 0, 0.35);
+  --overlay-scrim-medium: rgba(0, 0, 0, 0.45);
+
+  /* ----- Sticky page headers（検索・原価見積り計算） ----- */
+  --app-header-bg: #ffe4d5;
+  --app-header-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+  /* ----- Form controls（下線スタイル） ----- */
+  --input-bg: var(--ui-surface-low);
+  --input-text: var(--ui-text);
+  --input-border-bottom-color: rgba(51, 94, 161, 0.3);
+  --input-border-bottom: 1px solid var(--input-border-bottom-color);
+  --input-focus-color: var(--ui-primary);
+  /* 原価見積り: フォーカス時の太さは border ではなく inset で表現（レイアウトずれ防止） */
+  --input-focus-inset-shadow: inset 0 -1px 0 var(--input-focus-color);
+
+  /* しきい値ヒント（est_calc.js の applyConditionalTextboxBackgrounds が参照。通常レンジは背景をクリアして --input-bg を使う） */
+  /* proc-3 交換サイクル vs est-11 日数 */
+  --input-hint-proc3-bad: #ff9999;
+  --input-hint-proc3-caution: #ffcc99;
+  /* soryo-11 / soryo-38 重量(kg) しきい値 */
+  --input-hint-weight-good: #ccffcc;
+  --input-hint-weight-caution: #ffcc99;
+  --input-hint-weight-bad: #ff9999;
+
+  /* ----- Buttons（寸法・角丸） ----- */
+  --btn-radius: 6px;
+  --btn-font-weight: 600;
+  --btn-padding-y: 8px;
+  --btn-padding-x: 14px;
+
+  /* Primary（検索・登録・ダイアログ確定など） */
+  --btn-primary-bg: var(--ui-primary);
+  --btn-primary-hover: #2f548f;
+  --btn-primary-text: #ffffff;
+
+  /* Ghost（入力欄の初期化など） */
+  --btn-ghost-bg: transparent;
+  --btn-ghost-text: var(--ui-primary);
+  --btn-ghost-hover-bg: var(--ui-primary-soft);
+  --btn-ghost-border: none;
+
+  /* 水色（見積り追加・検索の新規） */
+  --btn-cyan-bg: #26a69a;
+  --btn-cyan-border: #00897b;
+  --btn-cyan-hover: #00897b;
+  --btn-cyan-active: #00796b;
+  --btn-cyan-text: #ffffff;
+
+  /* 緑（見積書ダウンロード） */
+  --btn-green-bg: #43a047;
+  --btn-green-border: #2e7d32;
+  --btn-green-hover: #388e3c;
+  --btn-green-active: #2e7d32;
+  --btn-green-text: #ffffff;
+
+  /* オレンジ（見積り保存） */
+  --btn-orange-bg: #fb8c00;
+  --btn-orange-border: #ef6c00;
+  --btn-orange-hover: #f57c00;
+  --btn-orange-active: #ef6c00;
+  --btn-orange-text: #ffffff;
+
+  /* 削除 */
+  --btn-danger-bg: var(--ui-danger);
+  --btn-danger-border: #8d3735;
+  --btn-danger-hover: #8f3937;
+  --btn-danger-active: #7f3432;
+  --btn-danger-text: #ffffff;
+
+  /* ----- Tables ----- */
+  --table-header-bg: #ecf2fc;
+  --table-cell-padding-y: 4px;
+  --table-cell-padding-x: 12px;
+
+  /* モーダル見出し（検索サブウィンドウ・ダイアログ） */
+  --modal-head-bg: var(--table-header-bg);
+
+  /* ----- Panels / glass ----- */
+  --radius-panel: 8px;
+  --shadow-ambient: 0 12px 40px rgba(45, 51, 53, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(45, 51, 53, 0.15);
+}
+
+/* 検索・原価見積り計算で共通の上部バー */
+.search-header,
+.est-calc-header {
+  background-color: var(--app-header-bg);
+  box-shadow: var(--app-header-shadow);
+}

@@ -1,0 +1,559 @@
+/* Shared design pass based on DESIGN/DESIGN.md. Visual-only overrides. */
+:root {
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f4f8fc;
+  --color-surface-tertiary: #e9f1f9;
+  --color-border: #dce5ee;
+  --color-border-subtle: #cfd7e2;
+  --color-text: #2b2f36;
+  --color-text-secondary: #646b75;
+  --color-text-tertiary: #9aa3ad;
+  --color-accent: #1e88e5;
+  --color-accent-hover: #005cac;
+  --color-accent-soft: rgba(30, 136, 229, 0.10);
+  --color-accent-ring: rgba(30, 136, 229, 0.25);
+  --color-success: #10b981;
+  --color-success-soft: rgba(16, 185, 129, 0.10);
+  --color-danger: #ef4444;
+  --color-danger-soft: rgba(239, 68, 68, 0.10);
+  --color-warning: #f59e0b;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* 起動時ウィンドウ高さに応じたスケール（display_scale.js が設定） */
+  --ui-scale: 1;
+  --font-scale: 1;
+  --app-footer-height: calc(40px * var(--ui-scale));
+}
+
+html {
+  font-size: calc(16px * var(--font-scale));
+}
+
+body.search-page {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: var(--app-footer-height);
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+.search-header.ship-insp-header-bar {
+  min-width: 0 !important;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.search-header {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: auto;
+  min-height: calc(64px * var(--ui-scale));
+}
+
+.search-header-inner {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  flex-wrap: wrap;
+  row-gap: calc(8px * var(--ui-scale));
+}
+
+.ship-insp-sub-header-inner {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  flex-wrap: wrap;
+  row-gap: calc(8px * var(--ui-scale));
+}
+
+.ship-insp-sub-header-inner .search-header-title,
+.search-header-inner .search-header-title {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.ship-insp-header-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8px * var(--ui-scale));
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ship-insp-header-title-group .search-header-title {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.ship-insp-back-btn {
+  margin: 0 !important;
+  flex-shrink: 0;
+}
+
+.ship-insp-header-refresh-btn {
+  margin-left: 0;
+  flex-shrink: 0;
+  background-color: #2f8f4e;
+  color: #fff;
+  border: none;
+  border-radius: calc(4px * var(--ui-scale));
+  padding: calc(8px * var(--ui-scale)) calc(18px * var(--ui-scale));
+  font-size: calc(14px * var(--font-scale));
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ship-insp-header-refresh-btn:hover {
+  background-color: #277a42;
+}
+
+.ship-insp-sub-header-inner > .ship-insp-header-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8px * var(--ui-scale));
+  flex-shrink: 0;
+}
+
+.ship-insp-sub-header-inner > .kanri-header-print-btn {
+  margin-left: auto;
+}
+
+.kanri-header-print-btn,
+.kanri-header-update-btn,
+.kanri-header-check-btn,
+.kanri-last-updated {
+  flex-shrink: 0;
+}
+
+.kanri-header-print-btn {
+  min-height: 0;
+  padding: calc(8px * var(--ui-scale)) calc(18px * var(--ui-scale));
+  font-size: calc(14px * var(--font-scale));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* label_print と同型の読み込みスピナー（ボタン隣接） */
+.btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(0.5rem * var(--ui-scale));
+  color: var(--color-text-secondary);
+  font-size: calc(13px * var(--font-scale));
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-loading[hidden] {
+  display: none;
+}
+
+.progress-spinner {
+  flex: 0 0 auto;
+  width: max(14px, calc(1rem * var(--ui-scale)));
+  height: max(14px, calc(1rem * var(--ui-scale)));
+  border: max(2px, calc(0.125rem * var(--ui-scale))) solid var(--color-surface-tertiary);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: progress-spin 0.8s linear infinite;
+}
+
+@keyframes progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.location-export-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(8px * var(--ui-scale));
+  align-self: stretch;
+  margin-top: calc(8px * var(--ui-scale));
+}
+
+.kanri-last-updated {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-main {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+.search-section {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.search-header-inner::before {
+  content: "";
+  flex: 0 0 auto;
+  width: calc(112px * var(--ui-scale));
+  height: calc(32px * var(--ui-scale));
+  background: url("../icons/arai_logo.png") center / contain no-repeat;
+}
+
+.search-header-title {
+  color: var(--color-text);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.search-header-version {
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-hover);
+}
+
+.search-btn,
+.ship-insp-back-btn,
+.kanri-header-print-btn,
+.kanri-header-update-btn,
+.kanri-header-check-btn,
+.insp-filter-clear-btn,
+.insp-copy-code-btn,
+.insp-editor-action-btn,
+.insp-confirm-btn {
+  border-radius: var(--radius-lg) !important;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.search-btn,
+.ship-insp-back-btn,
+.kanri-header-print-btn {
+  border: 1px solid var(--color-accent) !important;
+  background: var(--color-accent) !important;
+  color: #fff !important;
+}
+
+.search-btn:hover,
+.ship-insp-back-btn:hover,
+.kanri-header-print-btn:hover {
+  border-color: var(--color-accent-hover) !important;
+  background: var(--color-accent-hover) !important;
+}
+
+.kanri-header-update-btn,
+.kanri-header-check-btn,
+.insp-editor-action-btn--update,
+.location-export-modal__export-btn {
+  border: 1px solid var(--color-success) !important;
+  background: var(--color-success) !important;
+  color: #fff !important;
+}
+
+.insp-filter-clear-btn,
+.insp-copy-code-btn,
+.insp-confirm-btn--cancel,
+.insp-editor-action-btn {
+  border: 1px solid var(--color-border) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+
+.insp-editor-action-btn--delete {
+  border-color: var(--color-danger) !important;
+  background: var(--color-danger-soft) !important;
+  color: var(--color-danger) !important;
+}
+
+.insp-kanri-filter,
+.insp-gaikan-filter,
+.insp-suuchi-filter,
+.ship-insp-nav {
+  width: auto !important;
+  max-width: calc(100vw - calc(24px * var(--ui-scale)));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.insp-kanri-filter,
+.insp-gaikan-filter,
+.insp-suuchi-filter {
+  margin-bottom: calc(10px * var(--ui-scale)) !important;
+  padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale)) !important;
+  gap: calc(8px * var(--ui-scale)) calc(12px * var(--ui-scale)) !important;
+}
+
+.insp-filter-input,
+.insp-filter-select {
+  height: calc(30px * var(--ui-scale));
+  padding: calc(4px * var(--ui-scale)) calc(8px * var(--ui-scale)) !important;
+  font-size: calc(12px * var(--font-scale)) !important;
+}
+
+.insp-filter-input--ship-date,
+.insp-filter-input--arrival-date {
+  width: calc(118px * var(--ui-scale)) !important;
+}
+
+.insp-filter-input--hinban {
+  width: min(calc(220px * var(--ui-scale)), 16vw) !important;
+}
+
+.insp-filter-input--kyakusaki {
+  width: min(calc(180px * var(--ui-scale)), 14vw) !important;
+}
+
+.insp-filter-select--tanto {
+  width: min(calc(136px * var(--ui-scale)), 12vw) !important;
+}
+
+.insp-filter-select--senko,
+.insp-filter-select--kensa,
+.insp-filter-select--keiryo,
+.insp-filter-select--konpo,
+.insp-filter-select--data,
+.insp-filter-select--kakunin {
+  width: calc(94px * var(--ui-scale)) !important;
+}
+
+.insp-filter-label {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.insp-filter-input,
+.insp-filter-select,
+.insp-tanto-select,
+.location-export-modal__date,
+.insp-editor-field > input,
+.insp-editor-usage-row > input {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
+}
+
+.insp-table-wrapper {
+  width: calc(100vw - calc(50px * var(--ui-scale))) !important;
+  max-width: calc(100vw - calc(24px * var(--ui-scale)));
+  height: calc(100vh - calc(250px * var(--ui-scale))) !important;
+  min-height: calc(360px * var(--ui-scale));
+  border: 1px solid #c7d0dc;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.insp-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: fixed;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+.insp-table thead,
+.insp-table th {
+  background: var(--color-surface-secondary);
+}
+
+/* ヘッダー (th) — padding / font-size などはここだけで調整 */
+.insp-table th {
+  border: 1px solid var(--color-border-subtle) !important;
+  padding: calc(1px * var(--ui-scale)) calc(2px * var(--ui-scale)) !important;
+  font-size: calc(11px * var(--font-scale));
+  line-height: 1.28;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  vertical-align: middle;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+/* データ行 (td) — padding / font-size などはここだけで調整 */
+.insp-table td {
+  border: 1px solid var(--color-border-subtle) !important;
+  padding: calc(1px * var(--ui-scale)) calc(2px * var(--ui-scale)) !important;
+  font-size: calc(12.5px * var(--font-scale));
+  line-height: 1.28;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  vertical-align: middle;
+}
+
+.insp-table tbody tr:hover td {
+  background: var(--color-surface-secondary);
+}
+
+.insp-table td.insp-cell-expanded {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.insp-table td.insp-num-col {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.insp-table td.insp-check-col input[type="checkbox"] {
+  accent-color: var(--color-accent);
+}
+
+.insp-table td.insp-check-col,
+.insp-table th.insp-check-col,
+.insp-table td:has(.insp-tanto-select),
+.insp-table td:has(.insp-state-checkbox) {
+  white-space: nowrap;
+}
+
+.insp-tanto-select {
+  min-height: calc(20px * var(--ui-scale));
+  font-size: clamp(calc(10px * var(--font-scale)), 0.55vw, calc(11px * var(--font-scale)));
+}
+
+.insp-note-input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insp-table td.insp-cell-expanded .insp-note-input {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.insp-table tbody tr.insp-row-yellow td,
+.insp-table tbody tr td.suuchi-bg-yellow {
+  background: #fff2b8 !important;
+}
+
+.insp-table tbody tr.insp-row-green td,
+.insp-table tbody tr td.suuchi-bg-green {
+  background: #b9f8bd !important;
+}
+
+.insp-table tbody tr.insp-row-red td,
+.insp-table tbody tr td.suuchi-bg-red {
+  background: #ffb7bd !important;
+}
+
+.insp-table tbody tr.insp-row-magenta td {
+  background: #ffdbff !important;
+}
+
+.insp-editor-dialog,
+.insp-confirm-dialog,
+.location-export-modal__dialog {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 16px 40px rgba(23, 37, 54, 0.18);
+}
+
+.insp-editor-header,
+.insp-confirm-header,
+.location-export-modal__header {
+  background: var(--color-surface-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.insp-editor-title,
+.insp-confirm-title,
+.location-export-modal__title {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.insp-query-error {
+  background: var(--color-danger-soft);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-lg);
+  color: var(--color-danger);
+}
+
+.ship-insp-db-path {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  width: 100%;
+  box-sizing: border-box;
+  padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale));
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.app-footer small {
+  font: inherit;
+}
+
+@media (max-width: 900px) {
+  body.search-page {
+    min-width: 0;
+  }
+
+  .search-header-inner {
+    flex-wrap: wrap;
+    padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale));
+  }
+
+  .search-header-inner::before {
+    width: calc(96px * var(--ui-scale));
+    height: calc(28px * var(--ui-scale));
+  }
+
+  .search-main {
+    padding: calc(10px * var(--ui-scale));
+  }
+
+  .insp-table-wrapper {
+    width: calc(100vw - calc(20px * var(--ui-scale))) !important;
+    max-width: calc(100vw - calc(20px * var(--ui-scale)));
+    height: calc(100vh - calc(280px * var(--ui-scale))) !important;
+  }
+}
