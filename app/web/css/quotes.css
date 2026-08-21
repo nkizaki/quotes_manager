@@ -9,6 +9,7 @@ body.rate-master-page,
 body.freight-master-page,
 body.tray-master-page,
 body.dbox-master-page,
+body.master-edit-page,
 body.quotes-placeholder-page {
   font-family: var(--font-sans);
   background: var(--color-surface-secondary);
@@ -47,7 +48,8 @@ body.quotes-placeholder-page {
 .rate-master-page select,
 .freight-master-page input[type="text"],
 .tray-master-page input[type="text"],
-.dbox-master-page input[type="text"] {
+.dbox-master-page input[type="text"],
+.master-edit-page input[type="text"] {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -101,4 +103,76 @@ body.quotes-placeholder-page {
   border-radius: var(--radius-lg);
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+/* マスタ編集メニュー（縦並び区分） */
+.edit-masters-section {
+  max-width: calc(520px * var(--ui-scale, 1));
+}
+
+.edit-masters-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(28px * var(--ui-scale, 1));
+}
+
+.edit-masters-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(12px * var(--ui-scale, 1));
+}
+
+.edit-masters-group-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+.edit-masters-group-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(12px * var(--ui-scale, 1));
+}
+
+.edit-masters-group-actions .search-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(280px * var(--ui-scale, 1));
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* モーダル（search-dialog / insp-confirm）を参考プロジェクト書式に揃える */
+.search-dialog-overlay.insp-confirm-modal,
+.insp-confirm-modal.is-open {
+  display: flex;
+}
+
+.search-dialog-message,
+.insp-confirm-body {
+  color: var(--color-text);
+  font-size: calc(14px * var(--font-scale, 1));
+  line-height: 1.6;
+  font-family: var(--font-sans);
+}
+
+.search-dialog-actions,
+.insp-confirm-actions {
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.search-dialog-btn,
+.insp-confirm-btn {
+  min-width: calc(92px * var(--ui-scale, 1));
+  min-height: calc(34px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  font-family: var(--font-sans);
+  font-weight: 500;
 }

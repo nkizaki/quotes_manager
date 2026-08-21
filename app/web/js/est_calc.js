@@ -1439,281 +1439,145 @@
     return "原価見積書_" + customer + "_" + estimate + "_" + lot + ".xlsx";
   }
 
+  function buildConfirmModal(options) {
+    options = options || {};
+    var overlay = document.createElement("div");
+    overlay.className = "insp-confirm-modal is-open";
+    overlay.setAttribute("aria-hidden", "false");
+    overlay.style.display = "flex";
+
+    var dialog = document.createElement("div");
+    dialog.className = "insp-confirm-dialog";
+    dialog.setAttribute("role", "alertdialog");
+    dialog.setAttribute("aria-modal", "true");
+
+    var header = document.createElement("header");
+    header.className = "insp-confirm-header";
+    var title = document.createElement("h2");
+    title.className = "insp-confirm-title";
+    title.textContent = options.title || "確認";
+    header.appendChild(title);
+
+    var body = document.createElement("div");
+    body.className = "insp-confirm-body";
+    if (options.messageHtml != null) {
+      body.innerHTML = options.messageHtml;
+    } else {
+      body.textContent = options.message || "";
+    }
+
+    var actions = document.createElement("div");
+    actions.className = "insp-confirm-actions";
+
+    dialog.appendChild(header);
+    dialog.appendChild(body);
+    dialog.appendChild(actions);
+    overlay.appendChild(dialog);
+
+    function closeWith(value) {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+      if (typeof options.onClose === "function") {
+        options.onClose(value);
+      }
+    }
+
+    (options.buttons || []).forEach(function (btnDef, index) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = btnDef.label;
+      btn.className =
+        "insp-confirm-btn " +
+        (btnDef.primary ? "insp-confirm-btn--ok" : "insp-confirm-btn--cancel");
+      btn.addEventListener("click", function () {
+        closeWith(btnDef.value);
+      });
+      actions.appendChild(btn);
+      if (index === 0) {
+        setTimeout(function () {
+          try {
+            btn.focus();
+          } catch (e) {
+            /* ignore */
+          }
+        }, 0);
+      }
+    });
+
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
   function showExportConfirmDialog() {
     return new Promise(function (resolve) {
-      var overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.inset = "0";
-      overlay.style.background = "rgba(0, 0, 0, 0.35)";
-      overlay.style.zIndex = "3000";
-      overlay.style.display = "flex";
-      overlay.style.alignItems = "center";
-      overlay.style.justifyContent = "center";
-
-      var dialog = document.createElement("div");
-      dialog.style.width = "420px";
-      dialog.style.maxWidth = "calc(100vw - 32px)";
-      dialog.style.background = "#fff";
-      dialog.style.border = "1px solid #ccc";
-      dialog.style.borderRadius = "6px";
-      dialog.style.padding = "14px";
-      dialog.style.boxSizing = "border-box";
-
-      var title = document.createElement("div");
-      title.textContent = "確認";
-      title.style.fontWeight = "700";
-      title.style.marginBottom = "10px";
-
-      var message = document.createElement("div");
-      message.innerHTML =
-        "原価見積書への出力前に内容を保存しますか？<br>(いいえで保存せずに出力)";
-      message.style.marginBottom = "14px";
-      message.style.lineHeight = "1.5";
-
-      var actions = document.createElement("div");
-      actions.style.display = "flex";
-      actions.style.justifyContent = "flex-end";
-      actions.style.gap = "8px";
-
-      function makeButton(label, value) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = label;
-        btn.addEventListener("click", function () {
-          document.body.removeChild(overlay);
-          resolve(value);
-        });
-        return btn;
-      }
-
-      actions.appendChild(makeButton("はい", "yes"));
-      actions.appendChild(makeButton("いいえ", "no"));
-      actions.appendChild(makeButton("キャンセル", "cancel"));
-
-      dialog.appendChild(title);
-      dialog.appendChild(message);
-      dialog.appendChild(actions);
-      overlay.appendChild(dialog);
-      document.body.appendChild(overlay);
+      buildConfirmModal({
+        title: "確認",
+        message:
+          "原価見積書への出力前に内容を保存しますか？\n(いいえで保存せずに出力)",
+        buttons: [
+          { label: "はい", value: "yes", primary: true },
+          { label: "いいえ", value: "no" },
+          { label: "キャンセル", value: "cancel" },
+        ],
+        onClose: resolve,
+      });
     });
   }
 
   function showSaveConfirmDialog() {
     return new Promise(function (resolve) {
-      var overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.inset = "0";
-      overlay.style.background = "rgba(0, 0, 0, 0.35)";
-      overlay.style.zIndex = "3000";
-      overlay.style.display = "flex";
-      overlay.style.alignItems = "center";
-      overlay.style.justifyContent = "center";
-
-      var dialog = document.createElement("div");
-      dialog.style.width = "420px";
-      dialog.style.maxWidth = "calc(100vw - 32px)";
-      dialog.style.background = "#fff";
-      dialog.style.border = "1px solid #ccc";
-      dialog.style.borderRadius = "6px";
-      dialog.style.padding = "14px";
-      dialog.style.boxSizing = "border-box";
-
-      var title = document.createElement("div");
-      title.textContent = "確認";
-      title.style.fontWeight = "700";
-      title.style.marginBottom = "10px";
-
-      var message = document.createElement("div");
-      message.innerHTML =
-        "入力した見積りデータを保存しますか？<br>(使用中ロットID欄が空の場合新規で差分が登録されます)";
-      message.style.marginBottom = "14px";
-      message.style.lineHeight = "1.5";
-
-      var actions = document.createElement("div");
-      actions.style.display = "flex";
-      actions.style.justifyContent = "flex-end";
-      actions.style.gap = "8px";
-
-      function makeButton(label, value) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = label;
-        btn.addEventListener("click", function () {
-          document.body.removeChild(overlay);
-          resolve(value);
-        });
-        return btn;
-      }
-
-      actions.appendChild(makeButton("はい", "yes"));
-      actions.appendChild(makeButton("いいえ", "no"));
-      dialog.appendChild(title);
-      dialog.appendChild(message);
-      dialog.appendChild(actions);
-      overlay.appendChild(dialog);
-      document.body.appendChild(overlay);
+      buildConfirmModal({
+        title: "確認",
+        message:
+          "入力した見積りデータを保存しますか？\n(使用中ロットID欄が空の場合新規で差分が登録されます)",
+        buttons: [
+          { label: "はい", value: "yes", primary: true },
+          { label: "いいえ", value: "no" },
+        ],
+        onClose: resolve,
+      });
     });
   }
 
   function showYesNoConfirmDialog(titleText, messageText, messageHtml) {
     return new Promise(function (resolve) {
-      var overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.inset = "0";
-      overlay.style.background = "rgba(0, 0, 0, 0.35)";
-      overlay.style.zIndex = "3000";
-      overlay.style.display = "flex";
-      overlay.style.alignItems = "center";
-      overlay.style.justifyContent = "center";
-
-      var dialog = document.createElement("div");
-      dialog.style.width = "420px";
-      dialog.style.maxWidth = "calc(100vw - 32px)";
-      dialog.style.background = "#fff";
-      dialog.style.border = "1px solid #ccc";
-      dialog.style.borderRadius = "6px";
-      dialog.style.padding = "14px";
-      dialog.style.boxSizing = "border-box";
-
-      var title = document.createElement("div");
-      title.textContent = titleText || "確認";
-      title.style.fontWeight = "700";
-      title.style.marginBottom = "10px";
-
-      var message = document.createElement("div");
-      if (messageHtml != null) {
-        message.innerHTML = messageHtml;
-      } else {
-        message.textContent = messageText || "";
-      }
-      message.style.marginBottom = "14px";
-      message.style.lineHeight = "1.5";
-
-      var actions = document.createElement("div");
-      actions.style.display = "flex";
-      actions.style.justifyContent = "flex-end";
-      actions.style.gap = "8px";
-
-      function makeButton(label, value) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = label;
-        btn.addEventListener("click", function () {
-          document.body.removeChild(overlay);
-          resolve(value);
-        });
-        return btn;
-      }
-
-      actions.appendChild(makeButton("はい", "yes"));
-      actions.appendChild(makeButton("いいえ", "no"));
-
-      dialog.appendChild(title);
-      dialog.appendChild(message);
-      dialog.appendChild(actions);
-      overlay.appendChild(dialog);
-      document.body.appendChild(overlay);
+      buildConfirmModal({
+        title: titleText || "確認",
+        message: messageText || "",
+        messageHtml: messageHtml,
+        buttons: [
+          { label: "はい", value: "yes", primary: true },
+          { label: "いいえ", value: "no" },
+        ],
+        onClose: resolve,
+      });
     });
   }
 
   function showOkDialog(titleText, messageText) {
     return new Promise(function (resolve) {
-      var overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.inset = "0";
-      overlay.style.background = "rgba(0, 0, 0, 0.35)";
-      overlay.style.zIndex = "3000";
-      overlay.style.display = "flex";
-      overlay.style.alignItems = "center";
-      overlay.style.justifyContent = "center";
-
-      var dialog = document.createElement("div");
-      dialog.style.width = "420px";
-      dialog.style.maxWidth = "calc(100vw - 32px)";
-      dialog.style.background = "#fff";
-      dialog.style.border = "1px solid #ccc";
-      dialog.style.borderRadius = "6px";
-      dialog.style.padding = "14px";
-      dialog.style.boxSizing = "border-box";
-
-      var title = document.createElement("div");
-      title.textContent = titleText || "確認";
-      title.style.fontWeight = "700";
-      title.style.marginBottom = "10px";
-
-      var message = document.createElement("div");
-      message.textContent = messageText || "";
-      message.style.marginBottom = "14px";
-      message.style.lineHeight = "1.5";
-
-      var actions = document.createElement("div");
-      actions.style.display = "flex";
-      actions.style.justifyContent = "flex-end";
-
-      var okBtn = document.createElement("button");
-      okBtn.type = "button";
-      okBtn.textContent = "OK";
-      okBtn.addEventListener("click", function () {
-        document.body.removeChild(overlay);
-        resolve();
+      buildConfirmModal({
+        title: titleText || "確認",
+        message: messageText || "",
+        buttons: [{ label: "OK", value: true, primary: true }],
+        onClose: function () {
+          resolve();
+        },
       });
-
-      actions.appendChild(okBtn);
-      dialog.appendChild(title);
-      dialog.appendChild(message);
-      dialog.appendChild(actions);
-      overlay.appendChild(dialog);
-      document.body.appendChild(overlay);
     });
   }
 
   function showSavedDialog() {
     return new Promise(function (resolve) {
-      var overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.inset = "0";
-      overlay.style.background = "rgba(0, 0, 0, 0.35)";
-      overlay.style.zIndex = "3000";
-      overlay.style.display = "flex";
-      overlay.style.alignItems = "center";
-      overlay.style.justifyContent = "center";
-
-      var dialog = document.createElement("div");
-      dialog.style.width = "360px";
-      dialog.style.maxWidth = "calc(100vw - 32px)";
-      dialog.style.background = "#fff";
-      dialog.style.border = "1px solid #ccc";
-      dialog.style.borderRadius = "6px";
-      dialog.style.padding = "14px";
-      dialog.style.boxSizing = "border-box";
-
-      var title = document.createElement("div");
-      title.textContent = "確認";
-      title.style.fontWeight = "700";
-      title.style.marginBottom = "10px";
-
-      var message = document.createElement("div");
-      message.textContent = "保存しました";
-      message.style.marginBottom = "14px";
-
-      var actions = document.createElement("div");
-      actions.style.display = "flex";
-      actions.style.justifyContent = "flex-end";
-
-      var okBtn = document.createElement("button");
-      okBtn.type = "button";
-      okBtn.textContent = "OK";
-      okBtn.addEventListener("click", function () {
-        document.body.removeChild(overlay);
-        resolve();
+      buildConfirmModal({
+        title: "確認",
+        message: "保存しました",
+        buttons: [{ label: "OK", value: true, primary: true }],
+        onClose: function () {
+          resolve();
+        },
       });
-
-      actions.appendChild(okBtn);
-      dialog.appendChild(title);
-      dialog.appendChild(message);
-      dialog.appendChild(actions);
-      overlay.appendChild(dialog);
-      document.body.appendChild(overlay);
     });
   }
 

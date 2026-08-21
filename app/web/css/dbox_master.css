@@ -79,7 +79,8 @@
 }
 
 .dbox-master-table-wrap {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: 35rem;
   border: 1px solid var(--ui-border-default);
   border-radius: 6px;
   background: var(--ui-surface-card);

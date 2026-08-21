@@ -1,28 +1,19 @@
 /**
- * トレーマスタ編集ページ（--tm-table-col-* / --tm-form-max-* で幅調整）
+ * 共通マスタ編集（営業 / 客先 / RM / 表面処理 / 機械チャージ）
+ * 原価見積りマスタ（賃率など）と同じレイアウト・操作感。
  */
 
-.tray-master-page {
+.master-edit-page {
   margin: 0;
   background-color: var(--ui-surface);
   color: var(--ui-text);
   font-family: var(--ui-font-stack, sans-serif);
 
-  --tm-table-col-id: 72px;
-  --tm-table-col-name: 200px;
-  --tm-table-col-material: 160px;
-  --tm-table-col-capacity: 96px;
-  --tm-table-col-price: 100px;
-
-  --tm-form-max-id: 120px;
-  --tm-form-max-name: 220px;
-  --tm-form-max-material: 180px;
-  --tm-form-max-capacity: 110px;
-  --tm-form-max-price: 110px;
+  --me-table-min: 720px;
+  --me-main-max: 960px;
 }
 
-.tray-master-header {
-  min-width: 960px;
+.master-edit-header {
   position: sticky;
   top: 0;
   z-index: 200;
@@ -30,59 +21,37 @@
   border-bottom: 1px solid var(--ui-border-default);
 }
 
-.tray-master-header-inner {
-  margin: 0 auto;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.tray-master-title {
+.master-edit-title {
   margin: 0 0 0 100px;
   font-size: 1.5rem;
   font-weight: 700;
 }
 
-.tray-master-back-link {
-  color: var(--link-text, #00c);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.tray-master-back-link:hover {
-  color: var(--link-text-hover, #006);
-  text-decoration: underline;
-}
-
-.tray-master-main {
-  max-width: 960px;
-  min-width: 960px;
+.master-edit-main {
+  max-width: var(--me-main-max);
   margin: 0 auto;
   padding: 16px;
   box-sizing: border-box;
 }
 
-.tray-master-message {
+.master-edit-message {
   min-height: 1.25em;
   margin: 0 0 12px;
   font-size: 14px;
   color: var(--ui-text-muted);
 }
 
-.tray-master-message.is-error {
+.master-edit-message.is-error {
   color: var(--ui-danger, #9f403d);
   font-weight: 600;
 }
 
-.tray-master-message.is-ok {
+.master-edit-message.is-ok {
   color: var(--ui-success, #006f1e);
   font-weight: 600;
 }
 
-.tray-master-table-wrap {
+.master-edit-table-wrap {
   overflow: auto;
   max-height: 35rem;
   border: 1px solid var(--ui-border-default);
@@ -91,44 +60,38 @@
   margin-bottom: 20px;
 }
 
-.tray-master-table {
+.master-edit-table {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  min-width: 720px;
+  min-width: var(--me-table-min);
   font-size: 13px;
 }
 
-.tray-master-table col.tm-col--id { width: var(--tm-table-col-id); }
-.tray-master-table col.tm-col--name { width: var(--tm-table-col-name); }
-.tray-master-table col.tm-col--material { width: var(--tm-table-col-material); }
-.tray-master-table col.tm-col--capacity { width: var(--tm-table-col-capacity); }
-.tray-master-table col.tm-col--price { width: var(--tm-table-col-price); }
-
-.tray-master-table th,
-.tray-master-table td {
+.master-edit-table th,
+.master-edit-table td {
   border: 1px solid var(--ui-divider-soft, #e0e0e0);
   padding: 6px 8px;
   vertical-align: middle;
 }
 
-.tray-master-table thead th {
+.master-edit-table thead th {
   background: var(--ui-surface-low, #f2f4f4);
   font-weight: 700;
   white-space: nowrap;
   text-align: center;
 }
 
-.tray-master-table tbody td {
+.master-edit-table tbody td {
   background: var(--ui-surface-card);
 }
 
-.tray-master-td-num {
+.master-edit-td-num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.tray-master-id-btn {
+.master-edit-id-btn {
   margin: 0;
   padding: 1px 8px;
   border: 1px solid var(--ui-border-input);
@@ -142,81 +105,85 @@
   min-width: 48px;
 }
 
-.tray-master-id-btn:hover {
+.master-edit-id-btn:hover {
   background: var(--ui-primary-soft);
   filter: brightness(0.97);
 }
 
-.tray-master-form-section {
+.master-edit-form-section {
   background: var(--ui-surface-card);
   border: 1px solid var(--ui-border-default);
   border-radius: 6px;
   padding: 16px;
 }
 
-.tray-master-form-heading {
+.master-edit-form-heading {
   margin: 0 0 12px;
   font-size: 1.1rem;
   font-weight: 700;
 }
 
-.tray-master-form-grid {
+.master-edit-form-grid {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 10px 12px;
-  overflow-x: auto;
-  padding-bottom: 6px;
   margin-bottom: 16px;
-  min-width: 0;
 }
 
-.tray-master-field {
+.master-edit-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
   box-sizing: border-box;
   flex: 0 0 auto;
+  width: 140px;
 }
 
-.tray-master-field--id { width: var(--tm-form-max-id); }
-.tray-master-field--name { width: var(--tm-form-max-name); }
-.tray-master-field--material { width: var(--tm-form-max-material); }
-.tray-master-field--capacity { width: var(--tm-form-max-capacity); }
-.tray-master-field--price { width: var(--tm-form-max-price); }
+.master-edit-field--wide {
+  width: 220px;
+}
 
-.tray-master-field label {
+.master-edit-field--narrow {
+  width: 100px;
+}
+
+.master-edit-field label {
   font-size: 12px;
   font-weight: 600;
   color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
-.tray-master-field input[type="text"] {
+.master-edit-field input[type="text"] {
   padding: 6px 8px;
   border: 1px solid var(--ui-border-input);
   border-radius: 3px;
   font-size: 14px;
   box-sizing: border-box;
   width: 100%;
-  max-width: 100%;
 }
 
-.tray-master-int-input,
-.tray-master-dec1-input {
+.master-edit-field input[readonly] {
+  background-color: var(--ui-surface-low, #f2f4f4);
+  color: var(--ui-text-muted);
+  cursor: default;
+}
+
+.master-edit-num-input {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.tray-master-form-actions {
+.master-edit-form-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-.tray-master-action-btn {
+.master-edit-action-btn {
   min-width: 120px;
   padding: 10px 18px;
   font-size: 14px;
@@ -226,22 +193,48 @@
   border: 1px solid var(--ui-border-strong, #767676);
 }
 
-.tray-master-action-btn-primary {
+.master-edit-action-btn-primary {
   background-color: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   border-color: var(--btn-primary-bg);
 }
 
-.tray-master-action-btn-primary:hover {
+.master-edit-action-btn-primary:hover {
   background-color: var(--btn-primary-hover);
 }
 
-.tray-master-action-btn-danger {
+.master-edit-action-btn-danger {
   background: var(--ui-surface-card);
   color: var(--ui-danger, #9f403d);
   border-color: var(--ui-danger, #9f403d);
 }
 
-.tray-master-action-btn-danger:hover {
+.master-edit-action-btn-danger:hover {
   background: rgba(159, 64, 61, 0.08);
+}
+
+/* ページ別の幅調整 */
+.master-edit-page--sales {
+  --me-table-min: 480px;
+  --me-main-max: 720px;
+}
+
+.master-edit-page--customer {
+  --me-table-min: 720px;
+  --me-main-max: 960px;
+}
+
+.master-edit-page--rm {
+  --me-table-min: 420px;
+  --me-main-max: 640px;
+}
+
+.master-edit-page--surface {
+  --me-table-min: 480px;
+  --me-main-max: 720px;
+}
+
+.master-edit-page--machine {
+  --me-table-min: 560px;
+  --me-main-max: 800px;
 }

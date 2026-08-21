@@ -20,12 +20,6 @@
       <h1 class="search-header-title">原価見積り管理</h1>
       <span class="search-header-version" id="app-version"></span>
       <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
-      <div class="quotes-header-actions">
-        <a href="rate_master.html" class="search-header-rate-master-btn search-btn">賃率マスタ編集</a>
-        <a href="freight_master.html" class="search-header-freight-master-btn search-btn">運賃表マスタ編集</a>
-        <a href="tray_master.html" class="search-header-tray-master-btn search-btn">トレーマスタ編集</a>
-        <a href="dbox_master.html" class="search-header-dbox-master-btn search-btn">段ボール箱マスタ編集</a>
-      </div>
     </div>
   </header>
 
@@ -66,7 +60,12 @@
     </section>
 
     <section id="result-area" class="search-section">
-      <p id="result-message" class="search-result-message">検索結果：</p>
+      <div class="search-result-status">
+        <p id="result-message" class="search-result-message">検索結果：</p>
+        <span id="search-loading" class="btn-loading" hidden>
+          <span class="progress-spinner" aria-hidden="true"></span>
+        </span>
+      </div>
     <div id="result-table-wrapper">
       <table id="result-table">
         <colgroup>
@@ -233,6 +232,20 @@
         <p class="search-dialog-message">更新しました。</p>
         <div class="search-dialog-actions">
           <button type="button" id="update-done-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="alert-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="alert-title">
+      <div class="search-dialog-head">
+        <span id="alert-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p id="alert-message" class="search-dialog-message"></p>
+        <div class="search-dialog-actions">
+          <button type="button" id="alert-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
         </div>
       </div>
     </div>

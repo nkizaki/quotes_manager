@@ -680,7 +680,8 @@ button.search-btn {
 .insp-filter-clear-btn,
 .insp-copy-code-btn,
 .insp-editor-action-btn,
-.insp-confirm-btn {
+.insp-confirm-btn,
+.search-dialog-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -696,7 +697,9 @@ button.search-btn {
 
 .search-btn,
 .ship-insp-back-btn,
-.kanri-header-print-btn {
+.kanri-header-print-btn,
+.search-dialog-btn-primary,
+.insp-confirm-btn--ok {
   border: 1px solid var(--color-accent) !important;
   background: var(--color-accent) !important;
   color: #fff !important;
@@ -704,7 +707,9 @@ button.search-btn {
 
 .search-btn:hover,
 .ship-insp-back-btn:hover,
-.kanri-header-print-btn:hover {
+.kanri-header-print-btn:hover,
+.search-dialog-btn-primary:hover,
+.insp-confirm-btn--ok:hover {
   background: var(--color-accent-hover) !important;
   border-color: var(--color-accent-hover) !important;
 }
@@ -721,7 +726,8 @@ button.search-btn {
 .insp-filter-clear-btn,
 .insp-copy-code-btn,
 .insp-confirm-btn--cancel,
-.insp-editor-action-btn {
+.insp-editor-action-btn,
+.search-dialog-btn:not(.search-dialog-btn-primary) {
   border: 1px solid var(--color-border) !important;
   background: var(--color-surface) !important;
   color: var(--color-text) !important;

@@ -7,27 +7,107 @@
   <link rel="icon" type="image/png" sizes="256x256" href="icons/icon.ico">
   <link rel="stylesheet" href="css/top.css">
   <link rel="stylesheet" href="css/design.css">
+  <link rel="stylesheet" href="css/app-theme.css">
+  <link rel="stylesheet" href="css/search.css">
   <link rel="stylesheet" href="css/quotes.css">
   <script src="js/font_size_pref.js"></script>
   <script src="js/font_scale_boot.js"></script>
 </head>
-<body class="search-page quotes-placeholder-page">
+<body class="search-page">
   <header class="search-header ship-insp-header-bar">
-    <div class="search-header-inner ship-insp-sub-header-inner">
+    <div class="search-header-inner ship-insp-sub-header-inner quotes-header-inner">
       <a href="index.html" class="ship-insp-back-btn">戻る</a>
       <h1 class="search-header-title">見積り管理</h1>
       <span class="search-header-version" id="app-version"></span>
-      <span id="app-dev-badge" hidden style="color: red; font-weight: bold; margin-left: 10px;">開発モード</span>
+      <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
+      <div class="quotes-header-actions">
+        <a href="results_summary.html" class="search-btn">実績集計</a>
+      </div>
     </div>
   </header>
 
   <main class="search-main">
     <section class="search-section">
-      <div class="placeholder-card">
-        <p>このページは準備中です。見積り管理機能は今後移植します。</p>
+      <div class="search-form-grid">
+        <div class="search-form-item">
+          <label for="sales-select">営業担当</label>
+          <select id="sales-select" name="営業担当">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <div class="search-form-item">
+          <label for="customer-select">客先名</label>
+          <select id="customer-select" name="客先名">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <div class="search-form-item">
+          <label for="hinban">品番</label>
+          <input type="text" id="hinban" name="品番" value="" placeholder="">
+        </div>
+        <div class="search-form-item">
+          <label for="hinmei">品名</label>
+          <input type="text" id="hinmei" name="品名" value="" placeholder="">
+        </div>
+        <div class="search-form-item">
+          <label for="quote-id">見積りID</label>
+          <input type="text" id="quote-id" name="見積りID" value="" placeholder="">
+        </div>
+      </div>
+      <div class="search-actions">
+        <button type="button" id="search-btn" class="search-btn">検索</button>
+        <button type="button" id="search-new-btn" class="search-new-btn">新規</button>
+      </div>
+    </section>
+
+    <section id="result-area" class="search-section">
+      <div class="search-result-status">
+        <p id="result-message" class="search-result-message">検索結果：</p>
+        <span id="search-loading" class="btn-loading" hidden>
+          <span class="progress-spinner" aria-hidden="true"></span>
+        </span>
+      </div>
+      <div id="result-table-wrapper">
+        <table id="result-table">
+          <colgroup>
+            <col class="result-table-col-1">
+            <col class="result-table-col-2">
+            <col class="result-table-col-3">
+            <col class="result-table-col-4">
+            <col class="result-table-col-5">
+            <col class="result-table-col-6">
+            <col class="result-table-col-7">
+          </colgroup>
+          <thead id="result-thead">
+            <tr>
+              <th>見積りID</th>
+              <th>管理NO</th>
+              <th>営業担当</th>
+              <th>客先名</th>
+              <th>品番</th>
+              <th>品名</th>
+              <th>備考</th>
+            </tr>
+          </thead>
+          <tbody id="result-tbody"></tbody>
+        </table>
       </div>
     </section>
   </main>
+
+  <div id="alert-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="alert-title">
+      <div class="search-dialog-head">
+        <span id="alert-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p id="alert-message" class="search-dialog-message"></p>
+        <div class="search-dialog-actions">
+          <button type="button" id="alert-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <footer class="app-footer">
     <small>&copy; ARAISEIMITSU 2026 - Created By DIP Department</small>
@@ -35,5 +115,6 @@
   <script src="js/bridge.js"></script>
   <script src="js/page_common.js"></script>
   <script src="js/display_scale.js"></script>
+  <script src="js/quotes.js"></script>
 </body>
 </html>

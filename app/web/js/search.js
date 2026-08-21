@@ -8,6 +8,7 @@
   const genkaIdInput = document.getElementById('genka-id');
   const searchBtn = document.getElementById('search-btn');
   const searchNewBtn = document.getElementById('search-new-btn');
+  const searchLoading = document.getElementById('search-loading');
   const subOverlay = document.getElementById('search-subwindow-overlay');
   const subClose = document.getElementById('search-subwindow-close');
   const subwindowTitleEl = document.getElementById('search-subwindow-title');
@@ -60,6 +61,14 @@
   const updateDoneOk = document.getElementById('update-done-ok');
   const updateDonePanel = updateDoneOverlay
     ? updateDoneOverlay.querySelector('.search-dialog-panel')
+    : null;
+
+  const alertOverlay = document.getElementById('alert-overlay');
+  const alertTitle = document.getElementById('alert-title');
+  const alertMessage = document.getElementById('alert-message');
+  const alertOk = document.getElementById('alert-ok');
+  const alertPanel = alertOverlay
+    ? alertOverlay.querySelector('.search-dialog-panel')
     : null;
 
   const resultMessage = document.getElementById('result-message');
@@ -287,6 +296,41 @@
     updateDoneOverlay.setAttribute('aria-hidden', 'true');
   }
 
+  let alertResolver = null;
+
+  function showAlertModal(message, title) {
+    return new Promise(function (resolve) {
+      if (!alertOverlay || !alertMessage) {
+        window.alert(message);
+        resolve();
+        return;
+      }
+      if (alertTitle) alertTitle.textContent = title || '確認';
+      alertMessage.textContent = message == null ? '' : String(message);
+      alertResolver = resolve;
+      alertOverlay.hidden = false;
+      alertOverlay.setAttribute('aria-hidden', 'false');
+      if (alertOk) {
+        setTimeout(function () {
+          try {
+            alertOk.focus();
+          } catch (e) {
+            /* ignore */
+          }
+        }, 0);
+      }
+    });
+  }
+
+  function closeAlertModal() {
+    if (!alertOverlay) return;
+    alertOverlay.hidden = true;
+    alertOverlay.setAttribute('aria-hidden', 'true');
+    const resolve = alertResolver;
+    alertResolver = null;
+    if (typeof resolve === 'function') resolve();
+  }
+
   function resetNewForm() {
     if (newSalesSelect) newSalesSelect.value = '';
     if (newKanriNoInput) newKanriNoInput.value = '';
@@ -379,9 +423,27 @@
       e.stopPropagation();
     });
   }
+  if (alertOverlay) {
+    alertOverlay.addEventListener('click', function (e) {
+      if (e.target === alertOverlay) closeAlertModal();
+    });
+  }
+  if (alertPanel) {
+    alertPanel.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+  }
+  if (alertOk) {
+    alertOk.addEventListener('click', closeAlertModal);
+  }
 
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
+    if (alertOverlay && !alertOverlay.hidden) {
+      e.preventDefault();
+      closeAlertModal();
+      return;
+    }
     if (updateDoneOverlay && !updateDoneOverlay.hidden) {
       e.preventDefault();
       finishUpdateDoneOk();
@@ -671,6 +733,16 @@
     });
   }
 
+  function setSearchLoading(loading) {
+    if (searchLoading) searchLoading.hidden = !loading;
+    if (searchBtn) searchBtn.disabled = Boolean(loading);
+  }
+
+  function setResultMessage(text) {
+    if (!resultMessage) return;
+    resultMessage.textContent = text;
+  }
+
   /** 画面上部の条件で検索し直す（削除後の更新用。条件なしは 0 件表示） */
   function refreshSearchResults() {
     const salesId = salesSelect.value.trim();
@@ -682,7 +754,8 @@
     if (!salesId && !customerCode && !partNo && !partName && !estimateId) {
       cachedSearchRows = [];
       renderTable(cachedSearchRows);
-      resultMessage.textContent = '検索結果：0 件';
+      setSearchLoading(false);
+      setResultMessage('検索結果：0 件');
       return;
     }
 
@@ -693,23 +766,27 @@
     if (partName) params.append('part_name', partName);
     if (estimateId) params.append('estimate_id', estimateId);
 
-    resultMessage.textContent = '検索結果：検索中...';
+    setResultMessage('検索結果：検索中...');
+    setSearchLoading(true);
 
     fetch('/api/search_conditions?' + params.toString())
       .then(res => res.json())
       .then(data => {
         if (data.error) {
           alert(data.error);
-          resultMessage.textContent = '検索結果：';
+          setResultMessage('検索結果：');
           return;
         }
         cachedSearchRows = data.rows ? data.rows.slice() : [];
-        resultMessage.textContent = '検索結果：' + cachedSearchRows.length + ' 件';
+        setResultMessage('検索結果：' + cachedSearchRows.length + ' 件');
         renderTable(cachedSearchRows);
       })
       .catch(err => {
         alert('通信エラー: ' + err.message);
-        resultMessage.textContent = '検索結果：';
+        setResultMessage('検索結果：');
+      })
+      .finally(function () {
+        setSearchLoading(false);
       });
   }
 
@@ -722,7 +799,7 @@
       const estimateId = genkaIdInput.value.trim();
 
       if (!salesId && !customerCode && !partNo && !partName && !estimateId) {
-        alert('条件を最低1つ指定してください');
+        void showAlertModal('条件を最低1つ指定してください');
         return;
       }
       refreshSearchResults();

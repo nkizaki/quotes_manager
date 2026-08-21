@@ -60,8 +60,7 @@ def _apply_taskbar_icon(window, icon_path: Path) -> None:
         pass
 
 
-def _on_gui_ready(window, icon_path: Path, api: Api) -> None:
-    api._window = window
+def _on_gui_ready(window, icon_path: Path) -> None:
     _apply_taskbar_icon(window, icon_path)
     try:
         window.maximize()
@@ -101,7 +100,7 @@ def run() -> None:
 
     webview.start(
         _on_gui_ready,
-        (window, icon_path, api),
+        (window, icon_path),
         icon=icon,
         debug=loadenv.devflg,
     )

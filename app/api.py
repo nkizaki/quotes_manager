@@ -10,6 +10,7 @@ import webview
 from app.display_info import get_display_info
 from app.user_config import ensure_user_config, get_font_size_percent, set_font_size_percent
 from app import cost_quote_service as svc
+from app import quote_masters_service as qms
 
 
 def _json_safe(value: Any) -> Any:
@@ -43,11 +44,6 @@ def _call(fn, payload=None):
 
 
 class Api:
-    def __init__(self) -> None:
-        # pywebview は js_api の非 _ 属性を再帰走査する。Window を公開すると
-        # native/WebView2 COM へ入り込み、起動時にエラーログが出る。
-        self._window = None
-
     def bootstrap(self) -> dict[str, Any]:
         ensure_user_config()
         return {
@@ -107,6 +103,7 @@ class Api:
         return _call(svc.api_est_calc_initial_cost_delete, payload)
 
     def est_calc_export_xlsx(self, payload=None):
+        """原価見積書 xlsx を生成し、保存ダイアログで書き出す。"""
         try:
             result = svc.api_est_calc_export_xlsx(payload or {})
             if not isinstance(result, dict) or result.get("error"):
@@ -115,13 +112,14 @@ class Api:
             name = result.get("_xlsx_name") or "原価見積書.xlsx"
             if not raw:
                 return {"error": "Excel出力に失敗しました"}
-            dest = None
-            if self._window is not None:
-                dest = self._window.create_file_dialog(
-                    webview.SAVE_DIALOG,
-                    save_filename=str(name),
-                    file_types=("Excel Files (*.xlsx)",),
-                )
+            if not webview.windows:
+                return {"ok": False, "error": "ウィンドウが初期化されていません。"}
+            window = webview.windows[0]
+            dest = window.create_file_dialog(
+                webview.SAVE_DIALOG,
+                save_filename=str(name),
+                file_types=("Excel Files (*.xlsx)",),
+            )
             if not dest:
                 return {"ok": False, "cancelled": True}
             path = dest[0] if isinstance(dest, (list, tuple)) else dest
@@ -166,6 +164,51 @@ class Api:
 
     def dbox_master_delete(self, payload=None):
         return _call(svc.api_dbox_master_delete, payload)
+
+    def sales_master_list(self, payload=None):
+        return _call(qms.api_sales_master_list, payload)
+
+    def sales_master_save(self, payload=None):
+        return _call(qms.api_sales_master_save, payload)
+
+    def sales_master_delete(self, payload=None):
+        return _call(qms.api_sales_master_delete, payload)
+
+    def customer_master_list(self, payload=None):
+        return _call(qms.api_customer_master_list, payload)
+
+    def customer_master_save(self, payload=None):
+        return _call(qms.api_customer_master_save, payload)
+
+    def customer_master_delete(self, payload=None):
+        return _call(qms.api_customer_master_delete, payload)
+
+    def rm_master_list(self, payload=None):
+        return _call(qms.api_rm_master_list, payload)
+
+    def rm_master_save(self, payload=None):
+        return _call(qms.api_rm_master_save, payload)
+
+    def rm_master_delete(self, payload=None):
+        return _call(qms.api_rm_master_delete, payload)
+
+    def surface_master_list(self, payload=None):
+        return _call(qms.api_surface_master_list, payload)
+
+    def surface_master_save(self, payload=None):
+        return _call(qms.api_surface_master_save, payload)
+
+    def surface_master_delete(self, payload=None):
+        return _call(qms.api_surface_master_delete, payload)
+
+    def machine_charge_master_list(self, payload=None):
+        return _call(qms.api_machine_charge_master_list, payload)
+
+    def machine_charge_master_save(self, payload=None):
+        return _call(qms.api_machine_charge_master_save, payload)
+
+    def machine_charge_master_delete(self, payload=None):
+        return _call(qms.api_machine_charge_master_delete, payload)
 
     def search_conditions(self, payload=None):
         return _call(svc.api_search_conditions, payload)
