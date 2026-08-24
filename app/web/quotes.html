@@ -68,7 +68,7 @@
         </span>
       </div>
       <div id="result-table-wrapper">
-        <table id="result-table">
+        <table id="result-table" class="quotes-result-table">
           <colgroup>
             <col class="result-table-col-1">
             <col class="result-table-col-2">
@@ -77,6 +77,10 @@
             <col class="result-table-col-5">
             <col class="result-table-col-6">
             <col class="result-table-col-7">
+            <col class="result-table-col-8">
+            <col class="result-table-col-9">
+            <col class="result-table-col-10">
+            <col class="result-table-col-11">
           </colgroup>
           <thead id="result-thead">
             <tr>
@@ -84,8 +88,12 @@
               <th>管理NO</th>
               <th>営業担当</th>
               <th>客先名</th>
+              <th>客先部署</th>
+              <th>客先担当者</th>
               <th>品番</th>
               <th>品名</th>
+              <th>依頼日</th>
+              <th>提出日</th>
               <th>備考</th>
             </tr>
           </thead>
@@ -94,6 +102,134 @@
       </div>
     </section>
   </main>
+
+  <div id="search-subwindow-overlay" class="search-subwindow-overlay" aria-hidden="true" hidden>
+    <div class="search-subwindow-panel" role="dialog" aria-modal="true" aria-labelledby="search-subwindow-title">
+      <div class="search-subwindow-head">
+        <span id="search-subwindow-title" class="search-subwindow-title">新規</span>
+        <button type="button" id="search-subwindow-close" class="search-subwindow-close" aria-label="閉じる">×</button>
+      </div>
+      <div class="search-subwindow-body">
+        <form id="search-new-form" class="search-subwindow-form" novalidate>
+          <div class="search-subwindow-form-columns">
+            <div class="search-subwindow-form-grid">
+              <div class="search-form-item">
+                <label for="new-sales-select">営業担当<span class="required-mark" aria-hidden="true">*</span></label>
+                <select id="new-sales-select" name="new_sales_code" autocomplete="off">
+                  <option value="">選択してください</option>
+                </select>
+              </div>
+              <div class="search-form-item">
+                <label for="new-request-date">依頼日</label>
+                <input type="date" id="new-request-date" name="new_request_date" autocomplete="off">
+              </div>
+              <div class="search-form-item">
+                <label for="new-kanri-no">管理NO<span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="text" id="new-kanri-no" name="new_kanri_no" value="" autocomplete="off">
+              </div>
+              <div class="search-form-item">
+                <label for="new-customer-select">客先名<span class="required-mark" aria-hidden="true">*</span></label>
+                <select id="new-customer-select" name="new_customer_code" autocomplete="off">
+                  <option value="">選択してください</option>
+                </select>
+              </div>
+              <div class="search-form-item">
+                <label for="new-department">部署名</label>
+                <input type="text" id="new-department" name="new_department" value="" autocomplete="off">
+              </div>
+              <div class="search-form-item">
+                <label for="new-contact">担当者</label>
+                <input type="text" id="new-contact" name="new_contact" value="" autocomplete="off">
+              </div>
+              <div class="search-form-item">
+                <label for="new-hinban">品番<span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="text" id="new-hinban" name="new_hinban" value="" autocomplete="off">
+              </div>
+              <div class="search-form-item">
+                <label for="new-hinmei">品名</label>
+                <input type="text" id="new-hinmei" name="new_hinmei" value="" autocomplete="off">
+              </div>
+              <div class="search-form-item">
+                <label for="new-submission-date">提出日</label>
+                <input type="date" id="new-submission-date" name="new_submission_date" autocomplete="off">
+              </div>
+            </div>
+            <div class="search-form-item search-subwindow-bikou">
+              <label for="new-bikou">備考</label>
+              <textarea id="new-bikou" name="new_bikou" rows="5" autocomplete="off" placeholder=""></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="search-subwindow-actions">
+        <div id="search-subwindow-footer-new" class="search-subwindow-footer-group">
+          <button type="button" id="search-new-register-btn" class="search-register-btn" form="search-new-form">登録</button>
+        </div>
+        <div id="search-subwindow-footer-edit" class="search-subwindow-footer-group" hidden>
+          <button type="button" id="search-edit-save-btn" class="search-register-btn" form="search-new-form">変更</button>
+          <button type="button" id="search-edit-delete-btn" class="search-delete-btn" form="search-new-form">削除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="register-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="register-confirm-title">
+      <div class="search-dialog-head">
+        <span id="register-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">登録しますか？</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="register-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="register-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="register-done-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="register-done-title">
+      <div class="search-dialog-head">
+        <span id="register-done-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">登録しました</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="register-done-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="update-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="update-confirm-title">
+      <div class="search-dialog-head">
+        <span id="update-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">内容を更新しますか？</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="update-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="update-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="update-done-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="update-done-title">
+      <div class="search-dialog-head">
+        <span id="update-done-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">更新しました。</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="update-done-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="alert-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
     <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="alert-title">

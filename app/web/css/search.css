@@ -35,9 +35,9 @@
   background-color: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   border: var(--btn-ghost-border);
-  border-radius: 4px;
-  padding: 8px 14px;
-  font-size: 14px;
+  border-radius: calc(4px * var(--ui-scale, 1));
+  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
   font-weight: 600;
   cursor: pointer;
 }
@@ -68,51 +68,55 @@
 /* メイン検索フォームのみ */
 .search-main .search-form-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 420px);
-  gap: 10px;
+  grid-template-columns: minmax(calc(320px * var(--ui-scale, 1)), calc(420px * var(--ui-scale, 1)));
+  gap: calc(10px * var(--ui-scale, 1));
 }
 
 .search-main .search-form-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4px * var(--ui-scale, 1));
 }
 
 .search-main .search-form-item label {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale, 1));
   font-weight: 600;
 }
 
 .search-main .search-form-item input,
 .search-main .search-form-item select {
-  height: 30px;
+  height: calc(30px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 4px;
-  padding: 4px 8px;
+  border-radius: calc(4px * var(--ui-scale, 1));
+  padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   box-sizing: border-box;
   background: var(--ui-surface-card);
+  font-size: calc(14px * var(--font-scale, 1));
+  font-family: inherit;
 }
 
 /* 新規モーダル内の項目（メインと別定義） */
 .search-subwindow-form .search-form-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4px * var(--ui-scale, 1));
 }
 
 .search-subwindow-form .search-form-item label {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale, 1));
   font-weight: 600;
 }
 
 .search-subwindow-form .search-form-item input,
 .search-subwindow-form .search-form-item select {
-  height: 30px;
+  height: calc(30px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 4px;
-  padding: 4px 8px;
+  border-radius: calc(4px * var(--ui-scale, 1));
+  padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   box-sizing: border-box;
   background: var(--ui-surface-card);
+  font-size: calc(14px * var(--font-scale, 1));
+  font-family: inherit;
 }
 
 .search-actions {
@@ -124,13 +128,13 @@
 }
 
 .search-new-btn {
-  margin-left: 100px;
+  margin-left: calc(100px * var(--ui-scale, 1));
   background-color: var(--btn-cyan-bg);
   color: var(--btn-cyan-text);
   border: 1px solid var(--btn-cyan-border);
-  border-radius: 4px;
-  padding: 8px 14px;
-  font-size: 14px;
+  border-radius: calc(4px * var(--ui-scale, 1));
+  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
   font-weight: 600;
   cursor: pointer;
 }
@@ -335,10 +339,10 @@
   max-height: calc(15 * 1.35em + 12px + 2px);
   line-height: 1.35;
   border: 1px solid var(--ui-border-input);
-  border-radius: 4px;
-  padding: 6px 8px;
+  border-radius: calc(4px * var(--ui-scale, 1));
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   font-family: inherit;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale, 1));
   background: var(--ui-surface-card);
   resize: vertical;
 }
@@ -376,13 +380,13 @@
 }
 
 .search-delete-btn {
-  margin-left: 100px;
+  margin-left: calc(100px * var(--ui-scale, 1));
   background-color: var(--btn-danger-bg);
   color: var(--btn-danger-text);
   border: 1px solid var(--btn-danger-border);
-  border-radius: 4px;
-  padding: 8px 20px;
-  font-size: 14px;
+  border-radius: calc(4px * var(--ui-scale, 1));
+  padding: calc(8px * var(--ui-scale, 1)) calc(20px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
   font-weight: 600;
   cursor: pointer;
 }
@@ -416,9 +420,9 @@
   background-color: var(--btn-green-bg);
   color: var(--btn-green-text);
   border: 1px solid var(--btn-green-border);
-  border-radius: 4px;
-  padding: 8px 20px;
-  font-size: 14px;
+  border-radius: calc(4px * var(--ui-scale, 1));
+  padding: calc(8px * var(--ui-scale, 1)) calc(20px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
   font-weight: 600;
   cursor: pointer;
 }
@@ -547,7 +551,7 @@
 
 .search-main .search-form-item label,
 .search-subwindow-form .search-form-item label {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale, 1));
   letter-spacing: 0.01em;
   color: var(--ui-text-muted);
 }
@@ -562,6 +566,7 @@
   border: none;
   border-bottom: var(--input-border-bottom);
   border-radius: 0;
+  font-size: calc(14px * var(--font-scale, 1));
 }
 
 .search-main .search-form-item input:focus,

@@ -213,6 +213,15 @@ class Api:
     def search_conditions(self, payload=None):
         return _call(svc.api_search_conditions, payload)
 
+    def quote_search_conditions(self, payload=None):
+        return _call(svc.api_quote_search_conditions, payload)
+
+    def register_quote(self, payload=None):
+        return _call(svc.api_register_quote, payload)
+
+    def update_quote_history(self, payload=None):
+        return _call(svc.api_update_quote_history, payload)
+
     def register_estimate(self, payload=None):
         return _call(svc.api_register_estimate, payload)
 

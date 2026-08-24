@@ -604,28 +604,37 @@ button.search-btn {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: calc(6px * var(--ui-scale));
+  gap: 6px;
   flex-shrink: 0;
   color: var(--color-text-secondary);
-  font-size: calc(13px * var(--font-scale));
+  font-size: 13px;
   white-space: nowrap;
 }
 
-.font-size-setting__input {
-  width: calc(64px * var(--ui-scale));
-  height: calc(32px * var(--ui-scale));
+.font-size-setting__label,
+.font-size-setting__unit {
+  font-size: 13px;
+}
+
+.font-size-setting__input,
+.search-page .font-size-setting__input,
+input.font-size-setting__input[type="number"] {
+  width: 64px;
+  height: 32px;
   box-sizing: border-box;
-  padding: calc(4px * var(--ui-scale)) calc(6px * var(--ui-scale));
+  padding: 4px 6px;
   border: 1px solid var(--color-border);
-  border-radius: calc(4px * var(--ui-scale));
-  font-size: calc(13px * var(--font-scale));
+  border-radius: 4px;
+  font-size: 13px;
   font-family: inherit;
+  line-height: 1.2;
   text-align: right;
   color: var(--color-text);
   background: var(--color-surface);
 }
 
-.font-size-setting__input:focus {
+.font-size-setting__input:focus,
+.search-page .font-size-setting__input:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 2px var(--color-accent-ring);
@@ -685,11 +694,11 @@ button.search-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: calc(34px * var(--ui-scale));
+  gap: calc(8px * var(--ui-scale, 1));
+  min-height: calc(34px * var(--ui-scale, 1));
   border-radius: var(--radius-lg) !important;
   font-family: var(--font-sans);
-  font-size: 0.875rem;
+  font-size: calc(14px * var(--font-scale, 1));
   font-weight: 500;
   letter-spacing: 0;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;

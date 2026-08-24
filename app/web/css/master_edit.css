@@ -135,33 +135,33 @@
 .master-edit-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4px * var(--ui-scale, 1));
   min-width: 0;
   box-sizing: border-box;
   flex: 0 0 auto;
-  width: 140px;
+  width: calc(140px * var(--ui-scale, 1));
 }
 
 .master-edit-field--wide {
-  width: 220px;
+  width: calc(220px * var(--ui-scale, 1));
 }
 
 .master-edit-field--narrow {
-  width: 100px;
+  width: calc(100px * var(--ui-scale, 1));
 }
 
 .master-edit-field label {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale, 1));
   font-weight: 600;
   color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
 .master-edit-field input[type="text"] {
-  padding: 6px 8px;
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 3px;
-  font-size: 14px;
+  border-radius: calc(3px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
   box-sizing: border-box;
   width: 100%;
 }
@@ -225,7 +225,6 @@
 }
 
 .master-edit-page--rm {
-  --me-table-min: 420px;
   --me-main-max: 640px;
 }
 

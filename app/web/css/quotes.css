@@ -35,7 +35,7 @@ body.quotes-placeholder-page {
 }
 
 .search-page input[type="text"],
-.search-page input[type="number"],
+.search-page input[type="number"]:not(.font-size-setting__input),
 .search-page input:not([type]),
 .search-page select,
 .search-page textarea,
@@ -55,10 +55,10 @@ body.quotes-placeholder-page {
   background: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 0.875rem;
+  font-size: calc(14px * var(--font-scale, 1));
 }
 
-.search-page input:focus,
+.search-page input:not(.font-size-setting__input):focus,
 .search-page select:focus,
 .search-page textarea:focus,
 .est-calc-page input:focus,
@@ -126,7 +126,7 @@ body.quotes-placeholder-page {
 
 .edit-masters-group-title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: calc(18px * var(--font-scale, 1));
   font-weight: 600;
   color: var(--color-text);
   font-family: var(--font-sans);
@@ -139,14 +139,31 @@ body.quotes-placeholder-page {
   gap: calc(12px * var(--ui-scale, 1));
 }
 
+.ship-insp-nav .search-btn,
 .edit-masters-group-actions .search-btn {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: calc(280px * var(--ui-scale, 1));
+  min-height: calc(34px * var(--ui-scale, 1));
   box-sizing: border-box;
   text-align: center;
+  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  border-radius: calc(4px * var(--ui-scale, 1));
+}
+
+.quotes-header-actions .search-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(34px * var(--ui-scale, 1));
+  box-sizing: border-box;
+  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  border-radius: calc(4px * var(--ui-scale, 1));
 }
 
 /* モーダル（search-dialog / insp-confirm）を参考プロジェクト書式に揃える */
@@ -176,3 +193,20 @@ body.quotes-placeholder-page {
   font-family: var(--font-sans);
   font-weight: 500;
 }
+
+/* 見積り管理 検索結果（11列） */
+#result-table.quotes-result-table {
+  min-width: calc(1400px * var(--ui-scale, 1));
+}
+
+.quotes-result-table .result-table-col-1 { width: calc(90px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-2 { width: calc(100px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-3 { width: calc(90px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-4 { width: calc(160px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-5 { width: calc(110px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-6 { width: calc(110px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-7 { width: calc(160px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-8 { width: calc(200px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-9 { width: calc(100px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-10 { width: calc(100px * var(--ui-scale, 1)); }
+.quotes-result-table .result-table-col-11 { width: auto; }

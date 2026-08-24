@@ -8,7 +8,7 @@
  *   fields: [{ key: 'コード', id: 'me-code' }, ...],
  *   intKeys: ['一般', ...],       // 整数表示・入力
  *   deleteExtraKeys: ['営業担当'], // 削除確認メッセージ用
- *   valuesOnly: true              // 1件固定: 追加/削除なし・読込時に自動選択
+ *   valuesOnly: true              // 1件固定: テーブルなし・追加/削除なし・読込時にフォームへ反映
  * };
  */
 (function () {
@@ -134,7 +134,7 @@
         var col = dataColumns[c];
         var td = document.createElement('td');
         var v = row[col];
-        if (col === uniqueKey && !valuesOnly) {
+        if (col === uniqueKey) {
           var btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'master-edit-id-btn';
@@ -154,7 +154,7 @@
   }
 
   function bindTableClicks() {
-    if (!tbody) return;
+    if (valuesOnly || !tbody) return;
     tbody.addEventListener('click', function (e) {
       var btn = e.target.closest('.master-edit-id-btn');
       if (!btn) return;
@@ -179,20 +179,24 @@
         }
         dataColumns = data.columns && data.columns.length ? data.columns.slice() : [];
         cachedRows = data.rows && data.rows.length ? data.rows.slice() : [];
+        if (valuesOnly) {
+          if (!cachedRows.length) {
+            setMessage('データがありません', 'error');
+            return;
+          }
+          fillFormFromRow(cachedRows[0]);
+          setMessage('値を編集して保存できます', '');
+          return;
+        }
         if (dataColumns.length === 0) {
           setMessage('列情報がありません', 'error');
           return;
         }
         renderTable();
-        if (valuesOnly && cachedRows.length) {
-          fillFormFromRow(cachedRows[0]);
-          setMessage('値を編集して保存できます', '');
-        } else {
-          setMessage(
-            cachedRows.length ? cachedRows.length + ' 件を表示しています' : 'データがありません',
-            ''
-          );
-        }
+        setMessage(
+          cachedRows.length ? cachedRows.length + ' 件を表示しています' : 'データがありません',
+          ''
+        );
       })
       .catch(function (err) {
         setMessage('通信エラー: ' + err.message, 'error');
