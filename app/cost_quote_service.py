@@ -160,6 +160,20 @@ def get_quote_calc_page(payload=None):
         "machine_options": [],
         "processing_columns": [],
         "processing_rows": [],
+        "brass_has_row": False,
+        "brass_id": "",
+        "brass_rm_category": "1",
+        "brass_weight_calc_category": "1",
+        "brass_n_company_price": "",
+        "brass_rm": "",
+        "brass_par_value": "",
+        "brass_premium_value": "",
+        "brass_unit_weight": "",
+        "brass_scrap_weight": "",
+        "brass_scrap_base": "",
+        "brass_scrap_unit_price": "",
+        "brass_chip_recovery_rate_display": "90",
+        "brass_material_cost": "",
     }
     if not quote_id:
         try:
@@ -210,9 +224,24 @@ def get_quote_calc_page(payload=None):
             "machine_options": [],
             "processing_columns": [],
             "processing_rows": [],
+            "brass_has_row": False,
+            "brass_id": "",
+            "brass_rm_category": "1",
+            "brass_weight_calc_category": "1",
+            "brass_n_company_price": "",
+            "brass_rm": "",
+            "brass_par_value": "",
+            "brass_premium_value": "",
+            "brass_unit_weight": "",
+            "brass_scrap_weight": "",
+            "brass_scrap_base": "",
+            "brass_scrap_unit_price": "",
+            "brass_chip_recovery_rate_display": "90",
+            "brass_material_cost": "",
         }
         _quote_calc_load_masters(cur, result)
         _quote_calc_load_processing_rows(cur, quote_id, result)
+        _quote_calc_load_brass(cur, quote_id, result)
         conn.close()
         return result
     except Exception as e:
@@ -246,6 +275,68 @@ def _quote_calc_load_masters(cur, out: dict) -> None:
         }
         for r in mc_rows
     ]
+
+
+def _quote_calc_load_brass(cur, quote_id: str, out: dict) -> None:
+    """t_真鍮材料 を見積りIDで検索し、真鍮詳細欄へ反映する値を out に格納する。"""
+    cur.execute("SELECT * FROM t_真鍮材料 WHERE 見積りID = ?", (quote_id,))
+    row = cur.fetchone()
+    if not row:
+        out["brass_has_row"] = False
+        out["brass_id"] = ""
+        return
+
+    col_names = [c[0] for c in (cur.description or [])]
+    rec = dict(zip(col_names, row))
+
+    def _s(key):
+        v = rec.get(key)
+        if v is None:
+            return ""
+        return str(v)
+
+    r1 = _s("RM区分")
+    r2 = _s("重量計算区分")
+    out["brass_has_row"] = True
+    out["brass_id"] = _s("ID")
+    out["brass_rm_category"] = r1 if r1 in ("1", "2") else "1"
+    out["brass_weight_calc_category"] = r2 if r2 in ("1", "2") else "1"
+    out["brass_n_company_price"] = _s("N社価格")
+    out["brass_rm"] = _s("見積RM")
+    out["brass_par_value"] = _s("建値")
+    out["brass_premium_value"] = _s("増値")
+    out["brass_unit_weight"] = _s("単重")
+    out["brass_scrap_weight"] = _s("スクラップ重")
+    out["brass_scrap_base"] = _s("スクラップベース")
+    out["brass_scrap_unit_price"] = _s("スクラップ単価")
+    out["brass_chip_recovery_rate_display"] = format_cutting_recovery_rate_display(
+        rec.get("切粉回収率")
+    )
+    out["brass_material_cost"] = _s("材料費")
+
+
+def delete_quote_calc_brass(payload=None):
+    """真鍮詳細データを ID 指定で削除する。"""
+    payload = payload or {}
+    rid = payload.get("id") or payload.get("ID")
+    if rid is None or str(rid).strip() == "":
+        return {"error": "IDが必要です"}
+    try:
+        rid_param = int(str(rid).strip())
+    except ValueError:
+        rid_param = str(rid).strip()
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM t_真鍮材料 WHERE ID = ?", (rid_param,))
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当IDの行がありません"}
+        conn.commit()
+        conn.close()
+        return {"ok": True}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def _quote_calc_load_processing_rows(cur, quote_id: str, out: dict) -> None:

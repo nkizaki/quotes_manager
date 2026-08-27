@@ -509,7 +509,9 @@ body {
 .shinchuu-col-6 { grid-column: 6 / 7; }
 .shinchuu-col-7 { grid-column: 7 / 8; }
 .shinchuu-col-8 { grid-column: 8 / 9; }
+.shinchuu-span-2-3 { grid-column: 2 / 4; }
 .shinchuu-span-2-4 { grid-column: 2 / 5; }
+.shinchuu-span-5-6 { grid-column: 5 / 7; }
 .shinchuu-span-5-7 { grid-column: 5 / 8; }
 .shinchuu-span-1-7 { grid-column: 1 / 8; }
 .shinchuu-row-1 { grid-row: 1; }

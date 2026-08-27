@@ -2,20 +2,13 @@
  * 見積り計算ページ — est_calc.html の書式・レイアウトを踏襲
  */
 :root {
-  --qc-main-width: 1060px;
-  --qc-left-margin-min: 10px;
-  --qc-left-margin-max: 200px;
-  --qc-left-margin-dynamic: clamp(
-    var(--qc-left-margin-min),
-    calc(100vw - 1600px),
-    var(--qc-left-margin-max)
-  );
+  --qc-main-max-width: 1400px;
 }
 
 body.quote-calc-page {
   margin: 0;
   padding-bottom: var(--app-footer-height, calc(40px * var(--ui-scale, 1)));
-  min-width: calc(var(--qc-left-margin-dynamic) + var(--qc-main-width) + 20px);
+  min-width: 0;
 }
 
 .quote-calc-page .quote-calc-header {
@@ -25,20 +18,24 @@ body.quote-calc-page {
 }
 
 .quote-calc-page-layout {
-  margin-top: calc(10px * var(--ui-scale, 1));
-  padding-right: calc(10px * var(--ui-scale, 1));
+  margin: calc(10px * var(--ui-scale, 1)) auto;
+  padding: 0 calc(16px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
+  max-width: var(--qc-main-max-width);
+  width: 100%;
   box-sizing: border-box;
 }
 
 .quote-calc-page .main-content-offset {
-  margin-left: var(--qc-left-margin-dynamic);
-  width: var(--qc-main-width);
-  min-width: var(--qc-main-width);
+  margin-left: 0;
+  width: 100%;
+  min-width: 0;
 }
 
 .quote-calc-page .main-section {
-  width: var(--qc-main-width);
-  min-width: var(--qc-main-width);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   margin-bottom: calc(12px * var(--ui-scale, 1));
 }
 
@@ -195,77 +192,47 @@ body.quote-calc-page {
   line-height: 1.6;
 }
 
-/* 材料費・加工費タブ — レイアウトのみ（入力見た目は est-calc-page / style.css に委譲） */
+/* 材料費・加工費タブ — グリッドレイアウト（入力見た目は est-calc-page / style.css に委譲） */
 .quote-calc-tabs-section .main-section {
   margin-bottom: calc(12px * var(--ui-scale, 1));
 }
 
-.qc-mat-row,
-.qc-proc-row {
-  display: flex;
-  flex-wrap: nowrap;
+.qc-mat-grid,
+.qc-proc-grid {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qc-proc-grid {
+  grid-template-rows: repeat(4, auto);
+}
+
+.qc-mat-register-cell {
   align-items: flex-end;
-  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
-  margin-bottom: calc(8px * var(--ui-scale, 1));
 }
 
-.qc-mat-row-2 {
-  margin-bottom: 0;
-}
-
-.qc-field-wide {
-  flex: 1.6 1 0;
-  min-width: calc(100px * var(--ui-scale, 1));
-}
-
-.qc-field-narrow {
-  flex: 0 0 var(--est-grid-zairyo-col-width, 88px);
-  width: var(--est-grid-zairyo-col-width, 88px);
-}
-
-.qc-field-btn {
-  flex: 0 0 auto;
-  justify-content: flex-end;
-}
-
-.qc-field-btn-spacer {
+.qc-grid-btn-spacer {
   display: block;
   height: calc(15px * var(--ui-scale, 1));
 }
 
-.qc-brass-inline-label {
-  font-size: 12px;
-  color: var(--ui-text-muted);
-  white-space: nowrap;
-  margin-right: calc(4px * var(--ui-scale, 1));
-}
-
-.qc-rm-val {
-  margin-left: calc(2px * var(--ui-scale, 1));
-}
-
-.qc-proc-layout {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: calc(12px * var(--ui-scale, 1));
-  align-items: start;
-}
-
-.qc-proc-fields {
-  min-width: 0;
-  overflow-x: auto;
-}
-
-.qc-proc-row {
-  min-width: calc(980px * var(--ui-scale, 1));
+.qc-proc-actions-cell {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
 }
 
 .qc-proc-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: calc(8px * var(--ui-scale, 1));
-  padding-top: calc(14px * var(--ui-scale, 1));
-  flex: 0 0 auto;
+  width: 100%;
+}
+
+.qc-rm-val {
+  margin-left: calc(2px * var(--ui-scale, 1));
 }
 
 .quote-calc-page #qc-proc-table-wrapper {
@@ -279,7 +246,7 @@ body.quote-calc-page {
 
 .quote-calc-page #qc-proc-table {
   width: 100%;
-  min-width: 900px;
+  min-width: 0;
   border-collapse: collapse;
   table-layout: auto;
 }
@@ -308,11 +275,88 @@ body.quote-calc-page {
   background: var(--ui-surface-low, #f8f8f8);
 }
 
-.qc-material-section .qc-mat-row-1 {
-  overflow-x: auto;
-  min-width: 0;
+.qc-brass-section .shinchuu-grid {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.qc-brass-section .shinchuu-grid {
-  max-width: none;
+.quote-calc-page .quote-calc-kihon-grid {
+  max-width: 100%;
+}
+
+/* 真鍮削除確認モーダル（search.css 未読込のためここで定義） */
+.quote-calc-page .search-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.quote-calc-page .search-dialog-overlay[hidden] {
+  display: none !important;
+}
+
+.quote-calc-page .search-dialog-panel {
+  width: min(calc(420px * var(--ui-scale, 1)), 92vw);
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #c7d1dc);
+  border-radius: var(--radius-xl, calc(6px * var(--ui-scale, 1)));
+  box-shadow: 0 16px 40px rgba(23, 37, 54, 0.18);
+}
+
+.quote-calc-page .search-dialog-head {
+  padding: calc(10px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  background: var(--color-surface-secondary, #f2f4f4);
+  border-bottom: 1px solid var(--color-border, #c7d1dc);
+}
+
+.quote-calc-page .search-dialog-title {
+  margin: 0;
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.quote-calc-page .search-dialog-body {
+  padding: calc(16px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+}
+
+.quote-calc-page .search-dialog-message {
+  margin: 0 0 calc(16px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.quote-calc-page .search-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.quote-calc-page .search-dialog-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(92px * var(--ui-scale, 1));
+  min-height: calc(34px * var(--ui-scale, 1));
+  padding: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
+  border-radius: var(--radius-lg, calc(4px * var(--ui-scale, 1)));
+  border: 1px solid var(--color-border, #c7d1dc);
+  background: var(--color-surface, #fff);
+  cursor: pointer;
+  font-size: calc(14px * var(--font-scale, 1));
+}
+
+.quote-calc-page .search-dialog-btn-primary {
+  background: var(--btn-primary-bg, #2f6fed);
+  border-color: var(--btn-primary-bg, #2f6fed);
+  color: #fff;
 }

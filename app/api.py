@@ -78,6 +78,9 @@ class Api:
     def get_quote_calc_page(self, payload=None):
         return _call(svc.get_quote_calc_page, payload)
 
+    def delete_quote_calc_brass(self, payload=None):
+        return _call(svc.delete_quote_calc_brass, payload)
+
     def est_calc_set_lot(self, payload=None):
         return _call(svc.api_est_calc_set_lot, payload)
 

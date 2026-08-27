@@ -8,6 +8,7 @@
     "/api/search/page": "get_search_page",
     "/api/est_calc/page": "get_est_calc_page",
     "/api/quote_calc/page": "get_quote_calc_page",
+    "/api/quote_calc/brass_delete": "delete_quote_calc_brass",
     "/api/est_calc/set_lot": "est_calc_set_lot",
     "/api/est_calc/clear_usage_flag": "est_calc_clear_usage_flag",
     "/api/est_calc/add_estimate_lot": "est_calc_add_estimate_lot",
