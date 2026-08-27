@@ -140,6 +140,138 @@ EXCEL_TEMPLATE_PATH = os.path.join(
     "原価見積書原本.xlsx",
 )
 
+
+def get_quote_calc_page(payload=None):
+    """見積りID を元に quote_calc.html 用の基本情報・マスタ・加工費一覧を返す"""
+    payload = payload or {}
+    quote_id = str(payload.get("quote_id") or "").strip()
+
+    empty = {
+        "ok": True,
+        "quote_id": quote_id,
+        "part_no": "",
+        "part_name": "",
+        "customer_name": "",
+        "department": "",
+        "contact": "",
+        "zairyo_2_options": [],
+        "rm_general": "",
+        "rm_fuji_koki": "",
+        "machine_options": [],
+        "processing_columns": [],
+        "processing_rows": [],
+    }
+    if not quote_id:
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            _quote_calc_load_masters(cur, empty)
+            conn.close()
+        except Exception:
+            pass
+        return empty
+
+    sql = (
+        "SELECT "
+        "t_見積り履歴.見積りID, "
+        "t_見積り履歴.品番, "
+        "t_見積り履歴.品名, "
+        "t_客先マスタ.客先名, "
+        "t_見積り履歴.客先部署, "
+        "t_見積り履歴.客先担当者 "
+        "FROM t_見積り履歴 "
+        "LEFT JOIN t_客先マスタ ON t_見積り履歴.客先コード = t_客先マスタ.コード "
+        "WHERE t_見積り履歴.見積りID = ?"
+    )
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, (quote_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return {"error": "該当する見積りIDが見つかりません"}
+
+        def _cell(v):
+            return "" if v is None else str(v)
+
+        result = {
+            "ok": True,
+            "quote_id": _cell(row[0]),
+            "part_no": _cell(row[1]),
+            "part_name": _cell(row[2]),
+            "customer_name": _cell(row[3]),
+            "department": _cell(row[4]),
+            "contact": _cell(row[5]),
+            "zairyo_2_options": [],
+            "rm_general": "",
+            "rm_fuji_koki": "",
+            "machine_options": [],
+            "processing_columns": [],
+            "processing_rows": [],
+        }
+        _quote_calc_load_masters(cur, result)
+        _quote_calc_load_processing_rows(cur, quote_id, result)
+        conn.close()
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _quote_calc_load_masters(cur, out: dict) -> None:
+    cur.execute("SELECT * FROM t_比重マスタ ORDER BY ID")
+    rows = cur.fetchall()
+    out["zairyo_2_options"] = [
+        {
+            "id": (r[0] if r[0] is not None else ""),
+            "name": (r[1] if r[1] is not None else ""),
+            "specgravity": (r[2] if len(r) > 2 and r[2] is not None else ""),
+        }
+        for r in rows
+    ]
+
+    cur.execute("SELECT 一般, 不二工機 FROM t_RMマスタ ORDER BY rm_id ASC")
+    rm_rows = cur.fetchall()
+    if rm_rows:
+        out["rm_general"] = "" if rm_rows[0][0] is None else str(rm_rows[0][0])
+        out["rm_fuji_koki"] = "" if rm_rows[0][1] is None else str(rm_rows[0][1])
+
+    cur.execute("SELECT ID, 機種 FROM t_機械チャージ ORDER BY ID")
+    mc_rows = cur.fetchall()
+    out["machine_options"] = [
+        {
+            "id": (r[0] if r[0] is not None else ""),
+            "name": (r[1] if r[1] is not None else ""),
+        }
+        for r in mc_rows
+    ]
+
+
+def _quote_calc_load_processing_rows(cur, quote_id: str, out: dict) -> None:
+    proc_sql = (
+        "SELECT ID, ロット数, サイクルタイム, 日産数, 日数, 機械, チャージ, 加工費, "
+        "刃工具費, 刃工具費個別, 検査費, 検査費個別, 利益率, 利益, 管理費, 材料費 "
+        "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数"
+    )
+    cur.execute(proc_sql, (quote_id,))
+    rows = cur.fetchall()
+    col_names = [c[0] for c in cur.description] if cur.description else []
+    display_map = {
+        "サイクルタイム": "C/T",
+        "刃工具費個別": "刃個別",
+        "検査費個別": "検個別",
+    }
+    out["processing_columns"] = [display_map.get(c, c) for c in col_names]
+    out["processing_rows"] = []
+    for r in rows:
+        row_dict = {}
+        for i, c in enumerate(col_names):
+            key = display_map.get(c, c)
+            row_dict[key] = _json_safe_cell_value(r[i])
+        out["processing_rows"].append(row_dict)
+
+
 def get_est_calc_page(payload=None):
     """原価見積りID を元に詳細情報を取得して est_calc.html に表示"""
     est_1 = est_2 = est_3 = est_4 = ""
@@ -3444,6 +3576,87 @@ def api_update_quote_history(payload=None):
         if not row:
             return {"error": "更新後の行を取得できませんでした"}
         return {"row": _json_safe_estimate_row(row)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _summary_rows_from_cursor(cur, count_key):
+    """集計クエリ結果を {営業担当, count_key} の list に変換"""
+    rows = cur.fetchall()
+    if not rows:
+        return []
+    col_names = [c[0] for c in cur.description]
+    out = []
+    for r in rows:
+        d = dict(zip(col_names, r))
+        sales_name = d.get("営業担当")
+        cnt = d.get("cnt")
+        if cnt is None:
+            for v in d.values():
+                if isinstance(v, (int, float)):
+                    cnt = int(v)
+                    break
+        out.append(
+            {
+                "営業担当": "" if sales_name is None else str(sales_name),
+                count_key: int(cnt) if cnt is not None else 0,
+            }
+        )
+    return out
+
+
+def api_results_summary(payload=None):
+    """実績集計: 提出日範囲で管理NO件数・見積りID件数を営業担当別に集計"""
+    data = payload or {}
+    date_from_raw = (data.get("submission_date_from") or "").strip()
+    date_to_raw = (data.get("submission_date_to") or "").strip()
+
+    if not date_from_raw or not date_to_raw:
+        return {"error": "提出日は両方入力してください"}
+
+    try:
+        date_from = _parse_optional_date_input(date_from_raw)
+        date_to = _parse_optional_date_input(date_to_raw)
+    except ValueError as ex:
+        return {"error": str(ex)}
+
+    if date_from is None or date_to is None:
+        return {"error": "提出日は両方入力してください"}
+
+    mgmt_sql = (
+        "SELECT mgmt.営業ID, t_営業マスタ.営業担当, COUNT(mgmt.管理NO) AS cnt "
+        "FROM ("
+        "SELECT DISTINCT t_見積り履歴.営業ID, t_見積り履歴.管理NO "
+        "FROM t_見積り履歴 "
+        "WHERE CAST(t_見積り履歴.提出日 AS DATE) BETWEEN ? AND ?"
+        ") AS mgmt "
+        "INNER JOIN t_営業マスタ ON mgmt.営業ID = t_営業マスタ.コード "
+        "GROUP BY mgmt.営業ID, t_営業マスタ.営業担当 "
+        "ORDER BY mgmt.営業ID"
+    )
+    quote_sql = (
+        "SELECT t_見積り履歴.営業ID, t_営業マスタ.営業担当, "
+        "COUNT(t_見積り履歴.見積りID) AS cnt "
+        "FROM t_見積り履歴 "
+        "INNER JOIN t_営業マスタ ON t_見積り履歴.営業ID = t_営業マスタ.コード "
+        "WHERE CAST(t_見積り履歴.提出日 AS DATE) BETWEEN ? AND ? "
+        "GROUP BY t_見積り履歴.営業ID, t_営業マスタ.営業担当 "
+        "ORDER BY t_見積り履歴.営業ID"
+    )
+    params = (date_from.date(), date_to.date())
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(mgmt_sql, params)
+        mgmt_rows = _summary_rows_from_cursor(cur, "件数")
+        cur.execute(quote_sql, params)
+        quote_rows = _summary_rows_from_cursor(cur, "点数")
+        conn.close()
+        return {
+            "mgmt_no_rows": mgmt_rows,
+            "quote_id_rows": quote_rows,
+        }
     except Exception as e:
         return {"error": str(e)}
 

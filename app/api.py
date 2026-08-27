@@ -75,6 +75,9 @@ class Api:
     def get_est_calc_page(self, payload=None):
         return _call(svc.get_est_calc_page, payload)
 
+    def get_quote_calc_page(self, payload=None):
+        return _call(svc.get_quote_calc_page, payload)
+
     def est_calc_set_lot(self, payload=None):
         return _call(svc.api_est_calc_set_lot, payload)
 
@@ -201,6 +204,15 @@ class Api:
     def surface_master_delete(self, payload=None):
         return _call(qms.api_surface_master_delete, payload)
 
+    def gravity_master_list(self, payload=None):
+        return _call(qms.api_gravity_master_list, payload)
+
+    def gravity_master_save(self, payload=None):
+        return _call(qms.api_gravity_master_save, payload)
+
+    def gravity_master_delete(self, payload=None):
+        return _call(qms.api_gravity_master_delete, payload)
+
     def machine_charge_master_list(self, payload=None):
         return _call(qms.api_machine_charge_master_list, payload)
 
@@ -221,6 +233,9 @@ class Api:
 
     def update_quote_history(self, payload=None):
         return _call(svc.api_update_quote_history, payload)
+
+    def results_summary(self, payload=None):
+        return _call(svc.api_results_summary, payload)
 
     def register_estimate(self, payload=None):
         return _call(svc.api_register_estimate, payload)

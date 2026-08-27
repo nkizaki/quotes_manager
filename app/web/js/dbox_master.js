@@ -46,6 +46,15 @@
     if (kind === 'ok') msgEl.classList.add('is-ok');
   }
 
+  function showSaveError(detail) {
+    setMessage('', '');
+    if (typeof window.showMasterSaveError === 'function') {
+      window.showMasterSaveError(detail);
+    } else {
+      setMessage(detail || '保存に失敗しました', 'error');
+    }
+  }
+
   function formatPrice1(v) {
     if (v === null || v === undefined || v === '') {
       return '';
@@ -209,7 +218,7 @@
       })
       .then(function (out) {
         if (!out.ok || out.data.error) {
-          setMessage(out.data.error || '保存に失敗しました', 'error');
+          showSaveError(out.data.error || '保存に失敗しました');
           return;
         }
         if (out.data.inserted && out.data.id != null && elId) {
@@ -220,7 +229,7 @@
         setMessage('', '');
       })
       .catch(function (err) {
-        setMessage('通信エラー: ' + err.message, 'error');
+        showSaveError('通信エラー: ' + err.message);
       });
   }
 

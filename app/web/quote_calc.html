@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>見積り計算</title>
+  <link rel="icon" type="image/png" sizes="256x256" href="icons/icon.ico">
+  <link rel="stylesheet" href="css/top.css">
+  <link rel="stylesheet" href="css/design.css">
+  <link rel="stylesheet" href="css/app-theme.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/quotes.css">
+  <link rel="stylesheet" href="css/quote_calc.css">
+  <script src="js/font_size_pref.js"></script>
+  <script src="js/font_scale_boot.js"></script>
+</head>
+<body class="search-page est-calc-page quote-calc-page">
+  <header class="search-header ship-insp-header-bar est-calc-header quote-calc-header">
+    <div class="search-header-inner ship-insp-sub-header-inner quotes-header-inner">
+      <a href="quotes.html" class="ship-insp-back-btn">戻る</a>
+      <h1 class="search-header-title est-calc-header-title">見積り計算</h1>
+      <span class="search-header-version" id="app-version"></span>
+      <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
+    </div>
+  </header>
+
+  <div class="quote-calc-page-layout">
+    <div class="main-content-offset">
+      <section class="main-section quote-calc-fixed-section" aria-labelledby="quote-calc-basic-title">
+        <h2 id="quote-calc-basic-title">基本情報</h2>
+        <input type="hidden" id="qc-quote-id" name="quote_id" value="">
+
+        <div class="quote-calc-kihon-grid">
+          <div class="quote-calc-kihon-item quote-calc-span-1-2">
+            <label for="qc-part-no">品番</label>
+            <input type="text" id="qc-part-no" name="part_no" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" spellcheck="false" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-span-3-4">
+            <label for="qc-part-name">品名</label>
+            <input type="text" id="qc-part-name" name="part_name" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" spellcheck="false" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-span-1-2 quote-calc-row-2">
+            <label for="qc-customer">客先名</label>
+            <input type="text" id="qc-customer" name="customer_name" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-col-3 quote-calc-row-2">
+            <label for="qc-department">部署名</label>
+            <input type="text" id="qc-department" name="department" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-col-4 quote-calc-row-2">
+            <label for="qc-contact">担当者</label>
+            <input type="text" id="qc-contact" name="contact" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
+          </div>
+        </div>
+
+        <div class="quote-calc-actions">
+          <button type="button" id="qc-create-doc-btn" class="quote-calc-create-btn">見積書作成</button>
+        </div>
+      </section>
+
+      <section class="main-section quote-calc-tabs-section" aria-label="見積り計算タブ">
+        <div class="quote-calc-tablist" role="tablist" aria-label="見積り計算タブ">
+          <button type="button" class="quote-calc-tab is-active" role="tab" id="quote-calc-tab-material" aria-selected="true" aria-controls="quote-calc-panel-material" data-tab="material">材料費・加工費</button>
+          <button type="button" class="quote-calc-tab" role="tab" id="quote-calc-tab-packaging" aria-selected="false" aria-controls="quote-calc-panel-packaging" data-tab="packaging" tabindex="-1">梱包輸送費・表面処理・初期費用</button>
+          <button type="button" class="quote-calc-tab" role="tab" id="quote-calc-tab-remarks" aria-selected="false" aria-controls="quote-calc-panel-remarks" data-tab="remarks" tabindex="-1">備考</button>
+        </div>
+
+        <div class="quote-calc-tabpanels">
+          <div class="quote-calc-tabpanel is-active" role="tabpanel" id="quote-calc-panel-material" aria-labelledby="quote-calc-tab-material" data-tab-panel="material">
+
+            <section class="main-section qc-material-section">
+              <h2>材料費</h2>
+
+              <div class="qc-mat-row qc-mat-row-1">
+                <div class="zairyo-item qc-field-wide">
+                  <label for="qc-mat-diameter">材質 径</label>
+                  <input type="text" id="qc-mat-diameter" autocomplete="off">
+                </div>
+                <div class="zairyo-item">
+                  <label for="qc-mat-steel">材種</label>
+                  <select id="qc-mat-steel">
+                    <option value="">未選択</option>
+                  </select>
+                </div>
+                <div class="zairyo-item">
+                  <label for="qc-mat-shape">形状</label>
+                  <select id="qc-mat-shape">
+                    <option value="">未選択</option>
+                    <option value="1">φ</option>
+                    <option value="2">Hex</option>
+                    <option value="3">□</option>
+                  </select>
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-dia">径</label>
+                  <input type="text" id="qc-mat-dia" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-length">長さ</label>
+                  <input type="text" id="qc-mat-length" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-overall">全長</label>
+                  <input type="text" id="qc-mat-overall" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-cutoff">突切り</label>
+                  <input type="text" id="qc-mat-cutoff" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-pieces">取り数</label>
+                  <input type="text" id="qc-mat-pieces" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-pieces-input">取り数入力</label>
+                  <input type="text" id="qc-mat-pieces-input" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-btn">
+                  <span class="qc-field-btn-spacer" aria-hidden="true"></span>
+                  <button type="button" class="est-save-btn" id="qc-mat-btn-register">登録</button>
+                </div>
+              </div>
+
+              <div class="qc-mat-row qc-mat-row-2">
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-gravity">比重</label>
+                  <input type="text" id="qc-mat-gravity" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-bar-weight">一本重(g)</label>
+                  <input type="text" id="qc-mat-bar-weight" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-piece-weight">一個重(g)</label>
+                  <input type="text" id="qc-mat-piece-weight" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-unit-price">材料単価</label>
+                  <input type="text" id="qc-mat-unit-price" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-cost">材料費</label>
+                  <input type="text" id="qc-mat-cost" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-yield">歩留り</label>
+                  <input type="text" id="qc-mat-yield" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-yield-amt">歩留り金額</label>
+                  <input type="text" id="qc-mat-yield-amt" autocomplete="off">
+                </div>
+                <div class="zairyo-item qc-field-narrow">
+                  <label for="qc-mat-total">材料費合計</label>
+                  <input type="text" id="qc-mat-total" autocomplete="off">
+                </div>
+              </div>
+            </section>
+
+            <section class="main-section qc-brass-section">
+              <h2>真鍮詳細</h2>
+              <div class="shinchuu-grid qc-brass-grid">
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-col-1">
+                  <p class="est-checkbox-item">
+                    <input type="checkbox" id="qc-br-enable" checked>
+                    <label for="qc-br-enable">有効化</label>
+                  </p>
+                </div>
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-span-2-4">
+                  <p class="est-radio-item">
+                    <input type="radio" id="qc-br-rm-general" name="qc-br-rm" value="1" checked>
+                    <label for="qc-br-rm-general">RM<span id="qc-br-rm-general-val" class="qc-rm-val"></span></label>
+                    <input type="radio" id="qc-br-rm-fuji" name="qc-br-rm" value="2">
+                    <label for="qc-br-rm-fuji">不二工機<span id="qc-br-rm-fuji-val" class="qc-rm-val"></span></label>
+                  </p>
+                </div>
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-col-5">
+                  <label for="qc-br-quote-rm">見積RM</label>
+                  <input type="text" id="qc-br-quote-rm" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-span-5-7">
+                  <p class="est-radio-item">
+                    <span class="qc-brass-inline-label">スクラップ計算</span>
+                    <input type="radio" id="qc-br-scrap-unit" name="qc-br-scrap" value="1" checked>
+                    <label for="qc-br-scrap-unit">単重</label>
+                    <input type="radio" id="qc-br-scrap-weight" name="qc-br-scrap" value="2">
+                    <label for="qc-br-scrap-weight">スクラップ重</label>
+                  </p>
+                </div>
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-col-8">
+                  <label for="qc-br-material-unit">素材単価</label>
+                  <input type="text" id="qc-br-material-unit" autocomplete="off">
+                </div>
+
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-1">
+                  <label for="qc-br-n-price">N社価格</label>
+                  <input type="text" id="qc-br-n-price" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-2">
+                  <label for="qc-br-par">建値</label>
+                  <input type="text" id="qc-br-par" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-3">
+                  <label for="qc-br-premium">増値</label>
+                  <input type="text" id="qc-br-premium" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-4">
+                  <label for="qc-br-unit-weight">単重(g)</label>
+                  <input type="text" id="qc-br-unit-weight" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-5">
+                  <label for="qc-br-scrap-w">スクラップ重(g)</label>
+                  <input type="text" id="qc-br-scrap-w" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-6">
+                  <label for="qc-br-scrap-base">スクラップベース</label>
+                  <input type="text" id="qc-br-scrap-base" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-7">
+                  <label for="qc-br-chip-rate">切粉回収率</label>
+                  <input type="text" id="qc-br-chip-rate" autocomplete="off">
+                </div>
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-8">
+                  <label for="qc-br-scrap-unit-price">スクラップ単価</label>
+                  <input type="text" id="qc-br-scrap-unit-price" autocomplete="off">
+                </div>
+
+                <div class="shinchuu-empty shinchuu-row-3 shinchuu-span-1-7"></div>
+                <div class="shinchuu-item shinchuu-row-3 shinchuu-col-8">
+                  <label for="qc-br-material-cost">材料費</label>
+                  <input type="text" id="qc-br-material-cost" autocomplete="off">
+                </div>
+              </div>
+            </section>
+
+            <section class="main-section qc-proc-section">
+              <h2>加工費・管理費</h2>
+              <div class="qc-proc-layout">
+                <div class="qc-proc-fields">
+                  <div class="qc-proc-row qc-proc-row-1">
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-lot">ロット数</label>
+                      <input type="text" id="qc-proc-lot" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-ct">C/T</label>
+                      <input type="text" id="qc-proc-ct" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-daily-1">日産数</label>
+                      <input type="text" id="qc-proc-daily-1" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-daily-2">日産数</label>
+                      <input type="text" id="qc-proc-daily-2" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-days-1">日数</label>
+                      <input type="text" id="qc-proc-days-1" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-days-2">日数</label>
+                      <input type="text" id="qc-proc-days-2" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-machine">機種</label>
+                      <select id="qc-proc-machine">
+                        <option value="">未選択</option>
+                      </select>
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-charge">チャージ</label>
+                      <input type="text" id="qc-proc-charge" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-cost-1">加工費</label>
+                      <input type="text" id="qc-proc-cost-1" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-cost-2">加工費</label>
+                      <input type="text" id="qc-proc-cost-2" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-tool-cost">刃工具費</label>
+                      <input type="text" id="qc-proc-tool-cost" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-tool-per">工具費/個</label>
+                      <input type="text" id="qc-proc-tool-per" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-total">加工費合計</label>
+                      <input type="text" id="qc-proc-total" autocomplete="off">
+                    </div>
+                  </div>
+                  <div class="qc-proc-row qc-proc-row-2">
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-insp-amt">検査金額</label>
+                      <input type="text" id="qc-proc-insp-amt" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-insp-per">検査費/個</label>
+                      <input type="text" id="qc-proc-insp-per" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-profit-rate">利益率</label>
+                      <input type="text" id="qc-proc-profit-rate" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-profit">利益</label>
+                      <input type="text" id="qc-proc-profit" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-overhead">管理費</label>
+                      <input type="text" id="qc-proc-overhead" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-id">ID</label>
+                      <input type="text" id="qc-proc-id" autocomplete="off">
+                    </div>
+                    <div class="zairyo-item qc-field-narrow">
+                      <label for="qc-proc-material-cost">材料費</label>
+                      <input type="text" id="qc-proc-material-cost" autocomplete="off">
+                    </div>
+                  </div>
+                  <div id="qc-proc-table-wrapper">
+                    <table id="qc-proc-table">
+                      <thead>
+                        <tr id="qc-proc-thead-row"></tr>
+                      </thead>
+                      <tbody id="qc-proc-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="qc-proc-actions">
+                  <button type="button" class="est-save-btn" id="qc-proc-btn-register">登録</button>
+                  <button type="button" class="est-delete-muted-btn" id="qc-proc-btn-cancel">中止</button>
+                  <button type="button" class="est-delete-btn" id="qc-proc-btn-delete">削除</button>
+                </div>
+              </div>
+            </section>
+
+          </div>
+          <div class="quote-calc-tabpanel" role="tabpanel" id="quote-calc-panel-packaging" aria-labelledby="quote-calc-tab-packaging" data-tab-panel="packaging" hidden>
+            <p class="quote-calc-tab-placeholder">梱包輸送費・表面処理・初期費用の入力欄は今後実装します。</p>
+          </div>
+          <div class="quote-calc-tabpanel" role="tabpanel" id="quote-calc-panel-remarks" aria-labelledby="quote-calc-tab-remarks" data-tab-panel="remarks" hidden>
+            <p class="quote-calc-tab-placeholder">備考の入力欄は今後実装します。</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <small>&copy; ARAISEIMITSU 2026 - Created By DIP Department</small>
+  </footer>
+  <script src="js/bridge.js"></script>
+  <script src="js/page_common.js"></script>
+  <script src="js/display_scale.js"></script>
+  <script src="js/quote_calc.js"></script>
+</body>
+</html>

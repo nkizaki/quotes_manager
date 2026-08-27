@@ -1,0 +1,106 @@
+/* 実績集計 — マスタ編集メニューと同様に中央寄せ・幅 50rem */
+body.results-summary-page {
+  font-family: var(--font-sans);
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+  padding-bottom: var(--app-footer-height, calc(40px * var(--ui-scale, 1)));
+}
+
+/* design.css の .search-main { max-width: none !important } よりセクションで幅を制限 */
+.results-summary-page .results-summary-section {
+  max-width: 50rem;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.results-summary-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.results-summary-filter label {
+  font-size: calc(14px * var(--font-scale, 1));
+  white-space: nowrap;
+}
+
+.results-summary-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.results-summary-date-range input[type="date"] {
+  width: calc(10.5rem * var(--ui-scale, 1));
+  min-width: 8rem;
+  font-size: calc(14px * var(--font-scale, 1));
+}
+
+.results-summary-date-sep {
+  font-size: calc(14px * var(--font-scale, 1));
+  color: var(--color-text);
+}
+
+.results-summary-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(16px * var(--ui-scale, 1));
+  margin-top: calc(16px * var(--ui-scale, 1));
+}
+
+@media (max-width: 640px) {
+  .results-summary-tables {
+    grid-template-columns: 1fr;
+  }
+}
+
+.results-summary-table-block {
+  min-width: 0;
+}
+
+.results-summary-table-label {
+  margin: 0 0 calc(8px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  font-weight: 600;
+}
+
+.results-summary-table-wrap {
+  max-height: calc(35rem * var(--ui-scale, 1));
+  overflow: auto;
+  border: 1px solid var(--color-border, #ccc);
+  background: #fff;
+}
+
+.results-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(14px * var(--font-scale, 1));
+}
+
+.results-summary-table th,
+.results-summary-table td {
+  border: 1px solid var(--color-border, #ccc);
+  padding: calc(6px * var(--ui-scale, 1)) calc(10px * var(--ui-scale, 1));
+  text-align: left;
+}
+
+.results-summary-table th {
+  background: var(--color-surface-tertiary, #eef2f6);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.results-summary-table td:last-child,
+.results-summary-table th:last-child {
+  text-align: right;
+  width: 30%;
+}
+
+.results-summary-table tbody tr:nth-child(even) {
+  background: var(--color-surface-secondary, #f8f9fa);
+}

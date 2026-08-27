@@ -1,5 +1,5 @@
 /**
- * 共通マスタ編集（営業 / 客先 / RM / 表面処理 / 機械チャージ）
+ * 共通マスタ編集（営業 / 客先 / RM / 表面処理 / 比重 / 機械チャージ）
  * 原価見積りマスタ（賃率など）と同じレイアウト・操作感。
  */
 
@@ -147,7 +147,7 @@
 }
 
 .master-edit-field--narrow {
-  width: calc(100px * var(--ui-scale, 1));
+  width: calc(120px * var(--ui-scale, 1));
 }
 
 .master-edit-field label {
@@ -229,6 +229,11 @@
 }
 
 .master-edit-page--surface {
+  --me-table-min: 480px;
+  --me-main-max: 720px;
+}
+
+.master-edit-page--gravity {
   --me-table-min: 480px;
   --me-main-max: 720px;
 }

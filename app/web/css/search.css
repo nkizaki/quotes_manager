@@ -252,7 +252,6 @@
 
 .search-subwindow-panel {
   width: 1000px;
-  height: 600px;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 32px);
   box-sizing: border-box;

@@ -1,14 +1,24 @@
 """見積り管理DB の Access → PostgreSQL 英語名マッピング。"""
 
-SKIP_ACCESS_TABLES: frozenset[str] = frozenset(['t_真鍮材料 のコピー230405'])
+SKIP_ACCESS_TABLES: frozenset[str] = frozenset(
+    {
+        "t_真鍮材料 のコピー230405",
+        "t_リンクファイル",
+        "t_原価見積リンクファイル",
+    }
+)
+
+SKIP_TABLE_NOTES: dict[str, str] = {
+    "t_真鍮材料 のコピー230405": "Access上のバックアップコピー",
+    "t_リンクファイル": "不使用となったため",
+    "t_原価見積リンクファイル": "不使用となったため",
+}
 
 TABLE_NAME_MAP: dict[str, str] = {
     "t_RMマスタ": "rm_master",
     "t_トレー": "trays",
-    "t_リンクファイル": "link_files",
     "t_初期費用": "initial_costs",
     "t_加工費": "processing_costs",
-    "t_原価見積リンクファイル": "cost_quote_link_files",
     "t_原価見積初期費用": "cost_quote_initial_costs",
     "t_原価見積加工管理": "cost_quote_processing_mgmt",
     "t_原価見積履歴": "cost_quote_history",
@@ -359,7 +369,6 @@ IMPORTANT_COLUMNS: dict[str, list[str]] = {
     "quote_history": ["quote_id", "management_no", "customer_code", "product_code"],
     "cost_quote_history": ["cost_quote_id", "management_no", "customer_code", "product_code"],
     "cost_quote_info": ["lot_id", "cost_quote_id", "lot_count"],
-    "link_files": ["id", "quote_id", "file_name"],
     "customers": ["code", "customer_name"],
     "sales_staff_master": ["code", "sales_representative"],
 }

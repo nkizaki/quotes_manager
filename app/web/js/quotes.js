@@ -383,6 +383,12 @@
     }
     resultTbody.innerHTML = rows
       .map(function (row, rowIdx) {
+        var quoteId = row["見積りID"];
+        var baseUrl = "quote_calc.html";
+        var href = quoteId
+          ? baseUrl + "?quote_id=" + encodeURIComponent(String(quoteId))
+          : baseUrl;
+
         return (
           "<tr>" +
           cols
@@ -405,7 +411,7 @@
                 }
               }
               var text = escapeHtml(cellStr);
-              if (c === "見積りID" && row["見積りID"]) {
+              if (c === "見積りID" && quoteId) {
                 return (
                   '<td><button type="button" class="search-estimate-id-btn" data-row-index="' +
                   rowIdx +
@@ -413,6 +419,9 @@
                   text +
                   "</button></td>"
                 );
+              }
+              if (c === "品名" && quoteId) {
+                return '<td><a href="' + href + '">' + text + "</a></td>";
               }
               return "<td" + cellClass + titleAttr + ">" + text + "</td>";
             })

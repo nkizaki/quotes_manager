@@ -1,4 +1,4 @@
-"""見積り管理・共通マスタ（営業 / 客先 / RM / 表面処理 / 機械チャージ）の CRUD API。"""
+"""見積り管理・共通マスタ（営業 / 客先 / RM / 表面処理 / 比重 / 機械チャージ）の CRUD API。"""
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -57,6 +57,18 @@ def _parse_optional_int(raw, label="数値"):
         return int(d)
     except (InvalidOperation, ValueError):
         raise ValueError(f"{label}を整数にできません: " + str(raw))
+
+
+def _parse_optional_decimal(raw, label="数値"):
+    if raw is None:
+        return None
+    s = str(raw).strip().replace(",", "")
+    if s == "":
+        return None
+    try:
+        return float(Decimal(s))
+    except (InvalidOperation, ValueError):
+        raise ValueError(f"{label}を数値にできません: " + str(raw))
 
 
 def _key_empty(raw):
@@ -321,6 +333,78 @@ def api_surface_master_delete(payload=None):
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("DELETE FROM t_表面処理マスタ WHERE ID=?", (rid_param,))
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当IDの行がありません"}
+        conn.commit()
+        conn.close()
+        return {"ok": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ----- 比重マスタ（ID=BIGSERIAL） -----
+
+def api_gravity_master_list(payload=None):
+    return _list_query("SELECT * FROM t_比重マスタ ORDER BY ID ASC")
+
+
+def api_gravity_master_save(payload=None):
+    data = payload or {}
+    rid = data.get("ID")
+    name = _str_or_none(data.get("名称"))
+    try:
+        gravity = _parse_optional_decimal(data.get("比重"), "比重")
+    except ValueError as ex:
+        return {"error": str(ex)}
+    is_insert = _key_empty(rid)
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        if is_insert:
+            cur.execute(
+                "INSERT INTO t_比重マスタ ([名称], [比重]) VALUES (?, ?)",
+                (name, gravity),
+            )
+            conn.commit()
+            cur.execute("SELECT MAX(ID) FROM t_比重マスタ")
+            mx = cur.fetchone()
+            new_id = mx[0] if mx else None
+            conn.close()
+            if new_id is None:
+                return {"error": "登録後のIDを取得できませんでした"}
+            return {"ok": True, "id": new_id, "inserted": True}
+        try:
+            rid_param = int(str(rid).strip())
+        except ValueError:
+            rid_param = str(rid).strip()
+        cur.execute(
+            "UPDATE t_比重マスタ SET [名称]=?, [比重]=? WHERE ID=?",
+            (name, gravity, rid_param),
+        )
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当IDの行がありません"}
+        conn.commit()
+        conn.close()
+        return {"ok": True, "id": rid_param, "inserted": False}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def api_gravity_master_delete(payload=None):
+    data = payload or {}
+    rid = data.get("ID")
+    if _key_empty(rid):
+        return {"error": "IDが必要です"}
+    try:
+        rid_param = int(str(rid).strip())
+    except ValueError:
+        rid_param = str(rid).strip()
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM t_比重マスタ WHERE ID=?", (rid_param,))
         if cur.rowcount == 0:
             conn.close()
             return {"error": "該当IDの行がありません"}
