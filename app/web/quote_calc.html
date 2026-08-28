@@ -8,19 +8,21 @@
   <link rel="stylesheet" href="css/top.css">
   <link rel="stylesheet" href="css/design.css">
   <link rel="stylesheet" href="css/app-theme.css">
-  <link rel="stylesheet" href="css/est_calc.css">
   <link rel="stylesheet" href="css/quotes.css">
   <link rel="stylesheet" href="css/quote_calc.css">
   <script src="js/font_size_pref.js"></script>
   <script src="js/font_scale_boot.js"></script>
 </head>
-<body class="search-page est-calc-page quote-calc-page">
+<body class="search-page quote-calc-page">
   <header class="search-header ship-insp-header-bar est-calc-header quote-calc-header">
     <div class="search-header-inner ship-insp-sub-header-inner quotes-header-inner">
       <a href="quotes.html" class="ship-insp-back-btn">戻る</a>
       <h1 class="search-header-title est-calc-header-title">見積り計算</h1>
       <span class="search-header-version" id="app-version"></span>
       <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
+      <div class="quotes-header-actions">
+        <button type="button" id="qc-create-doc-btn" class="est-download-btn search-btn">見積書作成</button>
+      </div>
     </div>
   </header>
 
@@ -52,10 +54,6 @@
             <input type="text" id="qc-contact" name="contact" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
           </div>
         </div>
-
-        <div class="quote-calc-actions">
-          <button type="button" id="qc-create-doc-btn" class="quote-calc-create-btn">見積書作成</button>
-        </div>
       </section>
 
       <section class="main-section quote-calc-tabs-section" aria-label="見積り計算タブ">
@@ -71,27 +69,19 @@
             <section class="main-section qc-material-section">
               <h2>材料費</h2>
 
-              <div class="zairyo-grid qc-mat-grid">
+              <div class="kakou-grid qc-mat-grid">
                 <!-- 1行目 -->
-                <div class="zairyo-item zairyo-span-1-2">
+                <div class="kakou-item kakou-row-1 kakou-span-1-2">
                   <label for="qc-mat-diameter">材質 径</label>
                   <input type="text" id="qc-mat-diameter" autocomplete="off">
                 </div>
-                <div class="zairyo-empty"></div>
-                <div class="zairyo-item zairyo-span-4-5">
+                <div class="kakou-item kakou-row-1 kakou-span-3-4">
                   <label for="qc-mat-steel">材種</label>
                   <select id="qc-mat-steel">
                     <option value="">未選択</option>
                   </select>
                 </div>
-                <div class="zairyo-empty"></div>
-                <div class="zairyo-item zairyo-col-8 qc-mat-register-cell">
-                  <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
-                  <button type="button" class="est-save-btn" id="qc-mat-btn-register">登録</button>
-                </div>
-
-                <!-- 2行目 -->
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-1 kakou-col-5">
                   <label for="qc-mat-shape">形状</label>
                   <select id="qc-mat-shape">
                     <option value="">未選択</option>
@@ -100,62 +90,65 @@
                     <option value="3">□</option>
                   </select>
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-1 kakou-col-6">
                   <label for="qc-mat-dia">径</label>
                   <input type="text" id="qc-mat-dia" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-1 kakou-col-7">
                   <label for="qc-mat-length">長さ</label>
                   <input type="text" id="qc-mat-length" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-1 kakou-col-8">
                   <label for="qc-mat-overall">全長</label>
                   <input type="text" id="qc-mat-overall" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-1 kakou-col-9">
                   <label for="qc-mat-cutoff">突切り</label>
                   <input type="text" id="qc-mat-cutoff" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-1 kakou-col-10">
                   <label for="qc-mat-pieces">取り数</label>
                   <input type="text" id="qc-mat-pieces" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-1 kakou-col-11">
                   <label for="qc-mat-pieces-input">取り数入力</label>
                   <input type="text" id="qc-mat-pieces-input" autocomplete="off">
                 </div>
-                <div class="zairyo-empty"></div>
+                <div class="kakou-item kakou-row-1 kakou-col-12 qc-mat-register-cell">
+                  <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
+                  <button type="button" class="est-save-btn" id="qc-mat-btn-register">登録</button>
+                </div>
 
-                <!-- 3行目 -->
-                <div class="zairyo-item">
+                <!-- 2行目 -->
+                <div class="kakou-item kakou-row-2 kakou-col-1">
                   <label for="qc-mat-gravity">比重</label>
                   <input type="text" id="qc-mat-gravity" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-2 kakou-col-2">
                   <label for="qc-mat-bar-weight">一本重(g)</label>
                   <input type="text" id="qc-mat-bar-weight" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-2 kakou-col-3">
                   <label for="qc-mat-piece-weight">一個重(g)</label>
                   <input type="text" id="qc-mat-piece-weight" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-2 kakou-col-4">
                   <label for="qc-mat-unit-price">材料単価</label>
                   <input type="text" id="qc-mat-unit-price" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-2 kakou-col-5">
                   <label for="qc-mat-cost">材料費</label>
                   <input type="text" id="qc-mat-cost" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-2 kakou-col-6">
                   <label for="qc-mat-yield">歩留り</label>
                   <input type="text" id="qc-mat-yield" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-2 kakou-col-7">
                   <label for="qc-mat-yield-amt">歩留り金額</label>
                   <input type="text" id="qc-mat-yield-amt" autocomplete="off">
                 </div>
-                <div class="zairyo-item">
+                <div class="kakou-item kakou-row-2 kakou-col-8">
                   <label for="qc-mat-total">材料費合計</label>
                   <input type="text" id="qc-mat-total" autocomplete="off">
                 </div>
@@ -163,15 +156,15 @@
             </section>
 
             <section class="main-section qc-brass-section">
-              <h2>真鍮詳細</h2>
+              <div class="shinchuu-section-heading">
+                <h2>真鍮詳細</h2>
+                <p class="est-checkbox-item">
+                  <input type="checkbox" id="qc-br-enable">
+                  <label for="qc-br-enable">有効化</label>
+                </p>
+              </div>
               <div class="shinchuu-grid qc-brass-grid">
-                <div class="shinchuu-item shinchuu-row-1 shinchuu-col-1">
-                  <p class="est-checkbox-item">
-                    <input type="checkbox" id="qc-br-enable">
-                    <label for="qc-br-enable">有効化</label>
-                  </p>
-                </div>
-                <div class="shinchuu-item shinchuu-row-1 shinchuu-span-2-3">
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-span-1-2">
                   <p class="est-radio-item">
                     <input type="radio" id="qc-br-rm-general" name="qc-br-rm" value="1" checked>
                     <label for="qc-br-rm-general">RM<span id="qc-br-rm-general-val" class="qc-rm-val"></span></label>
@@ -179,11 +172,11 @@
                     <label for="qc-br-rm-fuji">不二工機<span id="qc-br-rm-fuji-val" class="qc-rm-val"></span></label>
                   </p>
                 </div>
-                <div class="shinchuu-item shinchuu-row-1 shinchuu-col-4">
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-col-3">
                   <label for="qc-br-quote-rm">見積RM</label>
                   <input type="text" id="qc-br-quote-rm" autocomplete="off">
                 </div>
-                <div class="shinchuu-item shinchuu-row-1 shinchuu-span-5-6">
+                <div class="shinchuu-item shinchuu-row-1 shinchuu-span-4-5">
                   <p class="est-radio-item">
                     <input type="radio" id="qc-br-scrap-unit" name="qc-br-scrap" value="1" checked>
                     <label for="qc-br-scrap-unit">単重</label>
@@ -228,9 +221,7 @@
                   <label for="qc-br-scrap-unit-price">スクラップ単価</label>
                   <input type="text" id="qc-br-scrap-unit-price" autocomplete="off">
                 </div>
-
-                <div class="shinchuu-empty shinchuu-row-3 shinchuu-span-1-7"></div>
-                <div class="shinchuu-item shinchuu-row-3 shinchuu-col-8">
+                <div class="shinchuu-item shinchuu-row-2 shinchuu-col-9">
                   <label for="qc-br-material-cost">材料費</label>
                   <input type="text" id="qc-br-material-cost" autocomplete="off">
                 </div>
@@ -275,66 +266,69 @@
                   <label for="qc-proc-charge">チャージ</label>
                   <input type="text" id="qc-proc-charge" autocomplete="off">
                 </div>
-
-                <!-- 2行目 -->
-                <div class="kakou-item kakou-row-2 kakou-col-1">
+                <div class="kakou-item kakou-row-1 kakou-col-9">
                   <label for="qc-proc-cost-1">加工費</label>
                   <input type="text" id="qc-proc-cost-1" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-2 kakou-col-2">
+                <div class="kakou-item kakou-row-1 kakou-col-10">
                   <label for="qc-proc-cost-2">加工費</label>
                   <input type="text" id="qc-proc-cost-2" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-2 kakou-col-3">
+                <div class="kakou-item kakou-row-1 kakou-col-11">
                   <label for="qc-proc-tool-cost">刃工具費</label>
                   <input type="text" id="qc-proc-tool-cost" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-2 kakou-col-4">
+                <div class="kakou-item kakou-row-1 kakou-col-12">
                   <label for="qc-proc-tool-per">工具費/個</label>
                   <input type="text" id="qc-proc-tool-per" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-2 kakou-col-5">
+                <div class="kakou-item kakou-row-1 kakou-col-13">
                   <label for="qc-proc-total">加工費合計</label>
                   <input type="text" id="qc-proc-total" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-2 kakou-col-6">
+
+                <!-- 2行目 -->
+                <div class="kakou-item kakou-row-2 kakou-col-1">
                   <label for="qc-proc-insp-amt">検査金額</label>
                   <input type="text" id="qc-proc-insp-amt" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-2 kakou-col-7">
+                <div class="kakou-item kakou-row-2 kakou-col-2">
                   <label for="qc-proc-insp-per">検査費/個</label>
                   <input type="text" id="qc-proc-insp-per" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-2 kakou-col-8">
+                <div class="kakou-item kakou-row-2 kakou-col-4">
                   <label for="qc-proc-profit-rate">利益率</label>
                   <input type="text" id="qc-proc-profit-rate" autocomplete="off">
                 </div>
-
-                <!-- 3行目 -->
-                <div class="kakou-item kakou-row-3 kakou-col-1">
+                <div class="kakou-item kakou-row-2 kakou-col-5">
                   <label for="qc-proc-profit">利益</label>
                   <input type="text" id="qc-proc-profit" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-3 kakou-col-2">
+                <div class="kakou-item kakou-row-2 kakou-col-6">
                   <label for="qc-proc-overhead">管理費</label>
                   <input type="text" id="qc-proc-overhead" autocomplete="off">
                 </div>
-                <div class="kakou-item kakou-row-3 kakou-col-3">
-                  <label for="qc-proc-id">ID</label>
-                  <input type="text" id="qc-proc-id" autocomplete="off">
-                </div>
-                <div class="kakou-item kakou-row-3 kakou-col-4">
+                <div class="kakou-item kakou-row-2 kakou-col-13">
                   <label for="qc-proc-material-cost">材料費</label>
                   <input type="text" id="qc-proc-material-cost" autocomplete="off">
                 </div>
 
-                <!-- 4行目 -->
-                <div class="kakou-item kakou-row-4 qc-proc-actions-cell">
-                  <div class="qc-proc-actions">
-                    <button type="button" class="est-save-btn" id="qc-proc-btn-register">登録</button>
-                    <button type="button" class="est-delete-muted-btn" id="qc-proc-btn-cancel">中止</button>
-                    <button type="button" class="est-delete-btn" id="qc-proc-btn-delete">削除</button>
-                  </div>
+                <!-- 3行目 -->
+                <div class="kakou-item kakou-row-3 kakou-col-1">
+                  <label for="qc-proc-id">選択中のID</label>
+                  <input type="text" id="qc-proc-id" autocomplete="off">
+                </div>
+                <div class="kakou-item kakou-row-3 kakou-col-11">
+                  <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
+                  <button type="button" class="est-save-btn" id="qc-proc-btn-register">登録</button>
+                </div>
+                <div class="kakou-item kakou-row-3 kakou-col-12">
+                  <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
+                  <button type="button" class="est-delete-muted-btn" id="qc-proc-btn-cancel">中止</button>
+                </div>
+                <div class="kakou-item kakou-row-3 kakou-col-13">
+                  <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
+                  <button type="button" class="est-delete-btn" id="qc-proc-btn-delete">削除</button>
                 </div>
               </div>
               <div id="qc-proc-table-wrapper">

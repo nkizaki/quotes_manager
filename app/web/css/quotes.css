@@ -45,6 +45,8 @@ body.quotes-placeholder-page {
 }
 
 .est-calc-page .est-calc-header,
+.quote-calc-page .quote-calc-header,
+.quote-calc-page .est-calc-header,
 .search-page .search-header {
   padding: 0;
   min-width: 0;
@@ -187,6 +189,30 @@ select.dynamic-disabled,
   color: var(--ui-text, var(--color-text));
 }
 
+.shinchuu-section-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(12px * var(--ui-scale, 1));
+  margin-bottom: calc(8px * var(--ui-scale, 1));
+}
+
+.shinchuu-section-heading h2 {
+  margin: 0;
+}
+
+.shinchuu-section-heading .est-checkbox-item {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.shinchuu-section-heading .est-checkbox-item label {
+  margin-bottom: 0;
+}
+
 .search-section {
   background: var(--ui-surface-card, var(--color-surface));
   border: none;
@@ -291,6 +317,26 @@ select.dynamic-disabled,
 .search-btn:hover,
 .search-register-btn:hover {
   background: var(--btn-primary-hover, var(--color-accent-hover));
+}
+
+/* search-btn の !important（top.css / design.css）より Excel 出力ボタンを緑に */
+.est-download-btn.search-btn,
+.quotes-header-actions .est-download-btn {
+  background: var(--btn-green-bg, #43a047) !important;
+  color: var(--btn-green-text, #fff) !important;
+  border: 1px solid var(--btn-green-border, #2e7d32) !important;
+}
+
+.est-download-btn.search-btn:hover,
+.quotes-header-actions .est-download-btn:hover {
+  background: var(--btn-green-hover, #388e3c) !important;
+  border-color: var(--btn-green-hover, #388e3c) !important;
+}
+
+.est-download-btn.search-btn:active,
+.quotes-header-actions .est-download-btn:active {
+  background: var(--btn-green-active, #2e7d32) !important;
+  border-color: var(--btn-green-active, #2e7d32) !important;
 }
 
 .search-new-btn {
