@@ -1,5 +1,6 @@
 /**
- * 見積り計算ページ — est_calc.html の書式・レイアウトを踏襲
+ * quote_calc.css — 見積り計算（quote_calc.html）レイアウト・寸法
+ * 見た目は quotes.css を参照
  */
 :root {
   --qc-main-max-width: 1400px;
@@ -7,7 +8,6 @@
 
 body.quote-calc-page {
   margin: 0;
-  padding-bottom: var(--app-footer-height, calc(40px * var(--ui-scale, 1)));
   min-width: 0;
 }
 
@@ -54,8 +54,6 @@ body.quote-calc-page {
 .quote-calc-fixed-section .quote-calc-kihon-item label {
   display: block;
   margin-bottom: calc(2px * var(--ui-scale, 1));
-  font-size: calc(12px * var(--font-scale, 1));
-  color: var(--ui-text-muted);
 }
 
 .quote-calc-fixed-section .quote-calc-kihon-item input[type="text"] {
@@ -68,13 +66,10 @@ body.quote-calc-page {
   pointer-events: none;
   cursor: default;
   user-select: none;
-  background-color: var(--input-readonly-bg, var(--ui-surface-low));
-  color: var(--input-text);
 }
 
 .quote-calc-fixed-section .quote-calc-readonly-field:focus {
   outline: none;
-  border-bottom-color: var(--ui-border-strong, #ccc);
   box-shadow: none;
 }
 
@@ -104,27 +99,6 @@ body.quote-calc-page {
   margin-top: calc(12px * var(--ui-scale, 1));
 }
 
-.quote-calc-create-btn {
-  background-color: var(--btn-green-bg);
-  color: var(--btn-green-text);
-  border: 1px solid var(--btn-green-border);
-  border-radius: calc(4px * var(--ui-scale, 1));
-  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font-sans, var(--ui-font-stack));
-}
-
-.quote-calc-create-btn:hover {
-  background-color: var(--btn-green-hover);
-}
-
-.quote-calc-create-btn:active {
-  background-color: var(--btn-green-active);
-}
-
-/* タブ */
 .quote-calc-tabs-section {
   display: flex;
   flex-direction: column;
@@ -135,7 +109,7 @@ body.quote-calc-page {
   flex-wrap: wrap;
   gap: calc(4px * var(--ui-scale, 1));
   margin-bottom: calc(12px * var(--ui-scale, 1));
-  border-bottom: 1px solid var(--ui-border-default);
+  border-bottom: 1px solid var(--ui-border-default, var(--color-border));
   padding-bottom: calc(4px * var(--ui-scale, 1));
 }
 
@@ -144,26 +118,12 @@ body.quote-calc-page {
   padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
   border: 1px solid transparent;
   border-bottom: none;
-  border-radius: calc(4px * var(--ui-scale, 1)) calc(4px * var(--ui-scale, 1)) 0 0;
-  background: transparent;
-  color: var(--ui-text-muted);
   font-size: calc(13px * var(--font-scale, 1));
-  font-weight: 600;
-  font-family: var(--font-sans, var(--ui-font-stack));
   cursor: pointer;
   white-space: nowrap;
 }
 
-.quote-calc-tab:hover {
-  color: var(--ui-text);
-  background: var(--ui-surface-low, #f2f4f4);
-}
-
 .quote-calc-tab.is-active {
-  color: var(--ui-text);
-  background: var(--ui-surface-card);
-  border-color: var(--ui-border-default);
-  border-bottom-color: var(--ui-surface-card);
   margin-bottom: -1px;
   padding-bottom: calc(9px * var(--ui-scale, 1));
 }
@@ -187,12 +147,10 @@ body.quote-calc-page {
 
 .quote-calc-tab-placeholder {
   margin: 0;
-  color: var(--ui-text-muted);
   font-size: calc(14px * var(--font-scale, 1));
   line-height: 1.6;
 }
 
-/* 材料費・加工費タブ — グリッドレイアウト（入力見た目は est-calc-page / style.css に委譲） */
 .quote-calc-tabs-section .main-section {
   margin-bottom: calc(12px * var(--ui-scale, 1));
 }
@@ -240,8 +198,6 @@ body.quote-calc-page {
   height: 240px;
   overflow: auto;
   margin-top: calc(12px * var(--ui-scale, 1));
-  border: 1px solid var(--ui-border-default);
-  background-color: var(--ui-surface-card);
 }
 
 .quote-calc-page #qc-proc-table {
@@ -255,24 +211,12 @@ body.quote-calc-page {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--table-header-bg);
 }
 
 .quote-calc-page #qc-proc-table th,
 .quote-calc-page #qc-proc-table td {
-  border: 1px solid var(--ui-border-default);
-  padding: calc(4px * var(--ui-scale, 1)) calc(6px * var(--ui-scale, 1));
   font-size: calc(12px * var(--font-scale, 1));
   white-space: nowrap;
-}
-
-.quote-calc-page #qc-proc-table th {
-  font-weight: 600;
-  background: var(--table-header-bg);
-}
-
-.quote-calc-page #qc-proc-table tbody tr:hover td {
-  background: var(--ui-surface-low, #f8f8f8);
 }
 
 .qc-brass-section .shinchuu-grid {
@@ -283,80 +227,4 @@ body.quote-calc-page {
 
 .quote-calc-page .quote-calc-kihon-grid {
   max-width: 100%;
-}
-
-/* 真鍮削除確認モーダル（search.css 未読込のためここで定義） */
-.quote-calc-page .search-dialog-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.quote-calc-page .search-dialog-overlay[hidden] {
-  display: none !important;
-}
-
-.quote-calc-page .search-dialog-panel {
-  width: min(calc(420px * var(--ui-scale, 1)), 92vw);
-  max-width: calc(100vw - 32px);
-  overflow: hidden;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #c7d1dc);
-  border-radius: var(--radius-xl, calc(6px * var(--ui-scale, 1)));
-  box-shadow: 0 16px 40px rgba(23, 37, 54, 0.18);
-}
-
-.quote-calc-page .search-dialog-head {
-  padding: calc(10px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
-  background: var(--color-surface-secondary, #f2f4f4);
-  border-bottom: 1px solid var(--color-border, #c7d1dc);
-}
-
-.quote-calc-page .search-dialog-title {
-  margin: 0;
-  display: block;
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.quote-calc-page .search-dialog-body {
-  padding: calc(16px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
-}
-
-.quote-calc-page .search-dialog-message {
-  margin: 0 0 calc(16px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.quote-calc-page .search-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: calc(8px * var(--ui-scale, 1));
-}
-
-.quote-calc-page .search-dialog-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: calc(92px * var(--ui-scale, 1));
-  min-height: calc(34px * var(--ui-scale, 1));
-  padding: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
-  border-radius: var(--radius-lg, calc(4px * var(--ui-scale, 1)));
-  border: 1px solid var(--color-border, #c7d1dc);
-  background: var(--color-surface, #fff);
-  cursor: pointer;
-  font-size: calc(14px * var(--font-scale, 1));
-}
-
-.quote-calc-page .search-dialog-btn-primary {
-  background: var(--btn-primary-bg, #2f6fed);
-  border-color: var(--btn-primary-bg, #2f6fed);
-  color: #fff;
 }

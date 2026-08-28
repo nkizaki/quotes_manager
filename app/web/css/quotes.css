@@ -1,10 +1,19 @@
-/* 見積り管理 — 参考プロジェクトに合わせたヘッダー/フッター/入力書式 */
+/**
+ * quotes.css — 共通デザイン（quotes.css を正とする）
+ *
+ * 見積り計算・原価見積り計算・検索ページの背景・フォント・入力・ボタン・テーブル見た目。
+ * width / margin / grid などのレイアウトは各ページ CSS を参照。
+ *
+ * 読み込み順: design.css → app-theme.css → [ページCSS] → quotes.css
+ */
 :root {
   --app-footer-height: calc(40px * var(--ui-scale, 1));
 }
 
+/* ----- ページ全体 ----- */
 body.search-page,
 body.est-calc-page,
+body.quote-calc-page,
 body.rate-master-page,
 body.freight-master-page,
 body.tray-master-page,
@@ -17,6 +26,7 @@ body.quotes-placeholder-page {
   padding-bottom: var(--app-footer-height);
 }
 
+/* ----- ヘッダー ----- */
 .search-header.ship-insp-header-bar .search-header-inner::before,
 .quotes-header-inner::before {
   content: "";
@@ -34,6 +44,27 @@ body.quotes-placeholder-page {
   gap: calc(8px * var(--ui-scale, 1));
 }
 
+.est-calc-page .est-calc-header,
+.search-page .search-header {
+  padding: 0;
+  min-width: 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.rate-master-page .rate-master-header,
+.freight-master-page .freight-master-header,
+.tray-master-page .tray-master-header,
+.dbox-master-page .dbox-master-header {
+  padding: 0;
+  min-width: 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ----- 入力欄 ----- */
 .search-page input[type="text"],
 .search-page input[type="number"]:not(.font-size-setting__input),
 .search-page input:not([type]),
@@ -44,6 +75,11 @@ body.quotes-placeholder-page {
 .est-calc-page input:not([type]),
 .est-calc-page select,
 .est-calc-page textarea,
+.quote-calc-page input[type="text"],
+.quote-calc-page input[type="number"],
+.quote-calc-page input:not([type]),
+.quote-calc-page select,
+.quote-calc-page textarea,
 .rate-master-page input[type="text"],
 .rate-master-page select,
 .freight-master-page input[type="text"],
@@ -56,6 +92,7 @@ body.quotes-placeholder-page {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: calc(14px * var(--font-scale, 1));
+  box-sizing: border-box;
 }
 
 .search-page input:not(.font-size-setting__input):focus,
@@ -63,25 +100,381 @@ body.quotes-placeholder-page {
 .search-page textarea:focus,
 .est-calc-page input:focus,
 .est-calc-page select:focus,
-.est-calc-page textarea:focus {
+.est-calc-page textarea:focus,
+.quote-calc-page input:focus,
+.quote-calc-page select:focus,
+.quote-calc-page textarea:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
-.est-calc-page .est-calc-header,
-.rate-master-page .rate-master-header,
-.freight-master-page .freight-master-header,
-.tray-master-page .tray-master-header,
-.dbox-master-page .dbox-master-header,
-.search-page .search-header {
-  padding: 0;
-  min-width: 0;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+.est-calc-page input[type="number"],
+.quote-calc-page input[type="number"] {
+  appearance: textfield;
 }
 
+input[readonly],
+.quote-calc-readonly-field {
+  background-color: var(--input-readonly-bg, #f0f0f0);
+}
+
+#est-1[readonly],
+#est-2[readonly],
+#est-3[readonly],
+#est-4[readonly],
+#est-5[readonly],
+#est-6[readonly] {
+  background-color: var(--ui-surface-low, #f2f4f4);
+}
+
+#est-1,
+#est-2,
+#est-3,
+#est-4,
+#est-5,
+#est-6,
+#proc-6,
+#proc-9,
+#proc-6[readonly],
+#proc-9:disabled,
+#proc-6.dynamic-disabled,
+#proc-9.dynamic-disabled {
+  background: var(--color-surface) !important;
+  color: var(--color-text);
+}
+
+.floating-window input[readonly] {
+  background-color: var(--color-surface);
+}
+
+input.dynamic-disabled,
+select.dynamic-disabled,
+.shinchuu-grid.shinchuu-disabled .shinchuu-item input[type="text"],
+.shinchuu-grid.shinchuu-disabled .shinchuu-item input[type="number"],
+.soryo-card-grid.soryo-card-disabled input[type="text"],
+.soryo-card-grid.soryo-card-disabled select,
+.soryo-nittou-grid.soryo-nittou-disabled input[type="text"],
+.soryo-plastic-grid.soryo-plastic-disabled input[type="text"],
+.soryo-plastic-grid.soryo-plastic-disabled select {
+  background-color: var(--state-disabled-bg, #d8d8d8) !important;
+  color: var(--state-disabled-text, #9e9e9e);
+}
+
+.shinchuu-grid.shinchuu-disabled .shinchuu-item label,
+.shinchuu-grid.shinchuu-disabled .shinchuu-item .est-radio-item label,
+.shinchuu-grid.shinchuu-disabled .shinchuu-item .est-checkbox-item label,
+.field-disabled label {
+  color: var(--state-disabled-text, #9e9e9e);
+}
+
+#mat-19,
+#br-1,
+#br-9 {
+  background-color: var(--cell-highlight-bg, #ffffcc);
+}
+
+/* ----- セクション ----- */
+.main-section {
+  background: var(--ui-surface-card, var(--color-surface));
+  border-radius: 6px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.main-section h2 {
+  margin: 0 0 12px;
+  color: var(--ui-text, var(--color-text));
+}
+
+.search-section {
+  background: var(--ui-surface-card, var(--color-surface));
+  border: none;
+  border-radius: 6px;
+}
+
+.search-main .search-form-item label,
+.search-subwindow-form .search-form-item label,
+.est-calc-page label,
+.quote-calc-page label {
+  color: var(--ui-text-muted, var(--color-text-secondary));
+  font-size: calc(11px * var(--font-scale, 1));
+  letter-spacing: 0.01em;
+  font-weight: 600;
+}
+
+/* ----- ボタン（原価見積り計算ヘッダー等） ----- */
+.est-reset-inputs-btn,
+.est-download-btn,
+.est-save-btn,
+.est-add-btn,
+.est-delete-btn,
+.est-delete-muted-btn,
+.quote-calc-create-btn {
+  border-radius: var(--btn-radius, calc(4px * var(--ui-scale, 1)));
+  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.est-reset-inputs-btn {
+  background: var(--btn-ghost-bg, transparent);
+  color: var(--btn-ghost-text, var(--ui-primary));
+  border: var(--btn-ghost-border, none);
+}
+
+.est-reset-inputs-btn:hover {
+  background: var(--btn-ghost-hover-bg, var(--ui-primary-soft));
+}
+
+.est-save-btn,
+.est-add-btn {
+  background-color: var(--btn-primary-bg, var(--ui-primary));
+  color: var(--btn-primary-text, #fff);
+  border: 1px solid var(--btn-primary-bg, var(--ui-primary));
+}
+
+.est-save-btn:hover,
+.est-add-btn:hover {
+  background-color: var(--btn-primary-hover, #2f548f);
+}
+
+.est-download-btn,
+.quote-calc-create-btn {
+  background: var(--btn-green-bg, #43a047);
+  color: var(--btn-green-text, #fff);
+  border: 1px solid var(--btn-green-border, #2e7d32);
+}
+
+.est-download-btn:hover,
+.quote-calc-create-btn:hover {
+  background: var(--btn-green-hover, #388e3c);
+}
+
+.est-download-btn:active,
+.quote-calc-create-btn:active {
+  background: var(--btn-green-active, #2e7d32);
+}
+
+.est-delete-btn {
+  background: var(--ui-surface-card, var(--color-surface));
+  color: var(--ui-danger, #9f403d);
+  border: 1px solid var(--ui-danger, #9f403d);
+}
+
+.est-delete-btn:hover {
+  background: rgba(159, 64, 61, 0.08);
+}
+
+.est-delete-muted-btn {
+  background: var(--ui-surface-card, var(--color-surface));
+  color: var(--ui-text-muted, var(--color-text-secondary));
+  border: 1px solid var(--ui-divider-soft, var(--color-border));
+}
+
+.est-delete-muted-btn:hover {
+  background: var(--ui-surface-low, #f2f4f4);
+  border-color: var(--ui-border-input, var(--color-border));
+}
+
+.search-btn,
+.search-register-btn {
+  background: var(--btn-primary-bg, var(--color-accent));
+  color: var(--btn-primary-text, #fff);
+  border: var(--btn-ghost-border, 1px solid var(--color-accent));
+  border-radius: var(--btn-radius, calc(4px * var(--ui-scale, 1)));
+}
+
+.search-btn:hover,
+.search-register-btn:hover {
+  background: var(--btn-primary-hover, var(--color-accent-hover));
+}
+
+.search-new-btn {
+  background: var(--btn-cyan-bg, #26a69a);
+  color: var(--btn-cyan-text, #fff);
+  border: 1px solid var(--btn-cyan-border, #00897b);
+  border-radius: var(--btn-radius, calc(4px * var(--ui-scale, 1)));
+}
+
+.search-new-btn:hover {
+  background: var(--btn-cyan-hover, #00897b);
+}
+
+.search-new-btn:active {
+  background: var(--btn-cyan-active, #00796b);
+}
+
+.search-delete-btn {
+  background: var(--btn-danger-bg, var(--ui-danger));
+  color: var(--btn-danger-text, #fff);
+  border: 1px solid var(--btn-danger-border, #8d3735);
+  border-radius: var(--btn-radius, calc(4px * var(--ui-scale, 1)));
+}
+
+.search-delete-btn:hover {
+  background: var(--btn-danger-hover, #8f3937);
+}
+
+.search-delete-btn:active {
+  background: var(--btn-danger-active, #7f3432);
+}
+
+.ship-insp-nav .search-btn,
+.edit-masters-group-actions .search-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(280px * var(--ui-scale, 1));
+  min-height: calc(34px * var(--ui-scale, 1));
+  box-sizing: border-box;
+  text-align: center;
+  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  border-radius: calc(4px * var(--ui-scale, 1));
+}
+
+.quotes-header-actions .search-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(34px * var(--ui-scale, 1));
+  box-sizing: border-box;
+  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  border-radius: calc(4px * var(--ui-scale, 1));
+}
+
+/* ----- テーブル ----- */
+#result-table-wrapper,
+#lot-table-wrapper,
+#shoki-hiyou-table-wrapper,
+.quote-calc-page #qc-proc-table-wrapper {
+  border: none;
+  border-radius: 6px;
+  background: var(--ui-surface-card, var(--color-surface));
+}
+
+#result-table thead,
+#lot-table thead,
+#shoki-hiyou-table thead,
+.quote-calc-page #qc-proc-table thead {
+  background: var(--table-header-bg, #ecf2fc);
+}
+
+#result-table thead::before,
+#result-table thead::after,
+#lot-table thead::before,
+#lot-table thead::after,
+#shoki-hiyou-table thead::before,
+#shoki-hiyou-table thead::after {
+  display: none;
+}
+
+#result-table th,
+#result-table td,
+#lot-table th,
+#lot-table td,
+#shoki-hiyou-table th,
+#shoki-hiyou-table td,
+.quote-calc-page #qc-proc-table th,
+.quote-calc-page #qc-proc-table td {
+  border: none;
+  border-bottom: 1px solid var(--ui-outline-soft, rgba(45, 51, 53, 0.1));
+  padding: var(--table-cell-padding-y, 4px) var(--table-cell-padding-x, 12px);
+  color: var(--ui-text, var(--color-text));
+}
+
+#result-table th,
+#lot-table th,
+#shoki-hiyou-table th,
+.quote-calc-page #qc-proc-table th {
+  background: var(--table-header-bg, #ecf2fc);
+  color: var(--ui-text-muted, var(--color-text-secondary));
+  font-size: calc(12px * var(--font-scale, 1));
+  font-weight: 600;
+}
+
+#result-table tbody tr:hover td,
+#lot-table tbody tr:hover td,
+#shoki-hiyou-table tbody tr:hover td,
+.quote-calc-page #qc-proc-table tbody tr:hover td {
+  background: var(--ui-surface-low, var(--color-surface-secondary));
+}
+
+#lot-table td,
+#shoki-hiyou-table td {
+  background-color: var(--ui-surface-card, var(--color-surface));
+}
+
+#lot-table a.lot-id-link,
+#shoki-hiyou-table a.shoki-hiyou-hinmei-link {
+  color: var(--link-text, #00c);
+  text-decoration: none;
+}
+
+#lot-table a.lot-id-link:hover,
+#shoki-hiyou-table a.shoki-hiyou-hinmei-link:hover {
+  color: var(--link-text-hover, #006);
+  text-decoration: underline;
+}
+
+.search-estimate-id-btn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--link-text, #00c);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-align: left;
+}
+
+.search-estimate-id-btn:hover {
+  color: var(--link-text-hover, #006);
+}
+
+/* ----- タブ（見積り計算） ----- */
+.quote-calc-tab {
+  border-radius: calc(4px * var(--ui-scale, 1)) calc(4px * var(--ui-scale, 1)) 0 0;
+  background: transparent;
+  color: var(--ui-text-muted, var(--color-text-secondary));
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.quote-calc-tab:hover {
+  color: var(--ui-text, var(--color-text));
+  background: var(--ui-surface-low, var(--color-surface-secondary));
+}
+
+.quote-calc-tab.is-active {
+  color: var(--ui-text, var(--color-text));
+  background: var(--ui-surface-card, var(--color-surface));
+  border-color: var(--ui-border-default, var(--color-border));
+  border-bottom-color: var(--ui-surface-card, var(--color-surface));
+}
+
+/* ----- フローティングウィンドウ ----- */
+.floating-window-content {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(45, 51, 53, 0.15));
+  box-shadow: var(--shadow-ambient, 0 12px 40px rgba(45, 51, 53, 0.06));
+}
+
+.floating-input-grid {
+  border: 1px solid var(--glass-border, rgba(45, 51, 53, 0.15));
+}
+
+/* ----- その他共有 ----- */
 .placeholder-card {
   max-width: calc(520px * var(--ui-scale, 1));
   padding: calc(24px * var(--ui-scale, 1));
@@ -105,7 +498,6 @@ body.quotes-placeholder-page {
   color: var(--color-danger);
 }
 
-/* マスタ編集メニュー（縦並び区分） */
 .edit-masters-section {
   max-width: calc(520px * var(--ui-scale, 1));
 }
@@ -139,34 +531,6 @@ body.quotes-placeholder-page {
   gap: calc(12px * var(--ui-scale, 1));
 }
 
-.ship-insp-nav .search-btn,
-.edit-masters-group-actions .search-btn {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: calc(280px * var(--ui-scale, 1));
-  min-height: calc(34px * var(--ui-scale, 1));
-  box-sizing: border-box;
-  text-align: center;
-  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
-  border-radius: calc(4px * var(--ui-scale, 1));
-}
-
-.quotes-header-actions .search-btn {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(34px * var(--ui-scale, 1));
-  box-sizing: border-box;
-  padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
-  border-radius: calc(4px * var(--ui-scale, 1));
-}
-
-/* モーダル（search-dialog / insp-confirm）を参考プロジェクト書式に揃える */
 .search-dialog-overlay.insp-confirm-modal,
 .insp-confirm-modal.is-open {
   display: flex;
@@ -194,19 +558,72 @@ body.quotes-placeholder-page {
   font-weight: 500;
 }
 
-/* 見積り管理 検索結果（11列） */
-#result-table.quotes-result-table {
-  min-width: calc(1400px * var(--ui-scale, 1));
+/* ----- モーダル（見積り計算ページ等） ----- */
+.quote-calc-page .search-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
 }
 
-.quotes-result-table .result-table-col-1 { width: calc(90px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-2 { width: calc(100px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-3 { width: calc(90px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-4 { width: calc(160px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-5 { width: calc(110px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-6 { width: calc(110px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-7 { width: calc(160px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-8 { width: calc(200px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-9 { width: calc(100px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-10 { width: calc(100px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-11 { width: auto; }
+.quote-calc-page .search-dialog-overlay[hidden] {
+  display: none !important;
+}
+
+.quote-calc-page .search-dialog-panel {
+  width: min(calc(420px * var(--ui-scale, 1)), 92vw);
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 16px 40px rgba(23, 37, 54, 0.18);
+}
+
+.quote-calc-page .search-dialog-head {
+  padding: calc(10px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+  background: var(--color-surface-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.quote-calc-page .search-dialog-title {
+  margin: 0;
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.quote-calc-page .search-dialog-body {
+  padding: calc(16px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
+}
+
+.quote-calc-page .search-dialog-message {
+  margin: 0 0 calc(16px * var(--ui-scale, 1));
+  white-space: pre-wrap;
+}
+
+.quote-calc-page .search-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.quote-calc-page .search-dialog-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.quote-calc-page .search-dialog-btn-primary {
+  background: var(--btn-primary-bg, var(--color-accent));
+  border-color: var(--btn-primary-bg, var(--color-accent));
+  color: #fff;
+}
