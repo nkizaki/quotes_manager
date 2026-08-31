@@ -343,10 +343,286 @@
 
           </div>
           <div class="quote-calc-tabpanel" role="tabpanel" id="quote-calc-panel-packaging" aria-labelledby="quote-calc-tab-packaging" data-tab-panel="packaging" hidden>
-            <p class="quote-calc-tab-placeholder">梱包輸送費・表面処理・初期費用の入力欄は今後実装します。</p>
+            <div class="qc-packaging-grid">
+              <fieldset class="qc-pack-panel qc-pack-shipping">
+                <legend>梱包輸送費</legend>
+                <div class="qc-pack-panel-body">
+                  <div class="qc-pack-form-area">
+                    <div class="qc-pack-form-grid qc-pack-form-grid-shipping">
+                      <div class="qc-pack-field qc-pkg-field--id">
+                        <label for="qc-pkg-id">ID</label>
+                        <input type="text" id="qc-pkg-id" readonly tabindex="-1" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field qc-pkg-field--lot">
+                        <label for="qc-pkg-lot">ロット数</label>
+                        <select id="qc-pkg-lot">
+                          <option value="">選択してください</option>
+                        </select>
+                      </div>
+                      <div class="qc-pack-field qc-pkg-field--spec">
+                        <label for="qc-pkg-spec">梱包</label>
+                        <select id="qc-pkg-spec">
+                          <option value="">選択してください</option>
+                          <option value="(未指定)">(未指定)</option>
+                          <option value="ビニール">ビニール</option>
+                          <option value="トレー">トレー</option>
+                        </select>
+                      </div>
+                      <div class="qc-pack-field qc-pkg-field--amount">
+                        <label for="qc-pkg-amount">金額</label>
+                        <input type="text" id="qc-pkg-amount" inputmode="numeric" autocomplete="off">
+                      </div>
+                    </div>
+                    <div id="qc-pkg-table-wrapper" class="qc-pack-table-wrap">
+                      <!-- 列幅は quote_calc.css の --qc-pkg-table-col-* -->
+                      <table id="qc-pkg-table" class="qc-pkg-table">
+                        <colgroup>
+                          <col class="qc-pkg-col qc-pkg-col--id">
+                          <col class="qc-pkg-col qc-pkg-col--spec">
+                          <col class="qc-pkg-col qc-pkg-col--price">
+                        </colgroup>
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>梱包仕様</th>
+                            <th>単価</th>
+                          </tr>
+                        </thead>
+                        <tbody id="qc-pkg-tbody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="qc-pack-actions">
+                    <button type="button" class="est-save-btn" id="qc-pkg-btn-register">登録</button>
+                    <button type="button" class="est-delete-muted-btn" id="qc-pkg-btn-cancel" disabled>中止</button>
+                    <button type="button" class="est-delete-btn" id="qc-pkg-btn-delete" disabled>削除</button>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset class="qc-pack-panel qc-pack-initial">
+                <legend>初期費用</legend>
+                <div class="qc-pack-panel-body">
+                  <div class="qc-pack-form-area">
+                    <div class="qc-pack-form-grid qc-pack-form-grid-initial">
+                      <div class="qc-pack-field qc-init-field--id">
+                        <label for="qc-init-id">ID</label>
+                        <input type="text" id="qc-init-id" readonly tabindex="-1" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field qc-init-field--name">
+                        <label for="qc-init-name">品名</label>
+                        <input type="text" id="qc-init-name" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field qc-init-field--qty">
+                        <label for="qc-init-qty">数量</label>
+                        <input type="text" id="qc-init-qty" inputmode="numeric" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field qc-init-field--unit">
+                        <label for="qc-init-unit">単位</label>
+                        <select id="qc-init-unit">
+                          <option value=""></option>
+                          <option value="個">個</option>
+                          <option value="式">式</option>
+                          <option value="セット">セット</option>
+                        </select>
+                      </div>
+                      <div class="qc-pack-field qc-init-field--price">
+                        <label for="qc-init-price">単価</label>
+                        <input type="text" id="qc-init-price" inputmode="numeric" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field qc-init-field--amount">
+                        <label for="qc-init-amount">金額</label>
+                        <input type="text" id="qc-init-amount" inputmode="numeric" autocomplete="off">
+                      </div>
+                    </div>
+                    <div id="qc-init-table-wrapper" class="qc-pack-table-wrap">
+                      <!-- 列幅は quote_calc.css の --qc-init-table-col-* -->
+                      <table id="qc-init-table" class="qc-init-table">
+                        <colgroup>
+                          <col class="qc-init-col qc-init-col--id">
+                          <col class="qc-init-col qc-init-col--name">
+                          <col class="qc-init-col qc-init-col--qty">
+                          <col class="qc-init-col qc-init-col--unit">
+                          <col class="qc-init-col qc-init-col--price">
+                          <col class="qc-init-col qc-init-col--amount">
+                        </colgroup>
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>品名</th>
+                            <th>数量</th>
+                            <th>単位</th>
+                            <th>単価</th>
+                            <th>金額</th>
+                          </tr>
+                        </thead>
+                        <tbody id="qc-init-tbody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="qc-pack-actions">
+                    <button type="button" class="est-save-btn" id="qc-init-btn-register">登録</button>
+                    <button type="button" class="est-delete-muted-btn" id="qc-init-btn-cancel" disabled>中止</button>
+                    <button type="button" class="est-delete-btn" id="qc-init-btn-delete" disabled>削除</button>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset class="qc-pack-panel qc-pack-surface">
+                <legend>表面処理費</legend>
+                <div class="qc-pack-panel-body">
+                  <div class="qc-pack-form-area">
+                    <div class="qc-pack-form-grid qc-pack-form-grid-surface">
+                      <div class="qc-pack-field qc-surf-field--id">
+                        <label for="qc-surf-id">ID</label>
+                        <input type="text" id="qc-surf-id" readonly tabindex="-1" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field qc-surf-field--lot">
+                        <label for="qc-surf-lot">ロット数</label>
+                        <select id="qc-surf-lot">
+                          <option value="">選択してください</option>
+                        </select>
+                      </div>
+                      <div class="qc-pack-field qc-surf-field--name">
+                        <label for="qc-surf-name">表面処理名</label>
+                        <select id="qc-surf-name">
+                          <option value="">選択してください</option>
+                        </select>
+                      </div>
+                      <div class="qc-pack-field qc-surf-field--price">
+                        <label for="qc-surf-price">単価</label>
+                        <input type="text" id="qc-surf-price" inputmode="numeric" autocomplete="off">
+                      </div>
+                    </div>
+                    <div id="qc-surf-table-wrapper" class="qc-pack-table-wrap">
+                      <!-- 列幅は quote_calc.css の --qc-surf-table-col-* -->
+                      <table id="qc-surf-table" class="qc-surf-table">
+                        <colgroup>
+                          <col class="qc-surf-col qc-surf-col--id">
+                          <col class="qc-surf-col qc-surf-col--name">
+                          <col class="qc-surf-col qc-surf-col--price">
+                        </colgroup>
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>処理名</th>
+                            <th>単価</th>
+                          </tr>
+                        </thead>
+                        <tbody id="qc-surf-tbody"></tbody>
+                      </table>
+                    </div>
+                    <div class="qc-surf-total-row">
+                      <label for="qc-surf-total">合計</label>
+                      <input type="text" id="qc-surf-total" readonly tabindex="-1" autocomplete="off">
+                    </div>
+                  </div>
+                  <div class="qc-pack-actions">
+                    <button type="button" class="est-save-btn" id="qc-surf-btn-register">登録</button>
+                    <button type="button" class="est-delete-muted-btn" id="qc-surf-btn-cancel" disabled>中止</button>
+                    <button type="button" class="est-delete-btn" id="qc-surf-btn-delete" disabled>削除</button>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset class="qc-pack-panel qc-pack-conditions">
+                <legend>諸条件</legend>
+                <div class="qc-pack-panel-body qc-pack-conditions-body">
+                  <div class="qc-pack-form-area">
+                    <div class="qc-pack-conditions-fields">
+                      <div class="qc-pack-field">
+                        <label for="qc-cond-location">納入場所</label>
+                        <input type="text" id="qc-cond-location" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field">
+                        <label for="qc-cond-date">納期</label>
+                        <input type="text" id="qc-cond-date" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field">
+                        <label for="qc-cond-status">製品納入状態</label>
+                        <input type="text" id="qc-cond-status" autocomplete="off">
+                      </div>
+                      <div class="qc-pack-field">
+                        <label for="qc-cond-packaging">納入梱包形態</label>
+                        <input type="text" id="qc-cond-packaging" autocomplete="off">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="qc-pack-actions">
+                    <button type="button" class="est-save-btn" id="qc-cond-btn-register">登録</button>
+                  </div>
+                </div>
+                <input type="hidden" id="qc-cond-id" value="">
+              </fieldset>
+            </div>
           </div>
           <div class="quote-calc-tabpanel" role="tabpanel" id="quote-calc-panel-remarks" aria-labelledby="quote-calc-tab-remarks" data-tab-panel="remarks" hidden>
-            <p class="quote-calc-tab-placeholder">備考の入力欄は今後実装します。</p>
+            <div class="qc-remarks-panel">
+              <div class="qc-remarks-recorded-head">
+                <div class="qc-remarks-recorded-main">
+                  <p class="qc-remarks-section-label">見積書記載備考内容（各行最大50文字）</p>
+                  <div class="qc-remarks-line-list">
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-1">1)</label>
+                      <input type="text" id="qc-remark-line-1" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-1" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-2">2)</label>
+                      <input type="text" id="qc-remark-line-2" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-2" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-3">3)</label>
+                      <input type="text" id="qc-remark-line-3" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-3" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-4">4)</label>
+                      <input type="text" id="qc-remark-line-4" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-4" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-5">5)</label>
+                      <input type="text" id="qc-remark-line-5" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-5" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-6">6)</label>
+                      <input type="text" id="qc-remark-line-6" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-6" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-7">7)</label>
+                      <input type="text" id="qc-remark-line-7" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-7" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-8">8)</label>
+                      <input type="text" id="qc-remark-line-8" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-8" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-9">9)</label>
+                      <input type="text" id="qc-remark-line-9" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-9" value="">
+                    </div>
+                    <div class="qc-remarks-line">
+                      <label for="qc-remark-line-10">10)</label>
+                      <input type="text" id="qc-remark-line-10" maxlength="50" autocomplete="off">
+                      <input type="hidden" id="qc-remark-line-id-10" value="">
+                    </div>
+                  </div>
+                </div>
+                <div class="qc-remarks-actions">
+                  <button type="button" class="est-save-btn" id="qc-remarks-btn-register">登録</button>
+                </div>
+              </div>
+              <div class="qc-remarks-internal">
+                <label for="qc-remarks-internal">備考（見積書には反映されません　最大255文字）</label>
+                <textarea id="qc-remarks-internal" maxlength="255" rows="6" autocomplete="off"></textarea>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -367,6 +643,35 @@
         <div class="search-dialog-actions">
           <button type="button" id="qc-brass-delete-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
           <button type="button" id="qc-brass-delete-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="qc-pkg-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="qc-pkg-confirm-title">
+      <div class="search-dialog-head">
+        <span id="qc-pkg-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p id="qc-pkg-confirm-message" class="search-dialog-message"></p>
+        <div class="search-dialog-actions">
+          <button type="button" id="qc-pkg-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="qc-pkg-confirm-no" class="search-dialog-btn">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="qc-pkg-alert-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="qc-pkg-alert-title">
+      <div class="search-dialog-head">
+        <span id="qc-pkg-alert-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p id="qc-pkg-alert-message" class="search-dialog-message"></p>
+        <div class="search-dialog-actions">
+          <button type="button" id="qc-pkg-alert-ok" class="search-dialog-btn search-dialog-btn-primary">はい</button>
         </div>
       </div>
     </div>

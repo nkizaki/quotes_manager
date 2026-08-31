@@ -106,17 +106,22 @@
   min-width: calc(1400px * var(--ui-scale, 1));
 }
 
-.quotes-result-table .result-table-col-1 { width: calc(90px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-2 { width: calc(100px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-3 { width: calc(90px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-4 { width: calc(160px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-5 { width: calc(110px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-6 { width: calc(110px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-7 { width: calc(160px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-8 { width: calc(200px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-9 { width: calc(100px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-10 { width: calc(100px * var(--ui-scale, 1)); }
-.quotes-result-table .result-table-col-11 { width: auto; }
+/* 検索結果テーブル列幅（quotes.html thead 順） */
+.quotes-result-table .result-table-col-1 { width: calc(90px * var(--ui-scale, 1)); }   /* 見積りID */
+.quotes-result-table .result-table-col-2 { width: calc(100px * var(--ui-scale, 1)); }  /* 管理NO */
+.quotes-result-table .result-table-col-3 { width: calc(90px * var(--ui-scale, 1)); }   /* 営業担当 */
+.quotes-result-table .result-table-col-4 { width: calc(200px * var(--ui-scale, 1)); }  /* 客先名 */
+.quotes-result-table .result-table-col-5 { width: calc(180px * var(--ui-scale, 1)); }  /* 客先部署 */
+.quotes-result-table .result-table-col-6 { width: calc(150px * var(--ui-scale, 1)); }  /* 客先担当者 */
+.quotes-result-table .result-table-col-7 { width: calc(250px * var(--ui-scale, 1)); }  /* 品番 */
+.quotes-result-table .result-table-col-8 { width: calc(260px * var(--ui-scale, 1)); }  /* 品名 */
+.quotes-result-table .result-table-col-9 { width: calc(100px * var(--ui-scale, 1)); }  /* 依頼日 */
+.quotes-result-table .result-table-col-10 { width: calc(100px * var(--ui-scale, 1)); } /* 提出日 */
+.quotes-result-table .result-table-col-11 { width: auto; min-width: calc(300px * var(--ui-scale, 1));}                             /* 備考 */
+
+#result-table.quotes-result-table td:nth-child(1) {
+  text-align: right;
+}
 
 .quotes-header-actions .search-btn {
   min-height: calc(34px * var(--ui-scale, 1));

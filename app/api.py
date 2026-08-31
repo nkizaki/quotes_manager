@@ -81,6 +81,45 @@ class Api:
     def delete_quote_calc_brass(self, payload=None):
         return _call(svc.delete_quote_calc_brass, payload)
 
+    def quote_calc_packaging_list(self, payload=None):
+        return _call(svc.api_quote_calc_packaging_list, payload)
+
+    def quote_calc_packaging_row(self, payload=None):
+        return _call(svc.api_quote_calc_packaging_row, payload)
+
+    def quote_calc_packaging_save(self, payload=None):
+        return _call(svc.api_quote_calc_packaging_save, payload)
+
+    def quote_calc_packaging_delete(self, payload=None):
+        return _call(svc.api_quote_calc_packaging_delete, payload)
+
+    def quote_calc_initial_cost_row(self, payload=None):
+        return _call(svc.api_quote_calc_initial_cost_row, payload)
+
+    def quote_calc_initial_cost_save(self, payload=None):
+        return _call(svc.api_quote_calc_initial_cost_save, payload)
+
+    def quote_calc_initial_cost_delete(self, payload=None):
+        return _call(svc.api_quote_calc_initial_cost_delete, payload)
+
+    def quote_calc_surface_list(self, payload=None):
+        return _call(svc.api_quote_calc_surface_list, payload)
+
+    def quote_calc_surface_row(self, payload=None):
+        return _call(svc.api_quote_calc_surface_row, payload)
+
+    def quote_calc_surface_save(self, payload=None):
+        return _call(svc.api_quote_calc_surface_save, payload)
+
+    def quote_calc_surface_delete(self, payload=None):
+        return _call(svc.api_quote_calc_surface_delete, payload)
+
+    def quote_calc_conditions_save(self, payload=None):
+        return _call(svc.api_quote_calc_conditions_save, payload)
+
+    def quote_calc_remarks_save(self, payload=None):
+        return _call(svc.api_quote_calc_remarks_save, payload)
+
     def est_calc_set_lot(self, payload=None):
         return _call(svc.api_est_calc_set_lot, payload)
 

@@ -174,12 +174,25 @@ def get_quote_calc_page(payload=None):
         "brass_scrap_unit_price": "",
         "brass_chip_recovery_rate_display": "90",
         "brass_material_cost": "",
+        "lot_options": [],
+        "initial_cost_rows": [],
+        "surface_master_options": [],
+        "conditions": {
+            "id": "",
+            "delivery_location": "",
+            "delivery_date": "",
+            "product_delivery_status": "",
+            "delivery_packaging_form": "",
+        },
+        "recorded_remarks_lines": _quote_blank_recorded_remarks_lines(),
+        "internal_remarks": "",
     }
     if not quote_id:
         try:
             conn = get_connection()
             cur = conn.cursor()
             _quote_calc_load_masters(cur, empty)
+            empty["surface_master_options"] = _quote_load_surface_master_options(cur)
             conn.close()
         except Exception:
             pass
@@ -238,10 +251,22 @@ def get_quote_calc_page(payload=None):
             "brass_scrap_unit_price": "",
             "brass_chip_recovery_rate_display": "90",
             "brass_material_cost": "",
+            "lot_options": [],
+            "initial_cost_rows": [],
+            "surface_master_options": [],
+            "conditions": {
+                "id": "",
+                "delivery_location": "",
+                "delivery_date": "",
+                "product_delivery_status": "",
+                "delivery_packaging_form": "",
+            },
         }
         _quote_calc_load_masters(cur, result)
         _quote_calc_load_processing_rows(cur, quote_id, result)
         _quote_calc_load_brass(cur, quote_id, result)
+        _quote_calc_load_packaging_tab(cur, quote_id, result)
+        _quote_calc_load_remarks(cur, quote_id, result)
         conn.close()
         return result
     except Exception as e:
@@ -361,6 +386,770 @@ def _quote_calc_load_processing_rows(cur, quote_id: str, out: dict) -> None:
             key = display_map.get(c, c)
             row_dict[key] = _json_safe_cell_value(r[i])
         out["processing_rows"].append(row_dict)
+
+
+def _quote_format_lot_display(raw) -> str:
+    if raw is None:
+        return ""
+    s = str(raw).strip().replace(",", "")
+    if s == "":
+        return ""
+    try:
+        return f"{int(Decimal(s)):,}"
+    except (InvalidOperation, ValueError, TypeError, OverflowError):
+        return str(raw).strip()
+
+
+def _quote_load_lot_options(cur, quote_id: str) -> list[dict]:
+    cur.execute(
+        "SELECT t_加工費.ID, t_加工費.ロット数, t_加工費.見積りID "
+        "FROM t_加工費 WHERE t_加工費.見積りID = ? ORDER BY t_加工費.ロット数",
+        (quote_id,),
+    )
+    rows = cur.fetchall()
+    out: list[dict] = []
+    for r in rows:
+        out.append(
+            {
+                "ID": _json_safe_cell_value(r[0]),
+                "Lot": _quote_format_lot_display(r[1]),
+                "見積りID": _json_safe_cell_value(r[2]),
+            }
+        )
+    return out
+
+
+def _quote_initial_cost_rows_for_api(cur, quote_id: str) -> list[dict]:
+    cur.execute(
+        "SELECT ID, 見積りID, 品名, 数量, 単位, 単価, 金額 "
+        "FROM t_初期費用 WHERE 見積りID = ? ORDER BY ID",
+        (quote_id,),
+    )
+    col_names = [c[0] for c in (cur.description or [])]
+    return [
+        {k: _initial_cost_display_str(k, v) for k, v in zip(col_names, ic_row)}
+        for ic_row in cur.fetchall()
+    ]
+
+
+def _quote_load_surface_master_options(cur) -> list[dict]:
+    cur.execute(
+        "SELECT t_表面処理マスタ.ID, t_表面処理マスタ.表面処理名, t_表面処理マスタ.並び順 "
+        "FROM t_表面処理マスタ ORDER BY t_表面処理マスタ.並び順"
+    )
+    return [
+        {
+            "ID": _json_safe_cell_value(r[0]),
+            "表面処理名": _json_safe_cell_value(r[1]),
+            "並び順": _json_safe_cell_value(r[2]),
+        }
+        for r in cur.fetchall()
+    ]
+
+
+def _quote_load_conditions(cur, quote_id: str) -> dict:
+    empty = {
+        "id": "",
+        "delivery_location": "",
+        "delivery_date": "",
+        "product_delivery_status": "",
+        "delivery_packaging_form": "",
+    }
+    cur.execute("SELECT * FROM t_諸条件 WHERE 見積りID = ?", (quote_id,))
+    row = cur.fetchone()
+    if not row:
+        return empty
+    col_names = [c[0] for c in (cur.description or [])]
+    rec = dict(zip(col_names, row))
+    return {
+        "id": _rec_str(rec, "ID"),
+        "delivery_location": _rec_str(rec, "納入場所"),
+        "delivery_date": _rec_str(rec, "納期"),
+        "product_delivery_status": _rec_str(rec, "製品納入状態"),
+        "delivery_packaging_form": _rec_str(rec, "納入梱包形態"),
+    }
+
+
+def _quote_calc_load_packaging_tab(cur, quote_id: str, out: dict) -> None:
+    out["lot_options"] = _quote_load_lot_options(cur, quote_id)
+    out["initial_cost_rows"] = _quote_initial_cost_rows_for_api(cur, quote_id)
+    out["surface_master_options"] = _quote_load_surface_master_options(cur)
+    out["conditions"] = _quote_load_conditions(cur, quote_id)
+
+
+def _quote_packaging_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
+    cur.execute(
+        "SELECT ID, 梱包仕様, 単価 FROM t_梱包輸送費 WHERE 加工費ID = ?",
+        (processing_cost_id,),
+    )
+    col_names = [c[0] for c in (cur.description or [])]
+    rows: list[dict] = []
+    for r in cur.fetchall():
+        row = {k: _json_safe_cell_value(v) for k, v in zip(col_names, r)}
+        rows.append(row)
+    return rows
+
+
+def _quote_surface_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
+    cur.execute(
+        "SELECT ID, 加工費ID, 処理名, 単価 FROM t_表面処理費 WHERE 加工費ID = ?",
+        (processing_cost_id,),
+    )
+    col_names = [c[0] for c in (cur.description or [])]
+    rows: list[dict] = []
+    for r in cur.fetchall():
+        row = {k: _json_safe_cell_value(v) for k, v in zip(col_names, r)}
+        rows.append(row)
+    return rows
+
+
+def _quote_surface_total(rows: list[dict]) -> str:
+    total = 0
+    for row in rows:
+        raw = row.get("単価")
+        if raw is None or str(raw).strip() == "":
+            continue
+        try:
+            total += int(Decimal(str(raw).replace(",", "").strip()))
+        except (InvalidOperation, ValueError, TypeError, OverflowError):
+            continue
+    return str(total) if total else ""
+
+
+def api_quote_calc_packaging_list(payload=None):
+    """梱包輸送費: 加工費ID に紐づく一覧"""
+    processing_cost_id = str((payload or {}).get("processing_cost_id") or "").strip()
+    if not processing_cost_id:
+        return {"error": "processing_cost_id が必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        rows = _quote_packaging_rows_for_api(cur, processing_cost_id)
+        conn.close()
+        return {"ok": True, "rows": rows}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_packaging_row(payload=None):
+    """梱包輸送費: 1件取得（フォーム反映用）"""
+    row_id = str((payload or {}).get("id") or "").strip()
+    if not row_id:
+        return {"error": "id が必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM t_梱包輸送費 WHERE ID = ?", (row_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return {"error": "該当データが見つかりません"}
+        col_names = [c[0] for c in (cur.description or [])]
+        out = {k: _json_safe_cell_value(v) for k, v in zip(col_names, row)}
+        conn.close()
+        return {"ok": True, "row": out}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_packaging_save(payload=None):
+    """梱包輸送費: 登録・更新"""
+    data = payload or {}
+    row_id = str(data.get("id") or "").strip()
+    processing_cost_id = str(data.get("processing_cost_id") or "").strip()
+    packaging_spec = str(data.get("梱包仕様") or data.get("packaging_spec") or "").strip()
+    unit_price_raw = data.get("単価") if data.get("単価") is not None else data.get("金額")
+
+    if not processing_cost_id:
+        return {"error": "ロット数を選択してください"}
+    if packaging_spec not in ("(未指定)", "ビニール", "トレー"):
+        return {"error": "梱包を選択してください"}
+    try:
+        unit_price = _initial_cost_parse_long_for_save(unit_price_raw, "金額")
+    except ValueError as e:
+        return {"error": str(e)}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        if row_id:
+            cur.execute(
+                "UPDATE t_梱包輸送費 SET 梱包仕様 = ?, 単価 = ? WHERE ID = ?",
+                (packaging_spec, unit_price, row_id),
+            )
+            if cur.rowcount == 0:
+                conn.close()
+                return {"error": "該当IDの行がありません"}
+        else:
+            cur.execute(
+                "INSERT INTO t_梱包輸送費 (加工費ID, 梱包仕様, 単価) VALUES (?, ?, ?)",
+                (processing_cost_id, packaging_spec, unit_price),
+            )
+        conn.commit()
+        rows = _quote_packaging_rows_for_api(cur, processing_cost_id)
+        conn.close()
+        return {"ok": True, "rows": rows}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_packaging_delete(payload=None):
+    """梱包輸送費: 削除"""
+    data = payload or {}
+    row_id = str(data.get("id") or "").strip()
+    processing_cost_id = str(data.get("processing_cost_id") or "").strip()
+    if not row_id:
+        return {"error": "IDが必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM t_梱包輸送費 WHERE ID = ?", (row_id,))
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当IDの行がありません"}
+        conn.commit()
+        rows = []
+        if processing_cost_id:
+            rows = _quote_packaging_rows_for_api(cur, processing_cost_id)
+        conn.close()
+        return {"ok": True, "rows": rows}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_initial_cost_row(payload=None):
+    """見積り初期費用: 1件取得"""
+    quote_id = str((payload or {}).get("quote_id") or "").strip()
+    row_id = str((payload or {}).get("id") or "").strip()
+    if not quote_id or not row_id:
+        return {"error": "quote_id と id が必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM t_初期費用 WHERE ID = ? AND 見積りID = ?",
+            (row_id, quote_id),
+        )
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return {"error": "該当データが見つかりません"}
+        col_names = [c[0] for c in (cur.description or [])]
+        out = {}
+        for k, v in zip(col_names, row):
+            if k in ("数量", "単価", "金額"):
+                out[k] = _initial_cost_display_str(k, v)
+            else:
+                out[k] = _json_safe_cell_value(v)
+        conn.close()
+        return {"ok": True, "row": out}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_initial_cost_save(payload=None):
+    """見積り初期費用: 登録・更新"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or "").strip()
+    row_id = str(data.get("id") or "").strip()
+    hinmei = str(data.get("品名") or "").strip()
+    tani = str(data.get("単位") or "").strip()
+
+    if not quote_id:
+        return {"error": "見積りIDがありません"}
+    if not hinmei:
+        return {"error": "品名を入力してください"}
+    if tani not in ("個", "式", "セット"):
+        return {"error": "単位を選択してください"}
+
+    try:
+        suryo = _initial_cost_parse_long_for_save(data.get("数量"), "数量")
+        tanka = _initial_cost_parse_long_for_save(data.get("単価"), "単価")
+        kingaku_raw = data.get("金額")
+        kingaku_s = (
+            str(kingaku_raw).replace(",", "").strip()
+            if kingaku_raw is not None
+            else ""
+        )
+        if kingaku_s == "":
+            kingaku = suryo * tanka
+        else:
+            kingaku = _initial_cost_parse_long_for_save(kingaku_raw, "金額")
+    except ValueError as e:
+        return {"error": str(e)}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        if row_id:
+            cur.execute(
+                "UPDATE t_初期費用 SET 品名 = ?, 数量 = ?, 単位 = ?, 単価 = ?, 金額 = ? "
+                "WHERE ID = ? AND 見積りID = ?",
+                (hinmei, suryo, tani, tanka, kingaku, row_id, quote_id),
+            )
+            if cur.rowcount == 0:
+                conn.close()
+                return {"error": "該当IDの行がありません"}
+        else:
+            cur.execute(
+                "INSERT INTO t_初期費用 (見積りID, 品名, 数量, 単位, 単価, 金額) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (quote_id, hinmei, suryo, tani, tanka, kingaku),
+            )
+        conn.commit()
+        rows = _quote_initial_cost_rows_for_api(cur, quote_id)
+        conn.close()
+        return {"ok": True, "rows": rows}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_initial_cost_delete(payload=None):
+    """見積り初期費用: 削除"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or "").strip()
+    row_id = str(data.get("id") or "").strip()
+    if not quote_id or not row_id:
+        return {"error": "quote_id と id が必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM t_初期費用 WHERE ID = ? AND 見積りID = ?",
+            (row_id, quote_id),
+        )
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当IDの行がありません"}
+        conn.commit()
+        rows = _quote_initial_cost_rows_for_api(cur, quote_id)
+        conn.close()
+        return {"ok": True, "rows": rows}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_surface_list(payload=None):
+    """表面処理費: 加工費ID に紐づく一覧"""
+    processing_cost_id = str((payload or {}).get("processing_cost_id") or "").strip()
+    if not processing_cost_id:
+        return {"error": "processing_cost_id が必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        rows = _quote_surface_rows_for_api(cur, processing_cost_id)
+        conn.close()
+        return {
+            "ok": True,
+            "rows": rows,
+            "total": _quote_surface_total(rows),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_surface_row(payload=None):
+    """表面処理費: 1件取得"""
+    row_id = str((payload or {}).get("id") or "").strip()
+    if not row_id:
+        return {"error": "id が必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM t_表面処理費 WHERE ID = ?", (row_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return {"error": "該当データが見つかりません"}
+        col_names = [c[0] for c in (cur.description or [])]
+        out = {k: _json_safe_cell_value(v) for k, v in zip(col_names, row)}
+        conn.close()
+        return {"ok": True, "row": out}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_surface_save(payload=None):
+    """表面処理費: 登録・更新"""
+    data = payload or {}
+    row_id = str(data.get("id") or "").strip()
+    processing_cost_id = str(data.get("processing_cost_id") or "").strip()
+    treatment_name = str(data.get("処理名") or data.get("表面処理名") or "").strip()
+
+    if not processing_cost_id:
+        return {"error": "ロット数を選択してください"}
+    if not treatment_name:
+        return {"error": "表面処理名を選択してください"}
+    try:
+        unit_price = _initial_cost_parse_long_for_save(data.get("単価"), "単価")
+    except ValueError as e:
+        return {"error": str(e)}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        if row_id:
+            cur.execute(
+                "UPDATE t_表面処理費 SET 処理名 = ?, 単価 = ? WHERE ID = ?",
+                (treatment_name, unit_price, row_id),
+            )
+            if cur.rowcount == 0:
+                conn.close()
+                return {"error": "該当IDの行がありません"}
+        else:
+            cur.execute(
+                "INSERT INTO t_表面処理費 (加工費ID, 処理名, 単価) VALUES (?, ?, ?)",
+                (processing_cost_id, treatment_name, unit_price),
+            )
+        conn.commit()
+        rows = _quote_surface_rows_for_api(cur, processing_cost_id)
+        conn.close()
+        return {
+            "ok": True,
+            "rows": rows,
+            "total": _quote_surface_total(rows),
+        }
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_surface_delete(payload=None):
+    """表面処理費: 削除"""
+    data = payload or {}
+    row_id = str(data.get("id") or "").strip()
+    processing_cost_id = str(data.get("processing_cost_id") or "").strip()
+    if not row_id:
+        return {"error": "IDが必要です"}
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM t_表面処理費 WHERE ID = ?", (row_id,))
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当IDの行がありません"}
+        conn.commit()
+        rows = []
+        total = ""
+        if processing_cost_id:
+            rows = _quote_surface_rows_for_api(cur, processing_cost_id)
+            total = _quote_surface_total(rows)
+        conn.close()
+        return {"ok": True, "rows": rows, "total": total}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_conditions_save(payload=None):
+    """諸条件: 登録・更新"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or "").strip()
+    row_id = str(data.get("id") or "").strip()
+    delivery_location = str(data.get("納入場所") or data.get("delivery_location") or "").strip()
+    delivery_date = str(data.get("納期") or data.get("delivery_date") or "").strip()
+    product_delivery_status = str(
+        data.get("製品納入状態") or data.get("product_delivery_status") or ""
+    ).strip()
+    delivery_packaging_form = str(
+        data.get("納入梱包形態") or data.get("delivery_packaging_form") or ""
+    ).strip()
+
+    if not quote_id:
+        return {"error": "見積りIDがありません"}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        if row_id:
+            cur.execute(
+                "UPDATE t_諸条件 SET 納入場所 = ?, 納期 = ?, 製品納入状態 = ?, 納入梱包形態 = ? "
+                "WHERE ID = ? AND 見積りID = ?",
+                (
+                    delivery_location,
+                    delivery_date,
+                    product_delivery_status,
+                    delivery_packaging_form,
+                    row_id,
+                    quote_id,
+                ),
+            )
+            if cur.rowcount == 0:
+                conn.close()
+                return {"error": "該当IDの行がありません"}
+        else:
+            cur.execute(
+                "SELECT ID FROM t_諸条件 WHERE 見積りID = ?",
+                (quote_id,),
+            )
+            existing = cur.fetchone()
+            if existing:
+                row_id = str(existing[0])
+                cur.execute(
+                    "UPDATE t_諸条件 SET 納入場所 = ?, 納期 = ?, 製品納入状態 = ?, 納入梱包形態 = ? "
+                    "WHERE ID = ? AND 見積りID = ?",
+                    (
+                        delivery_location,
+                        delivery_date,
+                        product_delivery_status,
+                        delivery_packaging_form,
+                        row_id,
+                        quote_id,
+                    ),
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO t_諸条件 (見積りID, 納入場所, 納期, 製品納入状態, 納入梱包形態) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (
+                        quote_id,
+                        delivery_location,
+                        delivery_date,
+                        product_delivery_status,
+                        delivery_packaging_form,
+                    ),
+                )
+                cur.execute("SELECT MAX(ID) FROM t_諸条件 WHERE 見積りID = ?", (quote_id,))
+                max_row = cur.fetchone()
+                row_id = str(max_row[0]) if max_row and max_row[0] is not None else ""
+        conn.commit()
+        conditions = _quote_load_conditions(cur, quote_id)
+        conn.close()
+        return {"ok": True, "conditions": conditions}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _quote_blank_recorded_remarks_lines(count: int = 10) -> list[dict]:
+    return [{"id": "", "text": ""} for _ in range(count)]
+
+
+def _quote_load_recorded_remarks(cur, quote_id: str) -> list[dict]:
+    cur.execute(
+        "SELECT ID, 備考 FROM t_記載事項 WHERE 見積りID = ? ORDER BY ID ASC",
+        (quote_id,),
+    )
+    rows = cur.fetchall()[:10]
+    lines: list[dict] = []
+    for row in rows:
+        lines.append(
+            {
+                "id": _json_safe_cell_value(row[0]),
+                "text": _json_safe_cell_value(row[1]) if row[1] is not None else "",
+            }
+        )
+    while len(lines) < 10:
+        lines.append({"id": "", "text": ""})
+    return lines
+
+
+def _quote_load_internal_remarks(cur, quote_id: str) -> str:
+    cur.execute("SELECT 備考 FROM t_見積り履歴 WHERE 見積りID = ?", (quote_id,))
+    row = cur.fetchone()
+    if not row or row[0] is None:
+        return ""
+    return _json_safe_cell_value(row[0])
+
+
+def _quote_calc_load_remarks(cur, quote_id: str, out: dict) -> None:
+    out["recorded_remarks_lines"] = _quote_load_recorded_remarks(cur, quote_id)
+    out["internal_remarks"] = _quote_load_internal_remarks(cur, quote_id)
+
+
+def api_quote_calc_remarks_save(payload=None):
+    """備考タブ: 記載事項の登録・更新・削除と見積り履歴備考の更新"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or "").strip()
+    internal_remarks = str(
+        data.get("internal_remarks") if data.get("internal_remarks") is not None else data.get("備考") or ""
+    )
+    lines = data.get("lines") or data.get("recorded_remarks_lines") or []
+
+    if not quote_id:
+        return {"error": "見積りIDがありません"}
+    if len(internal_remarks) > 255:
+        return {"error": "備考は255文字以内で入力してください"}
+
+    normalized_lines: list[dict] = []
+    for i in range(10):
+        item = lines[i] if i < len(lines) and isinstance(lines[i], dict) else {}
+        row_id = str(item.get("id") or "").strip()
+        text = str(item.get("text") if item.get("text") is not None else item.get("備考") or "").strip()
+        if len(text) > 50:
+            return {"error": f"見積書記載備考内容 {i + 1} 行目は50文字以内で入力してください"}
+        normalized_lines.append({"id": row_id, "text": text})
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM t_見積り履歴 WHERE 見積りID = ?", (quote_id,))
+        if not cur.fetchone():
+            conn.close()
+            return {"error": "該当する見積りIDが見つかりません"}
+        for line in normalized_lines:
+            row_id = line["id"]
+            text = line["text"]
+            if not row_id and not text:
+                continue
+            if not row_id:
+                cur.execute(
+                    "INSERT INTO t_記載事項 (見積りID, 備考) VALUES (?, ?)",
+                    (quote_id, text),
+                )
+            elif not text:
+                cur.execute(
+                    "DELETE FROM t_記載事項 WHERE ID = ? AND 見積りID = ?",
+                    (row_id, quote_id),
+                )
+            else:
+                cur.execute(
+                    "UPDATE t_記載事項 SET 備考 = ? WHERE ID = ? AND 見積りID = ?",
+                    (text, row_id, quote_id),
+                )
+        cur.execute(
+            "UPDATE t_見積り履歴 SET 備考 = ? WHERE 見積りID = ?",
+            (internal_remarks, quote_id),
+        )
+        conn.commit()
+        recorded_remarks_lines = _quote_load_recorded_remarks(cur, quote_id)
+        internal_loaded = _quote_load_internal_remarks(cur, quote_id)
+        conn.close()
+        return {
+            "ok": True,
+            "recorded_remarks_lines": recorded_remarks_lines,
+            "internal_remarks": internal_loaded,
+        }
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def get_est_calc_page(payload=None):
@@ -3713,6 +4502,9 @@ def api_results_summary(payload=None):
 
     if date_from is None or date_to is None:
         return {"error": "提出日は両方入力してください"}
+
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
 
     mgmt_sql = (
         "SELECT mgmt.営業ID, t_営業マスタ.営業担当, COUNT(mgmt.管理NO) AS cnt "

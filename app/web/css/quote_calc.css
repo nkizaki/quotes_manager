@@ -2,6 +2,8 @@
  * quote_calc.css — 見積り計算（quote_calc.html）レイアウト・寸法
  *
  * 原価見積り計算（est_calc.css）とは独立。列数・列幅は --qc-grid-* で変更。
+ * 梱包輸送費・初期費用・表面処理費の入力幅は --qc-*-form-*、
+ * テーブル列幅は --qc-*-table-col-*（HTML の colgroup と連動）。
  * 見た目は quotes.css を参照。
  */
 :root {
@@ -11,6 +13,66 @@
   --qc-grid-shinchuu-col-width: 110px;
   --qc-grid-kakou-col-width: 100px;
   /* 列数を変える場合は各 grid-template-columns の repeat(N, …) も合わせて変更 */
+
+  /* --- 梱包輸送費: フォーム入力幅（.qc-pkg-field--* と連動） --- */
+  --qc-pkg-form-id: calc(80px * var(--ui-scale, 1));
+  --qc-pkg-form-lot: calc(140px * var(--ui-scale, 1));
+  --qc-pkg-form-spec: calc(140px * var(--ui-scale, 1));
+  --qc-pkg-form-amount: calc(100px * var(--ui-scale, 1));
+  --qc-pkg-grid-col-1: var(--qc-pkg-form-lot);
+  --qc-pkg-grid-col-2: var(--qc-pkg-form-spec);
+  --qc-pkg-grid-col-3: var(--qc-pkg-form-amount);
+
+  /* --- 梱包輸送費: テーブル列幅（colgroup .qc-pkg-col--* と連動） --- */
+  --qc-pkg-table-col-id: calc(70px * var(--ui-scale, 1));
+  --qc-pkg-table-col-spec: auto;
+  --qc-pkg-table-col-price: calc(100px * var(--ui-scale, 1));
+
+  /* --- 初期費用: フォーム入力幅（.qc-init-field--* と連動） --- */
+  --qc-init-form-id: calc(80px * var(--ui-scale, 1));
+  --qc-init-form-name: calc(200px * var(--ui-scale, 1));
+  --qc-init-form-qty: calc(90px * var(--ui-scale, 1));
+  --qc-init-form-unit: calc(80px * var(--ui-scale, 1));
+  --qc-init-form-price: calc(90px * var(--ui-scale, 1));
+  --qc-init-form-amount: calc(90px * var(--ui-scale, 1));
+  --qc-init-grid-col-1: var(--qc-init-form-name);
+  --qc-init-grid-col-2: var(--qc-init-form-qty);
+  --qc-init-grid-col-3: var(--qc-init-form-unit);
+  --qc-init-grid-col-4: var(--qc-init-form-price);
+  --qc-init-grid-col-5: var(--qc-init-form-amount);
+
+  /* --- 初期費用: テーブル列幅（colgroup .qc-init-col--* と連動） --- */
+  --qc-init-table-col-id: calc(80px * var(--ui-scale, 1));
+  --qc-init-table-col-name: auto;
+  --qc-init-table-col-qty: calc(72px * var(--ui-scale, 1));
+  --qc-init-table-col-unit: calc(56px * var(--ui-scale, 1));
+  --qc-init-table-col-price: calc(88px * var(--ui-scale, 1));
+  --qc-init-table-col-amount: calc(88px * var(--ui-scale, 1));
+
+  /* --- 表面処理費: フォーム入力幅（.qc-surf-field--* と連動） --- */
+  --qc-surf-form-id: calc(80px * var(--ui-scale, 1));
+  --qc-surf-form-lot: calc(140px * var(--ui-scale, 1));
+  --qc-surf-form-name: calc(250px * var(--ui-scale, 1));
+  --qc-surf-form-price: calc(90px * var(--ui-scale, 1));
+  --qc-surf-form-total: calc(90px * var(--ui-scale, 1));
+  --qc-surf-grid-col-1: var(--qc-surf-form-lot);
+  --qc-surf-grid-col-2: var(--qc-surf-form-name);
+  --qc-surf-grid-col-3: var(--qc-surf-form-price);
+
+  /* --- 表面処理費: テーブル列幅（colgroup .qc-surf-col--* と連動） --- */
+  --qc-surf-table-col-id: calc(56px * var(--ui-scale, 1));
+  --qc-surf-table-col-name: auto;
+  --qc-surf-table-col-price: calc(88px * var(--ui-scale, 1));
+}
+
+html:has(body.quote-calc-page) {
+  scrollbar-gutter: stable;
+}
+
+@supports not (scrollbar-gutter: stable) {
+  html:has(body.quote-calc-page) {
+    overflow-y: scroll;
+  }
 }
 
 body.quote-calc-page {
@@ -315,4 +377,416 @@ body.quote-calc-page {
 .quote-calc-page #qc-proc-table td {
   font-size: calc(12px * var(--font-scale, 1));
   white-space: nowrap;
+}
+
+/* 加工費一覧: データ部のみ右寄せ（機械・利益は左寄せのまま） */
+.quote-calc-page #qc-proc-table tbody td:nth-child(1),
+.quote-calc-page #qc-proc-table tbody td:nth-child(2),
+.quote-calc-page #qc-proc-table tbody td:nth-child(3),
+.quote-calc-page #qc-proc-table tbody td:nth-child(4),
+.quote-calc-page #qc-proc-table tbody td:nth-child(5),
+.quote-calc-page #qc-proc-table tbody td:nth-child(7),
+.quote-calc-page #qc-proc-table tbody td:nth-child(8),
+.quote-calc-page #qc-proc-table tbody td:nth-child(9),
+.quote-calc-page #qc-proc-table tbody td:nth-child(10),
+.quote-calc-page #qc-proc-table tbody td:nth-child(11),
+.quote-calc-page #qc-proc-table tbody td:nth-child(12),
+.quote-calc-page #qc-proc-table tbody td:nth-child(13),
+.quote-calc-page #qc-proc-table tbody td:nth-child(15),
+.quote-calc-page #qc-proc-table tbody td:nth-child(16) {
+  text-align: right;
+}
+
+/* ----- 梱包輸送・初期費用・表面処理・諸条件（2×2） ----- */
+.qc-packaging-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(320px, auto));
+  gap: calc(12px * var(--ui-scale, 1));
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qc-pack-panel {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--ui-border-default, var(--color-border));
+  border-radius: calc(6px * var(--ui-scale, 1));
+  padding: calc(10px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
+  background: var(--ui-surface-card, var(--color-surface));
+  box-sizing: border-box;
+}
+
+.qc-pack-panel legend {
+  padding: 0 calc(6px * var(--ui-scale, 1));
+  font-size: calc(14px * var(--font-scale, 1));
+  font-weight: 600;
+}
+
+.qc-pack-panel-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: calc(10px * var(--ui-scale, 1));
+  align-items: start;
+}
+
+.qc-pack-conditions-body {
+  align-items: stretch;
+}
+
+.qc-pack-form-area {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.qc-pack-form-grid {
+  display: grid;
+  gap: calc(8px * var(--ui-scale, 1)) calc(10px * var(--ui-scale, 1));
+  align-items: end;
+}
+
+.qc-pack-form-grid-initial {
+  grid-template-columns:
+    var(--qc-init-grid-col-1)
+    var(--qc-init-grid-col-2)
+    var(--qc-init-grid-col-3)
+    var(--qc-init-grid-col-4)
+    var(--qc-init-grid-col-5);
+  grid-template-rows: auto auto;
+}
+
+.qc-init-field--id {
+  grid-column: 5 / 6;
+  grid-row: 1;
+  width: var(--qc-init-form-id);
+  max-width: 100%;
+  justify-self: end;
+}
+
+.qc-init-field--name {
+  grid-column: 1 / 2;
+  grid-row: 2;
+  width: var(--qc-init-form-name);
+  max-width: 100%;
+}
+
+.qc-init-field--qty {
+  grid-column: 2 / 3;
+  grid-row: 2;
+  width: var(--qc-init-form-qty);
+  max-width: 100%;
+}
+
+.qc-init-field--unit {
+  grid-column: 3 / 4;
+  grid-row: 2;
+  width: var(--qc-init-form-unit);
+  max-width: 100%;
+}
+
+.qc-init-field--price {
+  grid-column: 4 / 5;
+  grid-row: 2;
+  width: var(--qc-init-form-price);
+  max-width: 100%;
+}
+
+.qc-init-field--amount {
+  grid-column: 5 / 6;
+  grid-row: 2;
+  width: var(--qc-init-form-amount);
+  max-width: 100%;
+}
+
+.qc-pack-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.qc-pack-field label {
+  display: block;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: calc(12px * var(--font-scale, 1));
+}
+
+.qc-pack-field input[type="text"],
+.qc-pack-field select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qc-pack-actions {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--ui-scale, 1));
+  align-items: stretch;
+  min-width: calc(88px * var(--ui-scale, 1));
+}
+
+.qc-pack-actions button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qc-pack-table-wrap {
+  width: 100%;
+  height: calc(150px * var(--ui-scale, 1));
+  overflow: auto;
+  border: 1px solid var(--ui-border-default, var(--color-border));
+  background: var(--ui-surface-card, var(--color-surface));
+}
+
+.qc-pack-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.qc-pkg-table col.qc-pkg-col--id { width: var(--qc-pkg-table-col-id); }
+.qc-pkg-table col.qc-pkg-col--spec { width: var(--qc-pkg-table-col-spec); }
+.qc-pkg-table col.qc-pkg-col--price { width: var(--qc-pkg-table-col-price); }
+
+.qc-init-table col.qc-init-col--id { width: var(--qc-init-table-col-id); }
+.qc-init-table col.qc-init-col--name { width: var(--qc-init-table-col-name); }
+.qc-init-table col.qc-init-col--qty { width: var(--qc-init-table-col-qty); }
+.qc-init-table col.qc-init-col--unit { width: var(--qc-init-table-col-unit); }
+.qc-init-table col.qc-init-col--price { width: var(--qc-init-table-col-price); }
+.qc-init-table col.qc-init-col--amount { width: var(--qc-init-table-col-amount); }
+
+.qc-surf-table col.qc-surf-col--id { width: var(--qc-surf-table-col-id); }
+.qc-surf-table col.qc-surf-col--name { width: var(--qc-surf-table-col-name); }
+.qc-surf-table col.qc-surf-col--price { width: var(--qc-surf-table-col-price); }
+
+.qc-pack-table-wrap thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--table-header-bg, var(--color-surface-secondary));
+}
+
+.qc-pack-table-wrap th,
+.qc-pack-table-wrap td {
+  border: 1px solid var(--ui-border-default, var(--color-border));
+  padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
+  font-size: calc(12px * var(--font-scale, 1));
+  white-space: nowrap;
+}
+
+.qc-pack-table-wrap th {
+  background: var(--table-header-bg, var(--color-surface-secondary));
+  font-weight: 600;
+}
+
+/* 梱包輸送費一覧: ID・単価（データ部のみ右寄せ） */
+.quote-calc-page .qc-pkg-table tbody td:nth-child(1),
+.quote-calc-page .qc-pkg-table tbody td:nth-child(3) {
+  text-align: right;
+}
+
+/* 初期費用一覧: ID・数量・単価・金額（データ部のみ右寄せ） */
+.quote-calc-page .qc-init-table tbody td:nth-child(1),
+.quote-calc-page .qc-init-table tbody td:nth-child(3),
+.quote-calc-page .qc-init-table tbody td:nth-child(5),
+.quote-calc-page .qc-init-table tbody td:nth-child(6) {
+  text-align: right;
+}
+
+/* 表面処理費一覧: ID・単価（データ部のみ右寄せ） */
+.quote-calc-page .qc-surf-table tbody td:nth-child(1),
+.quote-calc-page .qc-surf-table tbody td:nth-child(3) {
+  text-align: right;
+}
+
+.qc-pack-table-wrap a.qc-pack-spec-link,
+.qc-pack-table-wrap a.qc-init-name-link,
+.qc-pack-table-wrap a.qc-surf-name-link {
+  color: var(--link-text, var(--color-accent));
+  text-decoration: none;
+}
+
+.qc-pack-table-wrap a.qc-pack-spec-link:hover,
+.qc-pack-table-wrap a.qc-init-name-link:hover,
+.qc-pack-table-wrap a.qc-surf-name-link:hover {
+  text-decoration: underline;
+}
+
+.qc-surf-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(8px * var(--ui-scale, 1));
+  margin-top: calc(4px * var(--ui-scale, 1));
+}
+
+.qc-surf-total-row label {
+  font-size: calc(12px * var(--font-scale, 1));
+  font-weight: 600;
+}
+
+.qc-surf-total-row input {
+  width: var(--qc-surf-form-total);
+  box-sizing: border-box;
+}
+
+.qc-pack-conditions-fields {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--ui-scale, 1));
+}
+
+.qc-pack-form-grid-shipping {
+  grid-template-columns:
+    var(--qc-pkg-grid-col-1)
+    var(--qc-pkg-grid-col-2)
+    var(--qc-pkg-grid-col-3);
+  grid-template-rows: auto auto;
+}
+
+.qc-pack-form-grid-surface {
+  grid-template-columns:
+    var(--qc-surf-grid-col-1)
+    var(--qc-surf-grid-col-2)
+    var(--qc-surf-grid-col-3);
+  grid-template-rows: auto auto;
+}
+
+.qc-pkg-field--id {
+  grid-column: 3 / 4;
+  grid-row: 1;
+  width: var(--qc-pkg-form-id);
+  max-width: 100%;
+  justify-self: end;
+}
+
+.qc-surf-field--id {
+  grid-column: 3 / 4;
+  grid-row: 1;
+  width: var(--qc-surf-form-id);
+  max-width: 100%;
+  justify-self: end;
+}
+
+.qc-pkg-field--lot {
+  grid-column: 1 / 2;
+  grid-row: 2;
+  width: var(--qc-pkg-form-lot);
+  max-width: 100%;
+}
+
+.qc-pkg-field--spec {
+  grid-column: 2 / 3;
+  grid-row: 2;
+  width: var(--qc-pkg-form-spec);
+  max-width: 100%;
+}
+
+.qc-pkg-field--amount {
+  grid-column: 3 / 4;
+  grid-row: 2;
+  width: var(--qc-pkg-form-amount);
+  max-width: 100%;
+}
+
+.qc-surf-field--lot {
+  grid-column: 1 / 2;
+  grid-row: 2;
+  width: var(--qc-surf-form-lot);
+  max-width: 100%;
+}
+
+.qc-surf-field--name {
+  grid-column: 2 / 3;
+  grid-row: 2;
+  width: var(--qc-surf-form-name);
+  max-width: 100%;
+}
+
+.qc-surf-field--price {
+  grid-column: 3 / 4;
+  grid-row: 2;
+  width: var(--qc-surf-form-price);
+  max-width: 100%;
+}
+
+.qc-pack-shipping .qc-pkg-field--id {
+  justify-self: end;
+}
+
+.qc-pack-surface .qc-surf-field--id {
+  justify-self: end;
+}
+
+/* ----- 備考タブ ----- */
+.qc-remarks-panel {
+  max-width: calc(720px * var(--ui-scale, 1));
+  padding: calc(4px * var(--ui-scale, 1)) 0;
+}
+
+.qc-remarks-recorded-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: calc(12px * var(--ui-scale, 1));
+  align-items: start;
+}
+
+.qc-remarks-section-label {
+  margin: 0 0 calc(8px * var(--ui-scale, 1));
+  font-size: calc(12px * var(--font-scale, 1));
+  font-weight: 600;
+}
+
+.qc-remarks-line-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6px * var(--ui-scale, 1));
+}
+
+.qc-remarks-line {
+  display: grid;
+  grid-template-columns: calc(28px * var(--ui-scale, 1)) minmax(0, 1fr);
+  gap: calc(6px * var(--ui-scale, 1));
+  align-items: center;
+}
+
+.qc-remarks-line label {
+  margin: 0;
+  font-size: calc(12px * var(--font-scale, 1));
+  text-align: right;
+}
+
+.qc-remarks-line input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qc-remarks-actions {
+  min-width: calc(88px * var(--ui-scale, 1));
+}
+
+.qc-remarks-actions button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qc-remarks-internal {
+  margin-top: calc(16px * var(--ui-scale, 1));
+}
+
+.qc-remarks-internal > label {
+  display: block;
+  margin-bottom: calc(6px * var(--ui-scale, 1));
+  font-size: calc(12px * var(--font-scale, 1));
+  font-weight: 600;
+}
+
+.qc-remarks-internal textarea {
+  display: block;
+  width: 100%;
+  height:calc(230px * var(--ui-scale, 1));
+  box-sizing: border-box;
+  resize: none;
 }

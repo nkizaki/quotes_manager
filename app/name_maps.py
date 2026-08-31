@@ -40,6 +40,7 @@ TABLE_NAME_MAP: dict[str, str] = {
     "t_表面処理費": "surface_treatment_costs",
     "t_見積り履歴": "quote_history",
     "t_記載備考": "recorded_remarks",
+    "t_記載事項": "recorded_remarks",
     "t_諸条件": "delivery_conditions",
     "t_賃率マスタ": "wage_rate_master",
     "t_運賃表": "freight_rates",
