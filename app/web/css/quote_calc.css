@@ -379,7 +379,7 @@ body.quote-calc-page {
   white-space: nowrap;
 }
 
-/* 加工費一覧: データ部のみ右寄せ（機械・利益は左寄せのまま） */
+/* 加工費一覧: データ部のみ右寄せ（機械は左寄せのまま） */
 .quote-calc-page #qc-proc-table tbody td:nth-child(1),
 .quote-calc-page #qc-proc-table tbody td:nth-child(2),
 .quote-calc-page #qc-proc-table tbody td:nth-child(3),
@@ -392,6 +392,7 @@ body.quote-calc-page {
 .quote-calc-page #qc-proc-table tbody td:nth-child(11),
 .quote-calc-page #qc-proc-table tbody td:nth-child(12),
 .quote-calc-page #qc-proc-table tbody td:nth-child(13),
+.quote-calc-page #qc-proc-table tbody td:nth-child(14),
 .quote-calc-page #qc-proc-table tbody td:nth-child(15),
 .quote-calc-page #qc-proc-table tbody td:nth-child(16) {
   text-align: right;
