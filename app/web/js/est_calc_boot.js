@@ -112,6 +112,23 @@
     });
   }
 
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text == null ? "" : String(text);
+  }
+
+  function applyRmMaster(data) {
+    var general = data && data.rm_general != null ? String(data.rm_general) : "";
+    var fuji = data && data.rm_fuji_koki != null ? String(data.rm_fuji_koki) : "";
+    if (general !== "") setText("br-r1-125-val", " " + general);
+    if (fuji !== "") setText("br-r1-97-val", " " + fuji);
+    window.estCalcRmMaster = {
+      general: general,
+      fuji_koki: fuji,
+    };
+  }
+
   function applyPage(data) {
     document.body.setAttribute("data-rate-default-map", JSON.stringify(data.rate_default_map || {}));
     var i;
@@ -123,6 +140,7 @@
     fillOptions("mat-2", data.zairyo_2_options, data.mat_2, { "data-specgravity": "specgravity" });
     setVal("mat-4", data.mat_4);
 
+    applyRmMaster(data);
     setChecked("br-cb-1", data.shinchuu_has_row);
     var r1 = String(data.shinchuu_r1 || "1");
     setChecked("br-r1-125", r1 !== "2");

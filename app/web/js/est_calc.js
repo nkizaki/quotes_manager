@@ -42,6 +42,25 @@
   var mat2Select = document.getElementById("mat-2");
   var mat3Input = document.getElementById("mat-3");
   var brCb1 = document.getElementById("br-cb-1");
+  /** RMマスタ「一般」の値（計算用） */
+  var rmMasterGeneral = 125;
+  /** RMマスタ「不二工機」の値（計算用） */
+  var rmMasterFujiKoki = 97;
+  /** RMマスタ一般 − 不二工機（計算用） */
+  var rmMasterDelta = rmMasterGeneral - rmMasterFujiKoki;
+
+  function applyRmMasterForCalc(master) {
+    if (!master) return;
+    var g = Number(String(master.general || "").replace(/,/g, "").trim());
+    var f = Number(String(master.fuji_koki || "").replace(/,/g, "").trim());
+    if (Number.isFinite(g)) rmMasterGeneral = g;
+    if (Number.isFinite(f)) rmMasterFujiKoki = f;
+    rmMasterDelta = rmMasterGeneral - rmMasterFujiKoki;
+  }
+
+  if (window.estCalcRmMaster) {
+    applyRmMasterForCalc(window.estCalcRmMaster);
+  }
   /** 単重↔スクラップ重の相互更新ループ防止 */
   var br56Syncing = false;
   var shinchuuGrid = document.querySelector(".shinchuu-grid");
@@ -1821,14 +1840,13 @@
     var is97Tanjyu = r1 === "2" && r2 === "1";
     var mat14 = parseNumEst(getInputValue("mat-14"));
     var mat15 = parseNumEst(getInputValue("mat-15"));
-    var delta125Minus97 = 125 - 97;
 
     if (is97Tanjyu) {
       if (mat14 === null || mat15 === null) {
         schedulePriceAggregation();
         return;
       }
-      var xRaw = (mat14 * (mat15 - delta125Minus97)) / 1000;
+      var xRaw = (mat14 * (mat15 - rmMasterDelta)) / 1000;
       var xInt = roundToDecimals(xRaw, 2);
       setInputValue("mat-16", formatNumberForDisplay(xInt, 2));
       var yieldPct = parseNumOrZeroEst(getInputValue("mat-17"));
@@ -1848,7 +1866,7 @@
     var br8 = parseNumEst(getInputValue("br-8"));
     if (br6 !== null && br7 !== null && br8 !== null) {
       var scrapUnitRaw = (br6 * br7 * (br8 / 100)) / 1000;
-      var br9val = roundToDecimals(scrapUnitRaw, 3);
+      var br9val = roundToDecimals(scrapUnitRaw, 2);
       setInputValue("br-9", formatNumberForDisplay(br9val, 2));
     }
     var br1n = parseNumEst(getInputValue("br-1"));
@@ -1953,7 +1971,7 @@
     schedulePriceAggregation();
   }
 
-  /** 真鍮詳細: RM125 / 不二工機97 と N社価格・材料単価から 建値・増値・スクラップベースを算出 */
+  /** 真鍮詳細: RM一般 / 不二工機 と N社価格・材料単価から 建値・増値・スクラップベースを算出 */
   function recalcBrR1NPriceDerived() {
     if (!brCb1 || !brCb1.checked) return;
     setInputValue("br-3", "");
@@ -1961,7 +1979,6 @@
     var r1 = getRadioValue("est_shinchuu_r1");
     var nPrice = parseNumEst(getInputValue("br-2"));
     var mat15 = parseNumEst(getInputValue("mat-15"));
-    var delta125Minus97 = 125 - 97;
 
     if (r1 === "1") {
       setInputValue("br-7", "");
@@ -1969,10 +1986,10 @@
         schedulePriceAggregation();
         return;
       }
-      var tate125 = nPrice + 125;
-      setInputValue("br-3", formatNumberForDisplay(roundToDecimals(tate125, 0), 0));
+      var tateGeneral = nPrice + rmMasterGeneral;
+      setInputValue("br-3", formatNumberForDisplay(roundToDecimals(tateGeneral, 0), 0));
       if (mat15 !== null) {
-        setInputValue("br-4", formatNumberForDisplay(roundToDecimals(mat15 - tate125, 0), 0));
+        setInputValue("br-4", formatNumberForDisplay(roundToDecimals(mat15 - tateGeneral, 0), 0));
       }
     } else if (r1 === "2") {
       if (nPrice === null) {
@@ -1980,15 +1997,15 @@
         schedulePriceAggregation();
         return;
       }
-      var tate97 = nPrice + 97;
-      setInputValue("br-3", formatNumberForDisplay(roundToDecimals(tate97, 0), 0));
+      var tateFuji = nPrice + rmMasterFujiKoki;
+      setInputValue("br-3", formatNumberForDisplay(roundToDecimals(tateFuji, 0), 0));
       if (mat15 !== null) {
         setInputValue(
           "br-4",
-          formatNumberForDisplay(roundToDecimals(mat15 - tate97 - delta125Minus97, 0), 0)
+          formatNumberForDisplay(roundToDecimals(mat15 - tateFuji - rmMasterDelta, 0), 0)
         );
       }
-      setInputValue("br-7", formatNumberForDisplay(roundToDecimals(tate97 - 140, 0), 0, false));
+      setInputValue("br-7", formatNumberForDisplay(roundToDecimals(tateFuji - 140, 0), 0, false));
     } else {
       setInputValue("br-7", "");
     }

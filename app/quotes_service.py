@@ -1,4 +1,4 @@
-"""原価見積り管理の業務ロジック（Access Flask 版を PostgreSQL 向けに移植）。"""
+"""見積り管理・原価見積り管理の業務ロジック（Access Flask 版を PostgreSQL 向けに移植）。"""
 from __future__ import annotations
 
 from io import BytesIO
@@ -8,6 +8,11 @@ from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 from app.database import get_connection
 
+
+# ---------------------------------------------------------------------------
+# 共通
+# ---------------------------------------------------------------------------
+
 def _rec_str(rec, key):
     """詳細クエリ1行 dict から列値を文字列で取得（None は空文字、0 も表示）"""
     if not rec:
@@ -16,7 +21,6 @@ def _rec_str(rec, key):
     if v is None:
         return ""
     return str(v)
-
 
 def _initial_cost_display_str(key, v):
     """初期費用テーブル表示用。数量・単価・金額は long（整数・小数なし）。"""
@@ -32,20 +36,6 @@ def _initial_cost_display_str(key, v):
             return str(v).strip()
     return str(v)
 
-
-def _initial_cost_rows_for_api(cur, estimate_id):
-    """t_原価見積初期費用 の一覧を API／画面更新用 dict のリストで返す"""
-    cur.execute(
-        "SELECT * FROM t_原価見積初期費用 WHERE 原価見積りID = ?;",
-        [estimate_id],
-    )
-    ic_col_names = [c[0] for c in (cur.description or [])]
-    return [
-        {k: _initial_cost_display_str(k, v) for k, v in zip(ic_col_names, ic_row)}
-        for ic_row in cur.fetchall()
-    ]
-
-
 def _initial_cost_parse_long_for_save(raw, label_jp):
     """登録・更新用: 数量・単価・金額を long として解釈"""
     if raw is None:
@@ -58,88 +48,63 @@ def _initial_cost_parse_long_for_save(raw, label_jp):
     except (InvalidOperation, ValueError, TypeError, OverflowError) as e:
         raise ValueError(f"{label_jp}の値が不正です") from e
 
-
-def format_cutting_recovery_rate_display(raw):
-    """DB値（小数 0.9 等）を画面表示用の数値パーセント（90）へ。空は 90。"""
-    if raw is None:
-        return "90"
-    s = str(raw).strip()
-    if s == "":
-        return "90"
-    try:
-        f = float(s.replace(",", ""))
-        if 0 <= f <= 1:
-            return f"{f * 100:g}"
-        return f"{f:g}"
-    except ValueError:
-        return "90"
-
-
-def normalize_cutting_recovery_rate_for_db(s):
-    """フォーム入力（90%, 90, 0.9）を DB 保存用に正規化（小数の文字列）。"""
-    if s is None:
-        return ""
-    t = str(s).strip().replace("%", "").strip()
-    if t == "":
-        return ""
-    try:
-        f = float(t.replace(",", ""))
-        if f > 1:
-            return str(f / 100.0)
-        return str(f)
-    except ValueError:
-        return ""
-
-
-def format_yield_rate_display(raw):
-    """歩留り: DB の小数（0.1＝10%）を画面の % 表記へ。空は空のまま。"""
-    if raw is None:
-        return ""
-    s = str(raw).strip()
-    if s == "":
-        return ""
-    try:
-        f = float(s.replace(",", ""))
-        if 0 <= f <= 1:
-            return f"{f * 100:g}"
-        return f"{f:g}"
-    except ValueError:
-        return ""
-
-
-def normalize_yield_rate_for_db(s):
-    """歩留り: 画面の %（10）を DB 用の小数（0.1）へ。管理費率と同様。"""
-    if s is None:
-        return ""
-    t = str(s).strip().replace("%", "").strip()
-    if t == "":
-        return ""
-    try:
-        f = float(t.replace(",", ""))
-        if f > 1:
-            return str(f / 100.0)
-        return str(f)
-    except ValueError:
-        return ""
-
-
-def _format_rate_sum_3(v):
-    """賃率計の表示/連携用に小数点以下3桁へ丸めた文字列を返す。"""
+def _json_safe_cell_value(v):
+    """pyodbc のセル値を jsonify 可能な型に変換する"""
     if v is None:
-        return ""
+        return None
+    from decimal import Decimal
+    from datetime import datetime, date, time
+
+    if isinstance(v, Decimal):
+        return float(v)
+    if isinstance(v, datetime):
+        return v.isoformat()
+    if isinstance(v, date):
+        return v.isoformat()
+    if isinstance(v, time):
+        return v.isoformat()
+    if isinstance(v, (bytes, bytearray)):
+        return v.decode("utf-8", errors="replace")
+    if isinstance(v, (int, float, str, bool)):
+        return v
+    return str(v)
+
+def _format_search_date(v):
+    """検索結果テーブル用の日付表示"""
+    if v is None:
+        return None
+    if isinstance(v, datetime):
+        return v.strftime("%Y/%m/%d")
+    if isinstance(v, date):
+        return v.strftime("%Y/%m/%d")
+    s = str(v).strip()
+    if not s:
+        return None
+    if len(s) >= 10 and s[4] == "-" and s[7] == "-":
+        return s[:10].replace("-", "/")
+    return s
+
+def _parse_optional_date_input(raw):
+    """依頼日・提出日: yyyy/mm/dd または yyyy-mm-dd"""
+    if raw is None:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    s = s.replace("/", "-")
     try:
-        d = Decimal(str(v)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
-        return format(d, "f")
-    except (InvalidOperation, ValueError, TypeError):
-        return ""
+        parts = s.split("-")
+        if len(parts) != 3:
+            raise ValueError("形式が不正です")
+        y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+        return datetime(y, m, d)
+    except (ValueError, TypeError) as ex:
+        raise ValueError(f"日付形式が不正です: {raw}") from ex
 
 
-EXCEL_TEMPLATE_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "exceltemplates",
-    "原価見積書原本.xlsx",
-)
-
+# ---------------------------------------------------------------------------
+# 見積り管理
+# ---------------------------------------------------------------------------
 
 def get_quote_calc_page(payload=None):
     """見積りID を元に quote_calc.html 用の基本情報・マスタ・加工費一覧を返す"""
@@ -272,7 +237,6 @@ def get_quote_calc_page(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def _quote_calc_load_masters(cur, out: dict) -> None:
     cur.execute("SELECT * FROM t_比重マスタ ORDER BY ID")
     rows = cur.fetchall()
@@ -300,7 +264,6 @@ def _quote_calc_load_masters(cur, out: dict) -> None:
         }
         for r in mc_rows
     ]
-
 
 def _quote_calc_load_brass(cur, quote_id: str, out: dict) -> None:
     """t_真鍮材料 を見積りIDで検索し、真鍮詳細欄へ反映する値を out に格納する。"""
@@ -339,7 +302,6 @@ def _quote_calc_load_brass(cur, quote_id: str, out: dict) -> None:
     )
     out["brass_material_cost"] = _s("材料費")
 
-
 def delete_quote_calc_brass(payload=None):
     """真鍮詳細データを ID 指定で削除する。"""
     payload = payload or {}
@@ -362,7 +324,6 @@ def delete_quote_calc_brass(payload=None):
         return {"ok": True}
     except Exception as e:
         return {"error": str(e)}
-
 
 def _quote_calc_load_processing_rows(cur, quote_id: str, out: dict) -> None:
     proc_sql = (
@@ -387,7 +348,6 @@ def _quote_calc_load_processing_rows(cur, quote_id: str, out: dict) -> None:
             row_dict[key] = _json_safe_cell_value(r[i])
         out["processing_rows"].append(row_dict)
 
-
 def _quote_format_lot_display(raw) -> str:
     if raw is None:
         return ""
@@ -398,7 +358,6 @@ def _quote_format_lot_display(raw) -> str:
         return f"{int(Decimal(s)):,}"
     except (InvalidOperation, ValueError, TypeError, OverflowError):
         return str(raw).strip()
-
 
 def _quote_load_lot_options(cur, quote_id: str) -> list[dict]:
     cur.execute(
@@ -418,7 +377,6 @@ def _quote_load_lot_options(cur, quote_id: str) -> list[dict]:
         )
     return out
 
-
 def _quote_initial_cost_rows_for_api(cur, quote_id: str) -> list[dict]:
     cur.execute(
         "SELECT ID, 見積りID, 品名, 数量, 単位, 単価, 金額 "
@@ -430,7 +388,6 @@ def _quote_initial_cost_rows_for_api(cur, quote_id: str) -> list[dict]:
         {k: _initial_cost_display_str(k, v) for k, v in zip(col_names, ic_row)}
         for ic_row in cur.fetchall()
     ]
-
 
 def _quote_load_surface_master_options(cur) -> list[dict]:
     cur.execute(
@@ -445,7 +402,6 @@ def _quote_load_surface_master_options(cur) -> list[dict]:
         }
         for r in cur.fetchall()
     ]
-
 
 def _quote_load_conditions(cur, quote_id: str) -> dict:
     empty = {
@@ -469,13 +425,11 @@ def _quote_load_conditions(cur, quote_id: str) -> dict:
         "delivery_packaging_form": _rec_str(rec, "納入梱包形態"),
     }
 
-
 def _quote_calc_load_packaging_tab(cur, quote_id: str, out: dict) -> None:
     out["lot_options"] = _quote_load_lot_options(cur, quote_id)
     out["initial_cost_rows"] = _quote_initial_cost_rows_for_api(cur, quote_id)
     out["surface_master_options"] = _quote_load_surface_master_options(cur)
     out["conditions"] = _quote_load_conditions(cur, quote_id)
-
 
 def _quote_packaging_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
     cur.execute(
@@ -489,7 +443,6 @@ def _quote_packaging_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
         rows.append(row)
     return rows
 
-
 def _quote_surface_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
     cur.execute(
         "SELECT ID, 加工費ID, 処理名, 単価 FROM t_表面処理費 WHERE 加工費ID = ?",
@@ -502,7 +455,6 @@ def _quote_surface_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
         rows.append(row)
     return rows
 
-
 def _quote_surface_total(rows: list[dict]) -> str:
     total = 0
     for row in rows:
@@ -514,7 +466,6 @@ def _quote_surface_total(rows: list[dict]) -> str:
         except (InvalidOperation, ValueError, TypeError, OverflowError):
             continue
     return str(total) if total else ""
-
 
 def api_quote_calc_packaging_list(payload=None):
     """梱包輸送費: 加工費ID に紐づく一覧"""
@@ -536,7 +487,6 @@ def api_quote_calc_packaging_list(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_quote_calc_packaging_row(payload=None):
     """梱包輸送費: 1件取得（フォーム反映用）"""
@@ -564,7 +514,6 @@ def api_quote_calc_packaging_row(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_quote_calc_packaging_save(payload=None):
     """梱包輸送費: 登録・更新"""
@@ -618,7 +567,6 @@ def api_quote_calc_packaging_save(payload=None):
             except Exception:
                 pass
 
-
 def api_quote_calc_packaging_delete(payload=None):
     """梱包輸送費: 削除"""
     data = payload or {}
@@ -653,7 +601,6 @@ def api_quote_calc_packaging_delete(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_quote_calc_initial_cost_row(payload=None):
     """見積り初期費用: 1件取得"""
@@ -690,7 +637,6 @@ def api_quote_calc_initial_cost_row(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_quote_calc_initial_cost_save(payload=None):
     """見積り初期費用: 登録・更新"""
@@ -760,7 +706,6 @@ def api_quote_calc_initial_cost_save(payload=None):
             except Exception:
                 pass
 
-
 def api_quote_calc_initial_cost_delete(payload=None):
     """見積り初期費用: 削除"""
     data = payload or {}
@@ -797,7 +742,6 @@ def api_quote_calc_initial_cost_delete(payload=None):
             except Exception:
                 pass
 
-
 def api_quote_calc_surface_list(payload=None):
     """表面処理費: 加工費ID に紐づく一覧"""
     processing_cost_id = str((payload or {}).get("processing_cost_id") or "").strip()
@@ -822,7 +766,6 @@ def api_quote_calc_surface_list(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_quote_calc_surface_row(payload=None):
     """表面処理費: 1件取得"""
@@ -850,7 +793,6 @@ def api_quote_calc_surface_row(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_quote_calc_surface_save(payload=None):
     """表面処理費: 登録・更新"""
@@ -907,7 +849,6 @@ def api_quote_calc_surface_save(payload=None):
             except Exception:
                 pass
 
-
 def api_quote_calc_surface_delete(payload=None):
     """表面処理費: 削除"""
     data = payload or {}
@@ -944,7 +885,6 @@ def api_quote_calc_surface_delete(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_quote_calc_conditions_save(payload=None):
     """諸条件: 登録・更新"""
@@ -1036,10 +976,8 @@ def api_quote_calc_conditions_save(payload=None):
             except Exception:
                 pass
 
-
 def _quote_blank_recorded_remarks_lines(count: int = 10) -> list[dict]:
     return [{"id": "", "text": ""} for _ in range(count)]
-
 
 def _quote_load_recorded_remarks(cur, quote_id: str) -> list[dict]:
     cur.execute(
@@ -1059,7 +997,6 @@ def _quote_load_recorded_remarks(cur, quote_id: str) -> list[dict]:
         lines.append({"id": "", "text": ""})
     return lines
 
-
 def _quote_load_internal_remarks(cur, quote_id: str) -> str:
     cur.execute("SELECT 備考 FROM t_見積り履歴 WHERE 見積りID = ?", (quote_id,))
     row = cur.fetchone()
@@ -1067,11 +1004,9 @@ def _quote_load_internal_remarks(cur, quote_id: str) -> str:
         return ""
     return _json_safe_cell_value(row[0])
 
-
 def _quote_calc_load_remarks(cur, quote_id: str, out: dict) -> None:
     out["recorded_remarks_lines"] = _quote_load_recorded_remarks(cur, quote_id)
     out["internal_remarks"] = _quote_load_internal_remarks(cur, quote_id)
-
 
 def api_quote_calc_remarks_save(payload=None):
     """備考タブ: 記載事項の登録・更新・削除と見積り履歴備考の更新"""
@@ -1151,6 +1086,477 @@ def api_quote_calc_remarks_save(payload=None):
             except Exception:
                 pass
 
+_QUOTE_SEARCH_UI_KEYS = [
+    "見積りID",
+    "管理NO",
+    "営業担当",
+    "客先名",
+    "客先部署",
+    "客先担当者",
+    "品番",
+    "品名",
+    "依頼日",
+    "提出日",
+    "備考",
+]
+
+def _quote_row_for_search_ui(col_names, r):
+    """見積り検索画面用の行 dict"""
+    if r is None:
+        return None
+    raw = dict(zip(col_names, r))
+    norm = _normalize_estimate_row_keys(raw)
+    out = {}
+    for k in _QUOTE_SEARCH_UI_KEYS:
+        v = norm.get(k)
+        if k in ("依頼日", "提出日"):
+            v = _format_search_date(v)
+        out[k] = v
+    if all(k in norm for k in _QUOTE_SEARCH_UI_KEYS):
+        return out
+    if len(r) >= len(_QUOTE_SEARCH_UI_KEYS):
+        out = {}
+        for i, k in enumerate(_QUOTE_SEARCH_UI_KEYS):
+            v = r[i]
+            if k in ("依頼日", "提出日"):
+                v = _format_search_date(v)
+            out[k] = v
+        return out
+    return out
+
+def api_quote_search_conditions(payload=None):
+    """quotes.html からの見積り履歴条件検索"""
+    sales_id = ((payload or {}).get("sales_id") or "").strip()
+    customer_code = ((payload or {}).get("customer_code") or "").strip()
+    part_no = ((payload or {}).get("part_no") or "").strip()
+    part_name = ((payload or {}).get("part_name") or "").strip()
+    quote_id = ((payload or {}).get("quote_id") or "").strip()
+
+    if not any([sales_id, customer_code, part_no, part_name, quote_id]):
+        return {"error": "条件を最低1つ指定してください"}
+
+    base_sql = (
+        "SELECT "
+        "t_見積り履歴.見積りID, "
+        "t_見積り履歴.管理NO, "
+        "t_営業マスタ.営業担当, "
+        "t_客先マスタ.客先名, "
+        "t_見積り履歴.客先部署, "
+        "t_見積り履歴.客先担当者, "
+        "t_見積り履歴.品番, "
+        "t_見積り履歴.品名, "
+        "t_見積り履歴.依頼日, "
+        "t_見積り履歴.提出日, "
+        "t_見積り履歴.備考 "
+        "FROM ((t_見積り履歴 "
+        "LEFT JOIN t_営業マスタ ON t_見積り履歴.営業ID = t_営業マスタ.コード) "
+        "LEFT JOIN t_客先マスタ ON t_見積り履歴.客先コード = t_客先マスタ.コード)"
+    )
+
+    conditions = []
+    params = []
+
+    if sales_id:
+        conditions.append("t_見積り履歴.営業ID = ?")
+        params.append(sales_id)
+    if customer_code:
+        conditions.append("t_見積り履歴.客先コード = ?")
+        params.append(customer_code)
+    if part_no:
+        conditions.append("t_見積り履歴.品番 LIKE ?")
+        params.append(f"%{part_no}%")
+    if part_name:
+        conditions.append("t_見積り履歴.品名 LIKE ?")
+        params.append(f"%{part_name}%")
+    if quote_id:
+        conditions.append("t_見積り履歴.見積りID = ?")
+        params.append(quote_id)
+
+    sql = base_sql
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY t_見積り履歴.見積りID"
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+        col_names = [c[0] for c in cur.description]
+        result_rows = [_quote_row_for_search_ui(col_names, r) for r in rows]
+        conn.close()
+        return {"rows": result_rows}
+    except Exception as e:
+        return {"error": str(e)}
+
+def _fetch_quote_row_for_search(cur, quote_id):
+    """見積り検索画面と同じ列構成で 1 行取得"""
+    sql = (
+        "SELECT "
+        "t_見積り履歴.見積りID, "
+        "t_見積り履歴.管理NO, "
+        "t_営業マスタ.営業担当, "
+        "t_客先マスタ.客先名, "
+        "t_見積り履歴.客先部署, "
+        "t_見積り履歴.客先担当者, "
+        "t_見積り履歴.品番, "
+        "t_見積り履歴.品名, "
+        "t_見積り履歴.依頼日, "
+        "t_見積り履歴.提出日, "
+        "t_見積り履歴.備考 "
+        "FROM ((t_見積り履歴 "
+        "LEFT JOIN t_営業マスタ ON t_見積り履歴.営業ID = t_営業マスタ.コード) "
+        "LEFT JOIN t_客先マスタ ON t_見積り履歴.客先コード = t_客先マスタ.コード) "
+        "WHERE t_見積り履歴.見積りID = ?"
+    )
+    cur.execute(sql, (quote_id,))
+    r = cur.fetchone()
+    if not r:
+        return None
+    col_names = [c[0] for c in cur.description]
+    return _quote_row_for_search_ui(col_names, r)
+
+def _quote_payload_from_json(data, *, truncate_department=False):
+    """新規/更新共通の入力値をパース"""
+    sales_id = (data.get("sales_id") or "").strip()
+    kanri_no = (data.get("kanri_no") or "").strip()
+    customer_code = (data.get("customer_code") or "").strip()
+    part_no = (data.get("part_no") or "").strip()
+
+    dept_raw = data.get("department")
+    department = (dept_raw or "").strip() if dept_raw is not None else ""
+    if department and truncate_department:
+        department = department[:10]
+    department = department if department else None
+
+    contact_raw = data.get("contact")
+    contact = (contact_raw or "").strip() if contact_raw is not None else ""
+    contact = contact if contact else None
+
+    part_name_raw = data.get("part_name")
+    part_name = (part_name_raw or "").strip() if part_name_raw is not None else ""
+    part_name = part_name if part_name else None
+
+    bikou_raw = data.get("bikou")
+    bikou = (bikou_raw or "").strip() if bikou_raw is not None else ""
+    bikou = _bikou_newlines_to_crlf(bikou) if bikou else None
+
+    try:
+        request_date = _parse_optional_date_input(data.get("request_date"))
+        submission_date = _parse_optional_date_input(data.get("submission_date"))
+    except ValueError as ex:
+        return None, str(ex)
+
+    return (
+        sales_id,
+        kanri_no,
+        customer_code,
+        department,
+        contact,
+        part_no,
+        part_name,
+        request_date,
+        submission_date,
+        bikou,
+    ), None
+
+def api_register_quote(payload=None):
+    """新規モーダルから t_見積り履歴 へ 1 件追加"""
+    data = payload or {}
+    parsed, err = _quote_payload_from_json(data, truncate_department=True)
+    if err:
+        return {"error": err}
+    (
+        sales_id,
+        kanri_no,
+        customer_code,
+        department,
+        contact,
+        part_no,
+        part_name,
+        request_date,
+        submission_date,
+        bikou,
+    ) = parsed
+
+    if not sales_id or not kanri_no or not customer_code or not part_no:
+        return {"error": "必須項目が不足しています"}
+
+    insert_sql = (
+        "INSERT INTO t_見積り履歴 ("
+        "営業ID, 管理NO, 客先コード, 客先部署, 客先担当者, "
+        "品番, 品名, 依頼日, 提出日, 備考"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    params = (
+        sales_id,
+        kanri_no,
+        customer_code,
+        department,
+        contact,
+        part_no,
+        part_name,
+        request_date,
+        submission_date,
+        bikou,
+    )
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(insert_sql, params)
+        conn.commit()
+        cur.execute("SELECT MAX(見積りID) FROM t_見積り履歴")
+        max_row = cur.fetchone()
+        new_id = max_row[0] if max_row else None
+        if new_id is None:
+            conn.close()
+            return {"error": "登録後の見積りIDを取得できませんでした"}
+        row = _fetch_quote_row_for_search(cur, new_id)
+        conn.close()
+        if not row:
+            return {"error": "登録した行を取得できませんでした"}
+        return {"row": _json_safe_estimate_row(row)}
+    except Exception as e:
+        return {"error": str(e)}
+
+def api_update_quote_history(payload=None):
+    """見積り検索画面編集モーダル: t_見積り履歴 を見積りID で更新"""
+    data = payload or {}
+    quote_id = (data.get("quote_id") or "").strip()
+    parsed, err = _quote_payload_from_json(data)
+    if err:
+        return {"error": err}
+    (
+        sales_id,
+        kanri_no,
+        customer_code,
+        department,
+        contact,
+        part_no,
+        part_name,
+        request_date,
+        submission_date,
+        bikou,
+    ) = parsed
+
+    if not quote_id:
+        return {"error": "見積りIDが必要です"}
+    if not sales_id or not kanri_no or not customer_code or not part_no:
+        return {"error": "必須項目が不足しています"}
+
+    kanri_no = kanri_no[:8]
+
+    update_sql = (
+        "UPDATE t_見積り履歴 SET "
+        "管理NO = ?, 営業ID = ?, 客先コード = ?, 客先部署 = ?, 客先担当者 = ?, "
+        "品番 = ?, 品名 = ?, 依頼日 = ?, 提出日 = ?, 備考 = ? "
+        "WHERE 見積りID = ?"
+    )
+    params = (
+        kanri_no,
+        sales_id,
+        customer_code,
+        department,
+        contact,
+        part_no,
+        part_name,
+        request_date,
+        submission_date,
+        bikou,
+        quote_id,
+    )
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(update_sql, params)
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当する見積りIDが見つかりません"}
+        conn.commit()
+        row = _fetch_quote_row_for_search(cur, quote_id)
+        conn.close()
+        if not row:
+            return {"error": "更新後の行を取得できませんでした"}
+        return {"row": _json_safe_estimate_row(row)}
+    except Exception as e:
+        return {"error": str(e)}
+
+def _summary_rows_from_cursor(cur, count_key):
+    """集計クエリ結果を {営業担当, count_key} の list に変換"""
+    rows = cur.fetchall()
+    if not rows:
+        return []
+    col_names = [c[0] for c in cur.description]
+    out = []
+    for r in rows:
+        d = dict(zip(col_names, r))
+        sales_name = d.get("営業担当")
+        cnt = d.get("cnt")
+        if cnt is None:
+            for v in d.values():
+                if isinstance(v, (int, float)):
+                    cnt = int(v)
+                    break
+        out.append(
+            {
+                "営業担当": "" if sales_name is None else str(sales_name),
+                count_key: int(cnt) if cnt is not None else 0,
+            }
+        )
+    return out
+
+def api_results_summary(payload=None):
+    """実績集計: 提出日範囲で管理NO件数・見積りID件数を営業担当別に集計"""
+    data = payload or {}
+    date_from_raw = (data.get("submission_date_from") or "").strip()
+    date_to_raw = (data.get("submission_date_to") or "").strip()
+
+    if not date_from_raw or not date_to_raw:
+        return {"error": "提出日は両方入力してください"}
+
+    try:
+        date_from = _parse_optional_date_input(date_from_raw)
+        date_to = _parse_optional_date_input(date_to_raw)
+    except ValueError as ex:
+        return {"error": str(ex)}
+
+    if date_from is None or date_to is None:
+        return {"error": "提出日は両方入力してください"}
+
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    mgmt_sql = (
+        "SELECT mgmt.営業ID, t_営業マスタ.営業担当, COUNT(mgmt.管理NO) AS cnt "
+        "FROM ("
+        "SELECT DISTINCT t_見積り履歴.営業ID, t_見積り履歴.管理NO "
+        "FROM t_見積り履歴 "
+        "WHERE CAST(t_見積り履歴.提出日 AS DATE) BETWEEN ? AND ?"
+        ") AS mgmt "
+        "INNER JOIN t_営業マスタ ON mgmt.営業ID = t_営業マスタ.コード "
+        "GROUP BY mgmt.営業ID, t_営業マスタ.営業担当 "
+        "ORDER BY mgmt.営業ID"
+    )
+    quote_sql = (
+        "SELECT t_見積り履歴.営業ID, t_営業マスタ.営業担当, "
+        "COUNT(t_見積り履歴.見積りID) AS cnt "
+        "FROM t_見積り履歴 "
+        "INNER JOIN t_営業マスタ ON t_見積り履歴.営業ID = t_営業マスタ.コード "
+        "WHERE CAST(t_見積り履歴.提出日 AS DATE) BETWEEN ? AND ? "
+        "GROUP BY t_見積り履歴.営業ID, t_営業マスタ.営業担当 "
+        "ORDER BY t_見積り履歴.営業ID"
+    )
+    params = (date_from.date(), date_to.date())
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(mgmt_sql, params)
+        mgmt_rows = _summary_rows_from_cursor(cur, "件数")
+        cur.execute(quote_sql, params)
+        quote_rows = _summary_rows_from_cursor(cur, "点数")
+        conn.close()
+        return {
+            "mgmt_no_rows": mgmt_rows,
+            "quote_id_rows": quote_rows,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# 原価見積り管理
+# ---------------------------------------------------------------------------
+
+def _initial_cost_rows_for_api(cur, estimate_id):
+    """t_原価見積初期費用 の一覧を API／画面更新用 dict のリストで返す"""
+    cur.execute(
+        "SELECT * FROM t_原価見積初期費用 WHERE 原価見積りID = ?;",
+        [estimate_id],
+    )
+    ic_col_names = [c[0] for c in (cur.description or [])]
+    return [
+        {k: _initial_cost_display_str(k, v) for k, v in zip(ic_col_names, ic_row)}
+        for ic_row in cur.fetchall()
+    ]
+
+def format_cutting_recovery_rate_display(raw):
+    """DB値（小数 0.9 等）を画面表示用の数値パーセント（90）へ。空は 90。"""
+    if raw is None:
+        return "90"
+    s = str(raw).strip()
+    if s == "":
+        return "90"
+    try:
+        f = float(s.replace(",", ""))
+        if 0 <= f <= 1:
+            return f"{f * 100:g}"
+        return f"{f:g}"
+    except ValueError:
+        return "90"
+
+def normalize_cutting_recovery_rate_for_db(s):
+    """フォーム入力（90%, 90, 0.9）を DB 保存用に正規化（小数の文字列）。"""
+    if s is None:
+        return ""
+    t = str(s).strip().replace("%", "").strip()
+    if t == "":
+        return ""
+    try:
+        f = float(t.replace(",", ""))
+        if f > 1:
+            return str(f / 100.0)
+        return str(f)
+    except ValueError:
+        return ""
+
+def format_yield_rate_display(raw):
+    """歩留り: DB の小数（0.1＝10%）を画面の % 表記へ。空は空のまま。"""
+    if raw is None:
+        return ""
+    s = str(raw).strip()
+    if s == "":
+        return ""
+    try:
+        f = float(s.replace(",", ""))
+        if 0 <= f <= 1:
+            return f"{f * 100:g}"
+        return f"{f:g}"
+    except ValueError:
+        return ""
+
+def normalize_yield_rate_for_db(s):
+    """歩留り: 画面の %（10）を DB 用の小数（0.1）へ。管理費率と同様。"""
+    if s is None:
+        return ""
+    t = str(s).strip().replace("%", "").strip()
+    if t == "":
+        return ""
+    try:
+        f = float(t.replace(",", ""))
+        if f > 1:
+            return str(f / 100.0)
+        return str(f)
+    except ValueError:
+        return ""
+
+def _format_rate_sum_3(v):
+    """賃率計の表示/連携用に小数点以下3桁へ丸めた文字列を返す。"""
+    if v is None:
+        return ""
+    try:
+        d = Decimal(str(v)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+        return format(d, "f")
+    except (InvalidOperation, ValueError, TypeError):
+        return ""
+
+EXCEL_TEMPLATE_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "exceltemplates",
+    "原価見積書原本.xlsx",
+)
 
 def get_est_calc_page(payload=None):
     """原価見積りID を元に詳細情報を取得して est_calc.html に表示"""
@@ -1210,6 +1616,8 @@ def get_est_calc_page(payload=None):
         "kensa_microgauge": "",
         "kensa_other": "",
     }
+    rm_general = ""
+    rm_fuji_koki = ""
 
     # プルダウン用マスタ取得
     try:
@@ -1397,6 +1805,14 @@ def get_est_calc_page(payload=None):
         rate_default_map["kensa_microscope"] = _rate_sum_by_equipment_name("顕微鏡")
         rate_default_map["kensa_microgauge"] = _rate_sum_by_equipment_name("マイクロゲージ")
         rate_default_map["kensa_other"] = _rate_sum_by_equipment_name("その他")
+
+        cur.execute("SELECT * FROM t_RMマスタ ORDER BY rm_id ASC")
+        rm_rows = cur.fetchall()
+        if rm_rows:
+            rm_col_names = [c[0] for c in (cur.description or [])]
+            rm_rec = dict(zip(rm_col_names, rm_rows[0]))
+            rm_general = _rec_str(rm_rec, "一般")
+            rm_fuji_koki = _rec_str(rm_rec, "不二工機")
 
         conn.close()
     except Exception:
@@ -1905,8 +2321,9 @@ def get_est_calc_page(payload=None):
         "soryo_29_options": soryo_29_options,
         "rate_default_map": rate_default_map,
         "initial_cost_rows": initial_cost_rows,
+        "rm_general": rm_general,
+        "rm_fuji_koki": rm_fuji_koki,
     }
-
 
 def _est_calc_detail_sql():
     """est_calc で使用する詳細取得クエリ（1件用）"""
@@ -1933,33 +2350,9 @@ def _est_calc_detail_sql():
         "AND t_原価見積情報.使用フラグ = 'Y';"
     )
 
-
-def _json_safe_cell_value(v):
-    """pyodbc のセル値を jsonify 可能な型に変換する"""
-    if v is None:
-        return None
-    from decimal import Decimal
-    from datetime import datetime, date, time
-
-    if isinstance(v, Decimal):
-        return float(v)
-    if isinstance(v, datetime):
-        return v.isoformat()
-    if isinstance(v, date):
-        return v.isoformat()
-    if isinstance(v, time):
-        return v.isoformat()
-    if isinstance(v, (bytes, bytearray)):
-        return v.decode("utf-8", errors="replace")
-    if isinstance(v, (int, float, str, bool)):
-        return v
-    return str(v)
-
-
 def _est_calc_detail_row_to_jsonable_dict(row, col_names):
     """詳細クエリ1行を JSON 用 dict に変換（列名は cur.description と同一）"""
     return {k: _json_safe_cell_value(val) for k, val in zip(col_names, row)}
-
 
 def _sanitize_filename_part(value, max_len=None):
     """Windows で使えない文字を除去し、必要なら長さを制限する"""
@@ -1971,7 +2364,6 @@ def _sanitize_filename_part(value, max_len=None):
     if max_len is not None:
         s = s[:max_len]
     return s
-
 
 def api_est_calc_set_lot(payload=None):
     """ロットIDクリック時: 使用フラグを更新し、扱うデータを変更"""
@@ -2045,7 +2437,6 @@ def api_est_calc_clear_usage_flag(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_est_calc_add_estimate_lot(payload=None):
     """見積り追加(2段目)用: 新規ロットを作成し、コピー有無で各テーブルへ追加"""
@@ -2368,7 +2759,6 @@ def api_est_calc_add_estimate_lot(payload=None):
             except Exception:
                 pass
 
-
 def api_est_calc_delete_estimate_lot(payload=None):
     """見積り削除: 指定ロットIDのデータを関連テーブルから削除し、当該原価見積りIDの初期費用も削除"""
     data = payload or {}
@@ -2416,7 +2806,6 @@ def api_est_calc_delete_estimate_lot(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_est_calc_pre_export_save(payload=None):
     """Excel 出力前の保存処理"""
@@ -2724,7 +3113,6 @@ def api_est_calc_pre_export_save(payload=None):
             except Exception:
                 pass
 
-
 def api_est_calc_shipping_by_region_size(payload=None):
     """地方ID + 梱包サイズ名から送料を取得する"""
     reg = ((payload or {}).get("reg") or "").strip()
@@ -2754,7 +3142,6 @@ def api_est_calc_shipping_by_region_size(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_est_calc_initial_cost_row(payload=None):
     """初期費用: 行 ID と原価見積り ID で 1 件取得（フォーム反映用）"""
@@ -2792,7 +3179,6 @@ def api_est_calc_initial_cost_row(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_est_calc_initial_cost_save(payload=None):
     """初期費用: 新規 INSERT または既存行 UPDATE"""
@@ -2865,7 +3251,6 @@ def api_est_calc_initial_cost_save(payload=None):
             except Exception:
                 pass
 
-
 def api_est_calc_initial_cost_delete(payload=None):
     """初期費用: 1 件削除"""
     data = payload or {}
@@ -2905,7 +3290,6 @@ def api_est_calc_initial_cost_delete(payload=None):
                 conn.close()
             except Exception:
                 pass
-
 
 def api_est_calc_export_xlsx(payload=None):
     """テンプレートExcelへ値を反映し、xlsx を返却する"""
@@ -3545,7 +3929,6 @@ def api_est_calc_export_xlsx(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def get_search_page(payload=None):
     """営業担当・客先名のプルダウン用データを取得して search.html を表示"""
     sales_list = []
@@ -3587,7 +3970,6 @@ def get_search_page(payload=None):
         "customer_list": customer_list,
     }
 
-
 def _json_safe_rate_master_cell(v):
     """pyodbc セルを JSON 向けに変換"""
     if v is None:
@@ -3596,13 +3978,11 @@ def _json_safe_rate_master_cell(v):
         return v
     return str(v)
 
-
 def _rate_master_row_to_dict(row, col_names):
     return {
         col_names[i]: _json_safe_rate_master_cell(row[i])
         for i in range(len(col_names))
     }
-
 
 def _compute_rate_sum_from_row_dict(d):
     """労務費賃率～土地の合計を小数第3位（賃率計）"""
@@ -3622,7 +4002,6 @@ def _compute_rate_sum_from_row_dict(d):
     except (InvalidOperation, ValueError, TypeError):
         return 0.0
 
-
 def _parse_optional_rate_number(raw):
     """賃率マスタの数値列: 空欄は None"""
     if raw is None:
@@ -3634,7 +4013,6 @@ def _parse_optional_rate_number(raw):
         return float(s)
     except ValueError:
         raise ValueError("数値にできません: " + str(raw))
-
 
 def api_rate_master_list(payload=None):
     """t_賃率マスタ全件（編集画面用）"""
@@ -3658,7 +4036,6 @@ def api_rate_master_list(payload=None):
         return {"rows": out_rows, "columns": display_columns}
     except Exception as e:
         return {"error": str(e)}
-
 
 def _rate_master_payload_from_json(data):
     """リクエスト JSON から更新用タプル (工程分類, 設備名等, 六数値...) とエラー文字列"""
@@ -3684,7 +4061,6 @@ def _rate_master_payload_from_json(data):
         土地,
     )
     return params, None
-
 
 def api_rate_master_save(payload=None):
     """t_賃率マスタ: ID ありなら UPDATE、なければ INSERT（ID はオートナンバー）"""
@@ -3734,7 +4110,6 @@ def api_rate_master_save(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def api_rate_master_delete(payload=None):
     """t_賃率マスタ 1 行削除"""
     data = payload or {}
@@ -3758,7 +4133,6 @@ def api_rate_master_delete(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def _parse_optional_freight_number(raw):
     """運賃表のサイズ列: 空欄は None、整数のみ（カンマ可）"""
     if raw is None:
@@ -3773,7 +4147,6 @@ def _parse_optional_freight_number(raw):
         return int(d)
     except (InvalidOperation, ValueError):
         raise ValueError("整数にできません: " + str(raw))
-
 
 def _freight_payload_from_json(data):
     """リクエスト JSON から更新/登録用タプルを生成"""
@@ -3795,7 +4168,6 @@ def _freight_payload_from_json(data):
     )
     return params, None
 
-
 def api_freight_master_list(payload=None):
     """t_運賃表 一覧"""
     sql = (
@@ -3813,7 +4185,6 @@ def api_freight_master_list(payload=None):
         return {"rows": out_rows, "columns": col_names}
     except Exception as e:
         return {"error": str(e)}
-
 
 def api_freight_master_save(payload=None):
     """t_運賃表: 地方ID 空なら INSERT、ありなら UPDATE"""
@@ -3864,7 +4235,6 @@ def api_freight_master_save(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def api_freight_master_delete(payload=None):
     """t_運賃表 1 行削除"""
     data = payload or {}
@@ -3888,7 +4258,6 @@ def api_freight_master_delete(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def _parse_optional_tray_capacity(raw):
     """t_トレー 収容数: 空欄は None、整数のみ（カンマ可）"""
     if raw is None:
@@ -3904,7 +4273,6 @@ def _parse_optional_tray_capacity(raw):
         raise ValueError("収容数は整数で入力してください: " + str(raw))
     return int(d)
 
-
 def _parse_optional_tray_unit_price(raw):
     """t_トレー 単価: 空欄は None、小数第1位まで（カンマ可）"""
     if raw is None:
@@ -3918,7 +4286,6 @@ def _parse_optional_tray_unit_price(raw):
         return float(q)
     except (InvalidOperation, ValueError):
         raise ValueError("単価を数値にできません: " + str(raw))
-
 
 def _tray_payload_from_json(data):
     """リクエスト JSON から更新/登録用タプルを生成"""
@@ -3937,7 +4304,6 @@ def _tray_payload_from_json(data):
     )
     return params, None
 
-
 def api_tray_master_list(payload=None):
     """t_トレー 一覧"""
     sql = (
@@ -3954,7 +4320,6 @@ def api_tray_master_list(payload=None):
         return {"rows": out_rows, "columns": col_names}
     except Exception as e:
         return {"error": str(e)}
-
 
 def api_tray_master_save(payload=None):
     """t_トレー: ID 空なら INSERT、ありなら UPDATE（ID はオートナンバー）"""
@@ -4003,7 +4368,6 @@ def api_tray_master_save(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def api_tray_master_delete(payload=None):
     """t_トレー 1 行削除"""
     data = payload or {}
@@ -4027,7 +4391,6 @@ def api_tray_master_delete(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def _dbox_payload_from_json(data):
     """t_段ボール リクエスト JSON から更新/登録用タプル"""
     規格 = (data.get("規格") or "").strip()
@@ -4037,7 +4400,6 @@ def _dbox_payload_from_json(data):
         return None, str(ex)
     params = (規格 if 規格 else None, 単価)
     return params, None
-
 
 def api_dbox_master_list(payload=None):
     """t_段ボール 一覧"""
@@ -4053,7 +4415,6 @@ def api_dbox_master_list(payload=None):
         return {"rows": out_rows, "columns": col_names}
     except Exception as e:
         return {"error": str(e)}
-
 
 def api_dbox_master_save(payload=None):
     """t_段ボール: ID 空なら INSERT、ありなら UPDATE（ID はオートナンバー）"""
@@ -4097,7 +4458,6 @@ def api_dbox_master_save(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
 def api_dbox_master_delete(payload=None):
     """t_段ボール 1 行削除"""
     data = payload or {}
@@ -4121,327 +4481,160 @@ def api_dbox_master_delete(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
-def _format_search_date(v):
-    """検索結果テーブル用の日付表示"""
-    if v is None:
-        return None
-    if isinstance(v, datetime):
-        return v.strftime("%Y/%m/%d")
-    if isinstance(v, date):
-        return v.strftime("%Y/%m/%d")
-    s = str(v).strip()
-    if not s:
-        return None
-    if len(s) >= 10 and s[4] == "-" and s[7] == "-":
-        return s[:10].replace("-", "/")
-    return s
-
-
-_QUOTE_SEARCH_UI_KEYS = [
-    "見積りID",
+_ESTIMATE_SEARCH_UI_KEYS = [
+    "原価見積りID",
     "管理NO",
     "営業担当",
     "客先名",
-    "客先部署",
-    "客先担当者",
     "品番",
     "品名",
-    "依頼日",
-    "提出日",
     "備考",
 ]
 
+def _normalize_estimate_row_keys(d):
+    """カーソル列名のテーブル接頭辞・Access の [] を除き、表示用キーに寄せる"""
+    if not d:
+        return d
+    out = {}
+    for k, v in d.items():
+        nk = k
+        if isinstance(k, str):
+            if "." in k:
+                nk = k.rsplit(".", 1)[-1]
+            if nk.startswith("[") and nk.endswith("]"):
+                nk = nk[1:-1].strip()
+        out[nk] = v
+    return out
 
-def _quote_row_for_search_ui(col_names, r):
-    """見積り検索画面用の行 dict"""
+def _estimate_row_for_search_ui(col_names, r):
+    """検索画面・登録直後表示用の 7 キー dict（ドライバの列名差を吸収）"""
     if r is None:
         return None
     raw = dict(zip(col_names, r))
     norm = _normalize_estimate_row_keys(raw)
+    if all(k in norm for k in _ESTIMATE_SEARCH_UI_KEYS):
+        return {k: norm[k] for k in _ESTIMATE_SEARCH_UI_KEYS}
+    if len(r) >= len(_ESTIMATE_SEARCH_UI_KEYS):
+        return {k: r[i] for i, k in enumerate(_ESTIMATE_SEARCH_UI_KEYS)}
+    return norm
+
+def _json_safe_estimate_row(d):
+    """pyodbc 行 dict を jsonify 可能な型にそろえる"""
     out = {}
-    for k in _QUOTE_SEARCH_UI_KEYS:
-        v = norm.get(k)
-        if k in ("依頼日", "提出日"):
-            v = _format_search_date(v)
-        out[k] = v
-    if all(k in norm for k in _QUOTE_SEARCH_UI_KEYS):
-        return out
-    if len(r) >= len(_QUOTE_SEARCH_UI_KEYS):
-        out = {}
-        for i, k in enumerate(_QUOTE_SEARCH_UI_KEYS):
-            v = r[i]
-            if k in ("依頼日", "提出日"):
-                v = _format_search_date(v)
+    for k, v in d.items():
+        if v is None:
+            out[k] = None
+        elif isinstance(v, (str, int, float, bool)):
             out[k] = v
-        return out
+        else:
+            out[k] = str(v)
     return out
 
+def _bikou_newlines_to_crlf(s):
+    """備考の改行を Access / VB の Chr(13) & Chr(10) と同じ CRLF にそろえる"""
+    if not s:
+        return s
+    if not isinstance(s, str):
+        s = str(s)
+    normalized = s.replace("\r\n", "\n").replace("\r", "\n")
+    return normalized.replace("\n", "\r\n")
 
-def api_quote_search_conditions(payload=None):
-    """quotes.html からの見積り履歴条件検索"""
-    sales_id = ((payload or {}).get("sales_id") or "").strip()
-    customer_code = ((payload or {}).get("customer_code") or "").strip()
-    part_no = ((payload or {}).get("part_no") or "").strip()
-    part_name = ((payload or {}).get("part_name") or "").strip()
-    quote_id = ((payload or {}).get("quote_id") or "").strip()
-
-    if not any([sales_id, customer_code, part_no, part_name, quote_id]):
-        return {"error": "条件を最低1つ指定してください"}
-
-    base_sql = (
-        "SELECT "
-        "t_見積り履歴.見積りID, "
-        "t_見積り履歴.管理NO, "
-        "t_営業マスタ.営業担当, "
-        "t_客先マスタ.客先名, "
-        "t_見積り履歴.客先部署, "
-        "t_見積り履歴.客先担当者, "
-        "t_見積り履歴.品番, "
-        "t_見積り履歴.品名, "
-        "t_見積り履歴.依頼日, "
-        "t_見積り履歴.提出日, "
-        "t_見積り履歴.備考 "
-        "FROM ((t_見積り履歴 "
-        "LEFT JOIN t_営業マスタ ON t_見積り履歴.営業ID = t_営業マスタ.コード) "
-        "LEFT JOIN t_客先マスタ ON t_見積り履歴.客先コード = t_客先マスタ.コード)"
-    )
-
-    conditions = []
-    params = []
-
-    if sales_id:
-        conditions.append("t_見積り履歴.営業ID = ?")
-        params.append(sales_id)
-    if customer_code:
-        conditions.append("t_見積り履歴.客先コード = ?")
-        params.append(customer_code)
-    if part_no:
-        conditions.append("t_見積り履歴.品番 LIKE ?")
-        params.append(f"%{part_no}%")
-    if part_name:
-        conditions.append("t_見積り履歴.品名 LIKE ?")
-        params.append(f"%{part_name}%")
-    if quote_id:
-        conditions.append("t_見積り履歴.見積りID = ?")
-        params.append(quote_id)
-
-    sql = base_sql
-    if conditions:
-        sql += " WHERE " + " AND ".join(conditions)
-    sql += " ORDER BY t_見積り履歴.見積りID"
-
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(sql, params)
-        rows = cur.fetchall()
-        col_names = [c[0] for c in cur.description]
-        result_rows = [_quote_row_for_search_ui(col_names, r) for r in rows]
-        conn.close()
-        return {"rows": result_rows}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def _fetch_quote_row_for_search(cur, quote_id):
-    """見積り検索画面と同じ列構成で 1 行取得"""
+def _fetch_estimate_row_for_search(cur, estimate_id):
+    """search_conditions と同じ列構成で 1 行取得"""
     sql = (
         "SELECT "
-        "t_見積り履歴.見積りID, "
-        "t_見積り履歴.管理NO, "
+        "t_原価見積履歴.原価見積りID, "
+        "t_原価見積履歴.管理NO, "
         "t_営業マスタ.営業担当, "
         "t_客先マスタ.客先名, "
-        "t_見積り履歴.客先部署, "
-        "t_見積り履歴.客先担当者, "
-        "t_見積り履歴.品番, "
-        "t_見積り履歴.品名, "
-        "t_見積り履歴.依頼日, "
-        "t_見積り履歴.提出日, "
-        "t_見積り履歴.備考 "
-        "FROM ((t_見積り履歴 "
-        "LEFT JOIN t_営業マスタ ON t_見積り履歴.営業ID = t_営業マスタ.コード) "
-        "LEFT JOIN t_客先マスタ ON t_見積り履歴.客先コード = t_客先マスタ.コード) "
-        "WHERE t_見積り履歴.見積りID = ?"
+        "t_原価見積履歴.品番, "
+        "t_原価見積履歴.品名, "
+        "t_原価見積履歴.備考 "
+        "FROM ((t_原価見積履歴 LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード) "
+        "LEFT JOIN t_客先マスタ ON t_原価見積履歴.客先コード = t_客先マスタ.コード) "
+        "WHERE t_原価見積履歴.原価見積りID = ?"
     )
-    cur.execute(sql, (quote_id,))
+    cur.execute(sql, (estimate_id,))
     r = cur.fetchone()
     if not r:
         return None
     col_names = [c[0] for c in cur.description]
-    return _quote_row_for_search_ui(col_names, r)
+    return _estimate_row_for_search_ui(col_names, r)
 
-
-def _parse_optional_date_input(raw):
-    """依頼日・提出日: yyyy/mm/dd または yyyy-mm-dd"""
-    if raw is None:
-        return None
-    s = str(raw).strip()
-    if not s:
-        return None
-    s = s.replace("/", "-")
-    try:
-        parts = s.split("-")
-        if len(parts) != 3:
-            raise ValueError("形式が不正です")
-        y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
-        return datetime(y, m, d)
-    except (ValueError, TypeError) as ex:
-        raise ValueError(f"日付形式が不正です: {raw}") from ex
-
-
-def _quote_payload_from_json(data, *, truncate_department=False):
-    """新規/更新共通の入力値をパース"""
-    sales_id = (data.get("sales_id") or "").strip()
-    kanri_no = (data.get("kanri_no") or "").strip()
-    customer_code = (data.get("customer_code") or "").strip()
-    part_no = (data.get("part_no") or "").strip()
-
-    dept_raw = data.get("department")
-    department = (dept_raw or "").strip() if dept_raw is not None else ""
-    if department and truncate_department:
-        department = department[:10]
-    department = department if department else None
-
-    contact_raw = data.get("contact")
-    contact = (contact_raw or "").strip() if contact_raw is not None else ""
-    contact = contact if contact else None
-
-    part_name_raw = data.get("part_name")
-    part_name = (part_name_raw or "").strip() if part_name_raw is not None else ""
-    part_name = part_name if part_name else None
-
-    bikou_raw = data.get("bikou")
-    bikou = (bikou_raw or "").strip() if bikou_raw is not None else ""
-    bikou = _bikou_newlines_to_crlf(bikou) if bikou else None
-
-    try:
-        request_date = _parse_optional_date_input(data.get("request_date"))
-        submission_date = _parse_optional_date_input(data.get("submission_date"))
-    except ValueError as ex:
-        return None, str(ex)
-
-    return (
-        sales_id,
-        kanri_no,
-        customer_code,
-        department,
-        contact,
-        part_no,
-        part_name,
-        request_date,
-        submission_date,
-        bikou,
-    ), None
-
-
-def api_register_quote(payload=None):
-    """新規モーダルから t_見積り履歴 へ 1 件追加"""
+def api_register_estimate(payload=None):
+    """新規モーダルから t_原価見積履歴 へ 1 件追加し、追加行を返す"""
     data = payload or {}
-    parsed, err = _quote_payload_from_json(data, truncate_department=True)
-    if err:
-        return {"error": err}
-    (
-        sales_id,
-        kanri_no,
-        customer_code,
-        department,
-        contact,
-        part_no,
-        part_name,
-        request_date,
-        submission_date,
-        bikou,
-    ) = parsed
+    sales_id = (data.get('sales_id') or '').strip()
+    kanri_no = (data.get('kanri_no') or '').strip()
+    customer_code = (data.get('customer_code') or '').strip()
+    part_no = (data.get('part_no') or '').strip()
+    part_name_raw = data.get('part_name')
+    bikou_raw = data.get('bikou')
+    part_name = (part_name_raw or '').strip() if part_name_raw is not None else ''
+    bikou = (bikou_raw or '').strip() if bikou_raw is not None else ''
 
     if not sales_id or not kanri_no or not customer_code or not part_no:
         return {"error": "必須項目が不足しています"}
 
+    part_name_val = part_name if part_name else None
+    bikou_val = _bikou_newlines_to_crlf(bikou) if bikou else None
+
     insert_sql = (
-        "INSERT INTO t_見積り履歴 ("
-        "営業ID, 管理NO, 客先コード, 客先部署, 客先担当者, "
-        "品番, 品名, 依頼日, 提出日, 備考"
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO t_原価見積履歴 (営業ID, 管理NO, 客先コード, 品番, 品名, 備考) "
+        "VALUES (?, ?, ?, ?, ?, ?)"
     )
-    params = (
-        sales_id,
-        kanri_no,
-        customer_code,
-        department,
-        contact,
-        part_no,
-        part_name,
-        request_date,
-        submission_date,
-        bikou,
-    )
+    params = (sales_id, kanri_no, customer_code, part_no, part_name_val, bikou_val)
 
     try:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(insert_sql, params)
         conn.commit()
-        cur.execute("SELECT MAX(見積りID) FROM t_見積り履歴")
+
+        cur.execute("SELECT MAX(原価見積りID) FROM t_原価見積履歴")
         max_row = cur.fetchone()
         new_id = max_row[0] if max_row else None
         if new_id is None:
             conn.close()
-            return {"error": "登録後の見積りIDを取得できませんでした"}
-        row = _fetch_quote_row_for_search(cur, new_id)
+            return {"error": "登録後の原価見積りIDを取得できませんでした"}
+
+        row = _fetch_estimate_row_for_search(cur, new_id)
         conn.close()
+
         if not row:
             return {"error": "登録した行を取得できませんでした"}
+
         return {"row": _json_safe_estimate_row(row)}
     except Exception as e:
         return {"error": str(e)}
 
-
-def api_update_quote_history(payload=None):
-    """見積り検索画面編集モーダル: t_見積り履歴 を見積りID で更新"""
+def api_update_estimate_history(payload=None):
+    """検索画面編集モーダル: t_原価見積履歴 を原価見積りID で更新"""
     data = payload or {}
-    quote_id = (data.get("quote_id") or "").strip()
-    parsed, err = _quote_payload_from_json(data)
-    if err:
-        return {"error": err}
-    (
-        sales_id,
-        kanri_no,
-        customer_code,
-        department,
-        contact,
-        part_no,
-        part_name,
-        request_date,
-        submission_date,
-        bikou,
-    ) = parsed
+    estimate_id = (data.get("estimate_id") or "").strip()
+    sales_id = (data.get("sales_id") or "").strip()
+    kanri_no = (data.get("kanri_no") or "").strip()
+    customer_code = (data.get("customer_code") or "").strip()
+    part_no = (data.get("part_no") or "").strip()
+    part_name_raw = data.get("part_name")
+    bikou_raw = data.get("bikou")
+    part_name = (part_name_raw or "").strip() if part_name_raw is not None else ""
+    bikou = (bikou_raw or "").strip() if bikou_raw is not None else ""
 
-    if not quote_id:
-        return {"error": "見積りIDが必要です"}
+    if not estimate_id:
+        return {"error": "原価見積りIDが必要です"}
     if not sales_id or not kanri_no or not customer_code or not part_no:
         return {"error": "必須項目が不足しています"}
 
-    kanri_no = kanri_no[:8]
+    part_name_val = part_name if part_name else None
+    bikou_val = _bikou_newlines_to_crlf(bikou) if bikou else None
 
     update_sql = (
-        "UPDATE t_見積り履歴 SET "
-        "管理NO = ?, 営業ID = ?, 客先コード = ?, 客先部署 = ?, 客先担当者 = ?, "
-        "品番 = ?, 品名 = ?, 依頼日 = ?, 提出日 = ?, 備考 = ? "
-        "WHERE 見積りID = ?"
+        "UPDATE t_原価見積履歴 SET "
+        "営業ID = ?, 管理NO = ?, 客先コード = ?, 品番 = ?, 品名 = ?, 備考 = ? "
+        "WHERE 原価見積りID = ?"
     )
-    params = (
-        kanri_no,
-        sales_id,
-        customer_code,
-        department,
-        contact,
-        part_no,
-        part_name,
-        request_date,
-        submission_date,
-        bikou,
-        quote_id,
-    )
+    params = (sales_id, kanri_no, customer_code, part_no, part_name_val, bikou_val, estimate_id)
 
     try:
         conn = get_connection()
@@ -4449,9 +4642,9 @@ def api_update_quote_history(payload=None):
         cur.execute(update_sql, params)
         if cur.rowcount == 0:
             conn.close()
-            return {"error": "該当する見積りIDが見つかりません"}
+            return {"error": "該当する原価見積りIDが見つかりません"}
         conn.commit()
-        row = _fetch_quote_row_for_search(cur, quote_id)
+        row = _fetch_estimate_row_for_search(cur, estimate_id)
         conn.close()
         if not row:
             return {"error": "更新後の行を取得できませんでした"}
@@ -4459,90 +4652,60 @@ def api_update_quote_history(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
-def _summary_rows_from_cursor(cur, count_key):
-    """集計クエリ結果を {営業担当, count_key} の list に変換"""
-    rows = cur.fetchall()
-    if not rows:
-        return []
-    col_names = [c[0] for c in cur.description]
-    out = []
-    for r in rows:
-        d = dict(zip(col_names, r))
-        sales_name = d.get("営業担当")
-        cnt = d.get("cnt")
-        if cnt is None:
-            for v in d.values():
-                if isinstance(v, (int, float)):
-                    cnt = int(v)
-                    break
-        out.append(
-            {
-                "営業担当": "" if sales_name is None else str(sales_name),
-                count_key: int(cnt) if cnt is not None else 0,
-            }
-        )
-    return out
-
-
-def api_results_summary(payload=None):
-    """実績集計: 提出日範囲で管理NO件数・見積りID件数を営業担当別に集計"""
+def api_search_delete_estimate(payload=None):
+    """検索画面編集モーダル: 原価見積りID に紐づくロット周り・履歴・情報・初期費用を削除"""
     data = payload or {}
-    date_from_raw = (data.get("submission_date_from") or "").strip()
-    date_to_raw = (data.get("submission_date_to") or "").strip()
+    estimate_id = (data.get("estimate_id") or "").strip()
+    if not estimate_id:
+        return {"error": "原価見積りIDが必要です"}
 
-    if not date_from_raw or not date_to_raw:
-        return {"error": "提出日は両方入力してください"}
+    lot_detail_tables = [
+        "t_原価見積材料",
+        "t_原価見積真鍮",
+        "t_原価見積加工管理",
+        "t_原価見積送料",
+        "t_原価見積計算チャージ",
+    ]
 
-    try:
-        date_from = _parse_optional_date_input(date_from_raw)
-        date_to = _parse_optional_date_input(date_to_raw)
-    except ValueError as ex:
-        return {"error": str(ex)}
-
-    if date_from is None or date_to is None:
-        return {"error": "提出日は両方入力してください"}
-
-    if date_from > date_to:
-        date_from, date_to = date_to, date_from
-
-    mgmt_sql = (
-        "SELECT mgmt.営業ID, t_営業マスタ.営業担当, COUNT(mgmt.管理NO) AS cnt "
-        "FROM ("
-        "SELECT DISTINCT t_見積り履歴.営業ID, t_見積り履歴.管理NO "
-        "FROM t_見積り履歴 "
-        "WHERE CAST(t_見積り履歴.提出日 AS DATE) BETWEEN ? AND ?"
-        ") AS mgmt "
-        "INNER JOIN t_営業マスタ ON mgmt.営業ID = t_営業マスタ.コード "
-        "GROUP BY mgmt.営業ID, t_営業マスタ.営業担当 "
-        "ORDER BY mgmt.営業ID"
-    )
-    quote_sql = (
-        "SELECT t_見積り履歴.営業ID, t_営業マスタ.営業担当, "
-        "COUNT(t_見積り履歴.見積りID) AS cnt "
-        "FROM t_見積り履歴 "
-        "INNER JOIN t_営業マスタ ON t_見積り履歴.営業ID = t_営業マスタ.コード "
-        "WHERE CAST(t_見積り履歴.提出日 AS DATE) BETWEEN ? AND ? "
-        "GROUP BY t_見積り履歴.営業ID, t_営業マスタ.営業担当 "
-        "ORDER BY t_見積り履歴.営業ID"
-    )
-    params = (date_from.date(), date_to.date())
-
+    conn = None
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute(mgmt_sql, params)
-        mgmt_rows = _summary_rows_from_cursor(cur, "件数")
-        cur.execute(quote_sql, params)
-        quote_rows = _summary_rows_from_cursor(cur, "点数")
-        conn.close()
-        return {
-            "mgmt_no_rows": mgmt_rows,
-            "quote_id_rows": quote_rows,
-        }
-    except Exception as e:
-        return {"error": str(e)}
 
+        cur.execute(
+            "SELECT ロットID FROM t_原価見積情報 WHERE 原価見積りID = ?",
+            [estimate_id],
+        )
+        lot_rows = cur.fetchall()
+        lot_ids = []
+        for r in lot_rows:
+            if not r or r[0] is None:
+                continue
+            lot_ids.append(r[0])
+
+        for lid in lot_ids:
+            for table_name in lot_detail_tables:
+                cur.execute(f"DELETE FROM {table_name} WHERE ロットID = ?", [lid])
+
+        cur.execute("DELETE FROM t_原価見積情報 WHERE 原価見積りID = ?", [estimate_id])
+        cur.execute("DELETE FROM t_原価見積履歴 WHERE 原価見積りID = ?", [estimate_id])
+        cur.execute("DELETE FROM t_原価見積初期費用 WHERE 原価見積りID = ?", [estimate_id])
+
+        conn.commit()
+        return {"ok": True}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 def api_search_conditions(payload=None):
     """search.html からの条件指定検索API"""
@@ -4610,242 +4773,6 @@ def api_search_conditions(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-
-def _normalize_estimate_row_keys(d):
-    """カーソル列名のテーブル接頭辞・Access の [] を除き、表示用キーに寄せる"""
-    if not d:
-        return d
-    out = {}
-    for k, v in d.items():
-        nk = k
-        if isinstance(k, str):
-            if "." in k:
-                nk = k.rsplit(".", 1)[-1]
-            if nk.startswith("[") and nk.endswith("]"):
-                nk = nk[1:-1].strip()
-        out[nk] = v
-    return out
-
-
-_ESTIMATE_SEARCH_UI_KEYS = [
-    "原価見積りID",
-    "管理NO",
-    "営業担当",
-    "客先名",
-    "品番",
-    "品名",
-    "備考",
-]
-
-
-def _estimate_row_for_search_ui(col_names, r):
-    """検索画面・登録直後表示用の 7 キー dict（ドライバの列名差を吸収）"""
-    if r is None:
-        return None
-    raw = dict(zip(col_names, r))
-    norm = _normalize_estimate_row_keys(raw)
-    if all(k in norm for k in _ESTIMATE_SEARCH_UI_KEYS):
-        return {k: norm[k] for k in _ESTIMATE_SEARCH_UI_KEYS}
-    if len(r) >= len(_ESTIMATE_SEARCH_UI_KEYS):
-        return {k: r[i] for i, k in enumerate(_ESTIMATE_SEARCH_UI_KEYS)}
-    return norm
-
-
-def _json_safe_estimate_row(d):
-    """pyodbc 行 dict を jsonify 可能な型にそろえる"""
-    out = {}
-    for k, v in d.items():
-        if v is None:
-            out[k] = None
-        elif isinstance(v, (str, int, float, bool)):
-            out[k] = v
-        else:
-            out[k] = str(v)
-    return out
-
-
-def _bikou_newlines_to_crlf(s):
-    """備考の改行を Access / VB の Chr(13) & Chr(10) と同じ CRLF にそろえる"""
-    if not s:
-        return s
-    if not isinstance(s, str):
-        s = str(s)
-    normalized = s.replace("\r\n", "\n").replace("\r", "\n")
-    return normalized.replace("\n", "\r\n")
-
-
-def _fetch_estimate_row_for_search(cur, estimate_id):
-    """search_conditions と同じ列構成で 1 行取得"""
-    sql = (
-        "SELECT "
-        "t_原価見積履歴.原価見積りID, "
-        "t_原価見積履歴.管理NO, "
-        "t_営業マスタ.営業担当, "
-        "t_客先マスタ.客先名, "
-        "t_原価見積履歴.品番, "
-        "t_原価見積履歴.品名, "
-        "t_原価見積履歴.備考 "
-        "FROM ((t_原価見積履歴 LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード) "
-        "LEFT JOIN t_客先マスタ ON t_原価見積履歴.客先コード = t_客先マスタ.コード) "
-        "WHERE t_原価見積履歴.原価見積りID = ?"
-    )
-    cur.execute(sql, (estimate_id,))
-    r = cur.fetchone()
-    if not r:
-        return None
-    col_names = [c[0] for c in cur.description]
-    return _estimate_row_for_search_ui(col_names, r)
-
-
-def api_register_estimate(payload=None):
-    """新規モーダルから t_原価見積履歴 へ 1 件追加し、追加行を返す"""
-    data = payload or {}
-    sales_id = (data.get('sales_id') or '').strip()
-    kanri_no = (data.get('kanri_no') or '').strip()
-    customer_code = (data.get('customer_code') or '').strip()
-    part_no = (data.get('part_no') or '').strip()
-    part_name_raw = data.get('part_name')
-    bikou_raw = data.get('bikou')
-    part_name = (part_name_raw or '').strip() if part_name_raw is not None else ''
-    bikou = (bikou_raw or '').strip() if bikou_raw is not None else ''
-
-    if not sales_id or not kanri_no or not customer_code or not part_no:
-        return {"error": "必須項目が不足しています"}
-
-    part_name_val = part_name if part_name else None
-    bikou_val = _bikou_newlines_to_crlf(bikou) if bikou else None
-
-    insert_sql = (
-        "INSERT INTO t_原価見積履歴 (営業ID, 管理NO, 客先コード, 品番, 品名, 備考) "
-        "VALUES (?, ?, ?, ?, ?, ?)"
-    )
-    params = (sales_id, kanri_no, customer_code, part_no, part_name_val, bikou_val)
-
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(insert_sql, params)
-        conn.commit()
-
-        cur.execute("SELECT MAX(原価見積りID) FROM t_原価見積履歴")
-        max_row = cur.fetchone()
-        new_id = max_row[0] if max_row else None
-        if new_id is None:
-            conn.close()
-            return {"error": "登録後の原価見積りIDを取得できませんでした"}
-
-        row = _fetch_estimate_row_for_search(cur, new_id)
-        conn.close()
-
-        if not row:
-            return {"error": "登録した行を取得できませんでした"}
-
-        return {"row": _json_safe_estimate_row(row)}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def api_update_estimate_history(payload=None):
-    """検索画面編集モーダル: t_原価見積履歴 を原価見積りID で更新"""
-    data = payload or {}
-    estimate_id = (data.get("estimate_id") or "").strip()
-    sales_id = (data.get("sales_id") or "").strip()
-    kanri_no = (data.get("kanri_no") or "").strip()
-    customer_code = (data.get("customer_code") or "").strip()
-    part_no = (data.get("part_no") or "").strip()
-    part_name_raw = data.get("part_name")
-    bikou_raw = data.get("bikou")
-    part_name = (part_name_raw or "").strip() if part_name_raw is not None else ""
-    bikou = (bikou_raw or "").strip() if bikou_raw is not None else ""
-
-    if not estimate_id:
-        return {"error": "原価見積りIDが必要です"}
-    if not sales_id or not kanri_no or not customer_code or not part_no:
-        return {"error": "必須項目が不足しています"}
-
-    part_name_val = part_name if part_name else None
-    bikou_val = _bikou_newlines_to_crlf(bikou) if bikou else None
-
-    update_sql = (
-        "UPDATE t_原価見積履歴 SET "
-        "営業ID = ?, 管理NO = ?, 客先コード = ?, 品番 = ?, 品名 = ?, 備考 = ? "
-        "WHERE 原価見積りID = ?"
-    )
-    params = (sales_id, kanri_no, customer_code, part_no, part_name_val, bikou_val, estimate_id)
-
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(update_sql, params)
-        if cur.rowcount == 0:
-            conn.close()
-            return {"error": "該当する原価見積りIDが見つかりません"}
-        conn.commit()
-        row = _fetch_estimate_row_for_search(cur, estimate_id)
-        conn.close()
-        if not row:
-            return {"error": "更新後の行を取得できませんでした"}
-        return {"row": _json_safe_estimate_row(row)}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def api_search_delete_estimate(payload=None):
-    """検索画面編集モーダル: 原価見積りID に紐づくロット周り・履歴・情報・初期費用を削除"""
-    data = payload or {}
-    estimate_id = (data.get("estimate_id") or "").strip()
-    if not estimate_id:
-        return {"error": "原価見積りIDが必要です"}
-
-    lot_detail_tables = [
-        "t_原価見積材料",
-        "t_原価見積真鍮",
-        "t_原価見積加工管理",
-        "t_原価見積送料",
-        "t_原価見積計算チャージ",
-    ]
-
-    conn = None
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-
-        cur.execute(
-            "SELECT ロットID FROM t_原価見積情報 WHERE 原価見積りID = ?",
-            [estimate_id],
-        )
-        lot_rows = cur.fetchall()
-        lot_ids = []
-        for r in lot_rows:
-            if not r or r[0] is None:
-                continue
-            lot_ids.append(r[0])
-
-        for lid in lot_ids:
-            for table_name in lot_detail_tables:
-                cur.execute(f"DELETE FROM {table_name} WHERE ロットID = ?", [lid])
-
-        cur.execute("DELETE FROM t_原価見積情報 WHERE 原価見積りID = ?", [estimate_id])
-        cur.execute("DELETE FROM t_原価見積履歴 WHERE 原価見積りID = ?", [estimate_id])
-        cur.execute("DELETE FROM t_原価見積初期費用 WHERE 原価見積りID = ?", [estimate_id])
-
-        conn.commit()
-        return {"ok": True}
-    except Exception as e:
-        if conn is not None:
-            try:
-                conn.rollback()
-            except Exception:
-                pass
-        return {"error": str(e)}
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
-
-
 def api_search(payload=None):
     """querytest.html からの検索API"""
     q = ((payload or {}).get('q') or '').strip()
@@ -4877,3 +4804,4 @@ def api_search(payload=None):
     except Exception as e:
         # エラー内容をそのまま返す（開発中）
         return {"error": str(e)}
+

@@ -9,7 +9,7 @@ import loadenv
 import webview
 from app.display_info import get_display_info
 from app.user_config import ensure_user_config, get_font_size_percent, set_font_size_percent
-from app import cost_quote_service as svc
+from app import quotes_service as svc
 from app import quote_masters_service as qms
 
 

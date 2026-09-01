@@ -21,7 +21,7 @@ hiddenimports = [
     'app.database',
     'app.pg_map',
     'app.name_maps',
-    'app.cost_quote_service',
+    'app.quotes_service',
     'app.user_config',
     'loadenv',
 ]

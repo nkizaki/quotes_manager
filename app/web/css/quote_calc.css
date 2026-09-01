@@ -134,13 +134,14 @@ body.quote-calc-page {
   box-sizing: border-box;
 }
 
-.quote-calc-fixed-section .quote-calc-readonly-field {
+.quote-calc-page .quote-calc-readonly-field {
   pointer-events: none;
   cursor: default;
   user-select: none;
 }
 
-.quote-calc-fixed-section .quote-calc-readonly-field:focus {
+.quote-calc-fixed-section .quote-calc-readonly-field:focus,
+.quote-calc-page .quote-calc-readonly-field:focus {
   outline: none;
   box-shadow: none;
 }
