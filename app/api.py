@@ -76,7 +76,7 @@ class Api:
         return _call(svc.get_est_calc_page, payload)
 
     def get_quote_calc_page(self, payload=None):
-        return _call(svc.get_quote_calc_page, payload)
+        return _call(svc.get_quote_calc_page, payload) # 見積り計算ページを取得
 
     def delete_quote_calc_brass(self, payload=None):
         return _call(svc.delete_quote_calc_brass, payload)
