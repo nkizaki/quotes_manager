@@ -128,7 +128,7 @@ def get_quote_calc_page(payload=None):
     customer_name = department = contact = ""
     
     material_diameter = steel_grade = shape = ""
-    diameter = length = overall_length = cutoff = piece_per_stock =pieces_per_stock_input = ""
+    diameter = length = overall_length = cutoff = piece_per_stock = pieces_per_stock_input = ""
     specific_gravity = weight_per_bar = weight_per_piece = ""
     material_unit_price = material_cost = yield_rate_decimal = yield_amount_decimal = material_cost_total = ""
 
@@ -145,13 +145,7 @@ def get_quote_calc_page(payload=None):
     processing_rows = []
     lot_options = []
     initial_cost_rows = []
-    conditions = {
-        "id": "",
-        "delivery_location": "",
-        "delivery_date": "",
-        "product_delivery_status": "",
-        "delivery_packaging_form": "",
-    }
+    conditions_rows = []
     recorded_remarks_lines = ""
     internal_remarks = ""
 
@@ -159,7 +153,7 @@ def get_quote_calc_page(payload=None):
     machine_options = []
     surface_master_options = []
 
-    # プルダウン用マスタ取得
+    # プルダウン用マスタ・データ取得
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -201,10 +195,7 @@ def get_quote_calc_page(payload=None):
             for r in mc_rows
         ]
 
-        cur.execute(
-            "SELECT t_表面処理マスタ.ID, t_表面処理マスタ.表面処理名, t_表面処理マスタ.並び順 "
-            "FROM t_表面処理マスタ ORDER BY t_表面処理マスタ.並び順"
-        )
+        cur.execute("SELECT ID, 表面処理名, 並び順 FROM t_表面処理マスタ ORDER BY 並び順")
         surface_master_options = [
             {
                 "ID": _json_safe_cell_value(r[0]),
@@ -221,6 +212,20 @@ def get_quote_calc_page(payload=None):
             rm_rec = dict(zip(rm_col_names, rm_rows[0]))
             rm_general = _rec_str(rm_rec, "一般")
             rm_fuji_koki = _rec_str(rm_rec, "不二工機")
+        
+
+        cur.execute("SELECT ID, ロット数, 見積りID FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数", (quote_id,))
+        lot_options_rows = cur.fetchall()
+        lot_options = [
+            {
+                "ID": _json_safe_cell_value(r[0]),
+                "Lot": _quote_format_lot_display(r[1]),
+                "見積りID": _json_safe_cell_value(r[2]),
+            }
+            for r in lot_options_rows
+        ]
+            
+
 
         conn.close()
     except Exception:
@@ -250,7 +255,7 @@ def get_quote_calc_page(payload=None):
                 material_diameter = _rec_str(rec, "材質径")
                 steel_grade = _rec_str(rec, "鋼種")
                 shape = _rec_str(rec, "形状")
-                diameter = 0
+                diameter = _rec_str(rec, "径")
                 length = _rec_str(rec, "長さ")
                 overall_length = _rec_str(rec, "全長")
                 cutoff = _rec_str(rec, "突切り")
@@ -262,13 +267,6 @@ def get_quote_calc_page(payload=None):
                 yield_amount_decimal = _rec_str(rec, "歩留金額")
                 material_cost_total = _rec_str(rec, "材料費合計")
 
-                weight_per_bar = _quote_calc_weight_per_bar(diameter, length, specific_gravity, shape)
-                piece_per_stock = _quote_calc_piece_per_stock(length, cutoff, overall_length, pieces_per_stock_input)
-
-    # material_diameter = steel_grade = shape = ""
-    # diameter = length = overall_length = cutoff = piece_per_stock =pieces_per_stock_input = ""
-    # specific_gravity = weight_per_bar = weight_per_piece = ""
-    # material_unit_price = material_cost = yield_rate_decimal = yield_amount_decimal = material_cost_total = ""
                 # 真鍮詳細
                 brass_id = _rec_str(rec, "ID")
                 if brass_id:
@@ -288,22 +286,116 @@ def get_quote_calc_page(payload=None):
                     unit_weight = _rec_str(rec, "単重")
                     scrap_weight = _rec_str(rec, "スクラップ重")
                     scrap_base = _rec_str(rec, "スクラップベース")
+                    chip_recovery_rate = format_cutting_recovery_rate_display(_rec_str(rec, "切粉回収率"))
                     scrap_unit_price = _rec_str(rec, "スクラップ単価")
-                    chip_recovery_rate = _rec_str(rec, "切粉回収率")
                     brass_material_cost = _rec_str(rec, "材料費")
+                
+                # 加工費のテーブル
+                proc_sql = (
+                    "SELECT ID, ロット数, サイクルタイム AS \"C/T\", 日産数, 日数, 機械, チャージ, 加工費, "
+                    "刃工具費, 刃工具費個別 AS 刃個別, 検査費, 検査費個別 AS 検個別, 利益率, 利益, 管理費, 材料費 "
+                    "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数"
+                )
+                cur.execute(proc_sql, (quote_id,))
+                proc_result = cur.fetchall()
 
+                processing_columns = [c[0] for c in cur.description] if cur.description else []
+                for r in proc_result:
+                    row_dict = {}
+                    for i, c in enumerate(processing_columns):
+                        row_dict[c] = _json_safe_cell_value(r[i])
+                    processing_rows.append(row_dict)
+                
+                # 梱包・輸送費のテーブル.
+                cur.execute("SELECT ID, 梱包仕様, 単価 FROM t_梱包輸送費 WHERE 加工費ID = ?", (quote_id,))
+                packaging_result = cur.fetchall()
+                packaging_columns = [c[0] for c in cur.description] if cur.description else []
+                packaging_rows = []
+                for r in packaging_result:
+                    row_dict = {}
+                    for i, c in enumerate(packaging_columns):
+                        row_dict[c] = _json_safe_cell_value(r[i])
+                    packaging_rows.append(row_dict)
 
+                # 初期費用のテーブル
+                cur.execute("SELECT ID, 見積りID, 品名, 数量, 単位, 単価, 金額 FROM t_初期費用 WHERE 見積りID = ? ORDER BY ID", (quote_id,))
+                initial_cost_result = cur.fetchall()
+                initial_cost_columns = [c[0] for c in cur.description] if cur.description else []
+                for r in initial_cost_result:
+                    row_dict = {}
+                    for i, c in enumerate(initial_cost_columns):
+                        row_dict[c] = _json_safe_cell_value(r[i])
+                    initial_cost_rows.append(row_dict)
 
-
-
-
-
-            conn.close()
+                # 諸条件
+                conditions_rows = _quote_load_conditions(cur, quote_id)
+                
+                # 見積書記載備考内容
+                recorded_remarks_lines = _quote_load_recorded_remarks(cur, quote_id)
+                
+                # 備考
+                internal_remarks = _rec_str(rec, "備考")
         except Exception:
-            pass
+            # エラー時は空のまま
+            conn.close()
+            return None
 
-
+    result = {
+        "quote_id": quote_id,
+        "part_no": part_no,
+        "part_name": part_name,
+        "customer_name": customer_name,
+        "department": department,
+        "contact": contact,
+        "material_diameter": material_diameter,
+        "steel_grade": steel_grade,
+        "shape": shape,
+        "diameter": diameter,
+        "length": length,
+        "overall_length": overall_length,
+        "cutoff": cutoff,
+        "pieces_per_stock": piece_per_stock,
+        "pieces_per_stock_input": pieces_per_stock_input,
+        "specific_gravity": specific_gravity,
+        "weight_per_bar": weight_per_bar,
+        "weight_per_piece": weight_per_piece,
+        "material_unit_price": material_unit_price,
+        "material_cost": material_cost,
+        "yield_rate_decimal": yield_rate_decimal,
+        "yield_amount_decimal": yield_amount_decimal,
+        "material_cost_total": material_cost_total,
+        "rm_general": rm_general,
+        "rm_fuji_koki": rm_fuji_koki,
+        "brass_id": brass_id,
+        "qc_br_rm": qc_br_rm,
+        "rm": rm,
+        "qc_br_scrap": qc_br_scrap,
+        "raw_material_unit_price": raw_material_unit_price,
+        "n_company_price": n_company_price,
+        "par_value": par_value,
+        "premium_value": premium_value,
+        "unit_weight": unit_weight,
+        "scrap_weight": scrap_weight,
+        "scrap_base": scrap_base,
+        "chip_recovery_rate": chip_recovery_rate,
+        "scrap_unit_price": scrap_unit_price,
+        "brass_material_cost": brass_material_cost,
+        "processing_columns": processing_columns,
+        "processing_rows": processing_rows,
+        "lot_options": lot_options,
+        "initial_cost_rows": initial_cost_rows,
+        "conditions": conditions_rows,
+        "recorded_remarks_lines": recorded_remarks_lines,
+        "internal_remarks": internal_remarks,
+        "machine_options": machine_options,
+        "surface_master_options": surface_master_options,
+        "zairyo_2_options": zairyo_2_options,
+    }
     
+    conn.close()
+    return result
+
+
 def _quote_calc_detail_sql():
     """est_calc で使用する詳細取得クエリ（1件用）"""
     return (
@@ -319,261 +411,6 @@ def _quote_calc_detail_sql():
         "ON t_見積り履歴.客先コード = t_客先マスタ.コード "
         "WHERE t_見積り履歴.見積りID = ?;"
     )
-
-
-
-
-
-
-
-
-
-
-
-
-    empty = {
-        "ok": True,
-        "quote_id": quote_id,
-        "part_no": "",
-        "part_name": "",
-        "customer_name": "",
-        "department": "",
-        "contact": "",
-        "material_diameter": "",
-        "zairyo_2_options": [],
-        "steel_grade":"",
-        "shape":"",
-        "diameter":"",
-        "length":"",
-        "overall_length":"",
-        "cutoff":"",
-        "pieces_per_stock_input":"",
-        "material_unit_price":"",
-        "yield_rate_decimal":"",
-        "material_cost":"",
-        "yield_amount_decimal":"",
-        "material_cost_total":"",
-        "rm_general": "",
-        "rm_fuji_koki": "",
-        "machine_options": [],
-        "processing_columns": [],
-        "processing_rows": [],
-        "brass_has_row": False,
-        "brass_id": "",
-        "brass_rm_category": "1",
-        "brass_weight_calc_category": "1",
-        "brass_n_company_price": "",
-        "brass_rm": "",
-        "brass_par_value": "",
-        "brass_premium_value": "",
-        "brass_unit_weight": "",
-        "brass_scrap_weight": "",
-        "brass_scrap_base": "",
-        "brass_scrap_unit_price": "",
-        "brass_chip_recovery_rate_display": "90",
-        "brass_material_cost": "",
-        "lot_options": [],
-        "initial_cost_rows": [],
-        "surface_master_options": [],
-        "conditions": {
-            "id": "",
-            "delivery_location": "",
-            "delivery_date": "",
-            "product_delivery_status": "",
-            "delivery_packaging_form": "",
-        },
-        "recorded_remarks_lines": _quote_blank_recorded_remarks_lines(),
-        "internal_remarks": "",
-    }
-
-    if not quote_id:
-        try:
-            conn = get_connection()
-            cur = conn.cursor()
-            _quote_calc_load_masters(cur, empty)
-            empty["surface_master_options"] = _quote_load_surface_master_options(cur)
-            conn.close()
-        except Exception:
-            pass
-        return empty
-
-    sql = (
-        "SELECT "
-        "t_見積り履歴.見積りID, "
-        "t_見積り履歴.品番, "
-        "t_見積り履歴.品名, "
-        "t_客先マスタ.客先名, "
-        "t_見積り履歴.客先部署, "
-        "t_見積り履歴.客先担当者 "
-        "FROM t_見積り履歴 "
-        "LEFT JOIN t_客先マスタ ON t_見積り履歴.客先コード = t_客先マスタ.コード "
-        "WHERE t_見積り履歴.見積りID = ?"
-    )
-
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(sql, (quote_id,))
-        row = cur.fetchone()
-        if not row:
-            conn.close()
-            return {"error": "該当する見積りIDが見つかりません"}
-
-        def _cell(v):
-            return "" if v is None else str(v)
-
-        result = {
-            "ok": True,
-            "quote_id": _cell(row[0]),
-            "part_no": _cell(row[1]),
-            "part_name": _cell(row[2]),
-            "customer_name": _cell(row[3]),
-            "department": _cell(row[4]),
-            "contact": _cell(row[5]),
-            "material_diameter":"",
-            "zairyo_2_options": [],
-            "steel_grade":"",
-            "shape":"",
-            "diameter":"",
-            "length":"",
-            "overall_length":"",
-            "cutoff":"",
-            "pieces_per_stock_input":"",
-            "material_unit_price":"",
-            "yield_rate_decimal":"",
-            "material_cost":"",
-            "yield_amount_decimal":"",
-            "material_cost_total":"",
-            "rm_general": "",
-            "rm_fuji_koki": "",
-            "machine_options": [],
-            "processing_columns": [],
-            "processing_rows": [],
-            "brass_has_row": False,
-            "brass_id": "",
-            "brass_rm_category": "1",
-            "brass_weight_calc_category": "1",
-            "brass_n_company_price": "",
-            "brass_rm": "",
-            "brass_par_value": "",
-            "brass_premium_value": "",
-            "brass_unit_weight": "",
-            "brass_scrap_weight": "",
-            "brass_scrap_base": "",
-            "brass_scrap_unit_price": "",
-            "brass_chip_recovery_rate_display": "90",
-            "brass_material_cost": "",
-            "lot_options": [],
-            "initial_cost_rows": [],
-            "surface_master_options": [],
-            "conditions": {
-                "id": "",
-                "delivery_location": "",
-                "delivery_date": "",
-                "product_delivery_status": "",
-                "delivery_packaging_form": "",
-            },
-        }
-        _quote_calc_load_masters(cur, result)
-        _quote_calc_load_processing_rows(cur, quote_id, result)
-        _quote_calc_load_brass(cur, quote_id, result)
-        _quote_calc_load_packaging_tab(cur, quote_id, result)
-        _quote_calc_load_remarks(cur, quote_id, result)
-        conn.close()
-        return result
-    except Exception as e:
-        return {"error": str(e)}
-
-def _quote_calc_weight_per_bar(diameter, length, specific_gravity, shape):
-    """重量計算"""
-    if not diameter or not length or not specific_gravity or not shape:
-        return ""
-    weight = (Decimal(diameter) / 2 / 10) **2 * Decimal(3.14) * (Decimal(length) / 10) * Decimal(specific_gravity)
-    if shape == "2": # Hex=φ*1.15
-        weight = weight * Decimal(1.15)
-    elif shape == "3": # □=φ*1.263
-        weight = weight * Decimal(1.263)
-    weight = str(Decimal(weight).quantize(Decimal("0.01"),  rounding=ROUND_HALF_UP))
-    return weight
-
-def _quote_calc_piece_per_stock(length, cutoff, overall_length, pieces_per_stock_input):
-    """取り数と一個重の計算"""
-    piece = None
-    piece_2 = None
-    weight_piece = None
-    if not length or not cutoff or not overall_length:
-        return piece, piece_2, weight_piece
-    piece = int(overall_length - 300) / (int(length) + int(cutoff))
-    piece = str(piece)
-    if not pieces_per_stock_input:
-        piece_2 = piece
-    weight_piece = str(Decimal(weight_piece).quantize(Decimal("0.01"),  rounding=ROUND_HALF_UP))
-    return piece, piece_2, weight_piece
-
-def _quote_calc_load_masters(cur, out: dict) -> None:
-    cur.execute("SELECT * FROM t_比重マスタ ORDER BY ID")
-    rows = cur.fetchall()
-    out["zairyo_2_options"] = [
-        {
-            "id": (r[0] if r[0] is not None else ""),
-            "name": (r[1] if r[1] is not None else ""),
-            "specgravity": (r[2] if len(r) > 2 and r[2] is not None else ""),
-        }
-        for r in rows
-    ]
-
-    cur.execute("SELECT 一般, 不二工機 FROM t_RMマスタ ORDER BY rm_id ASC")
-    rm_rows = cur.fetchall()
-    if rm_rows:
-        out["rm_general"] = "" if rm_rows[0][0] is None else str(rm_rows[0][0])
-        out["rm_fuji_koki"] = "" if rm_rows[0][1] is None else str(rm_rows[0][1])
-
-    cur.execute("SELECT ID, 機種 FROM t_機械チャージ ORDER BY ID")
-    mc_rows = cur.fetchall()
-    out["machine_options"] = [
-        {
-            "id": (r[0] if r[0] is not None else ""),
-            "name": (r[1] if r[1] is not None else ""),
-        }
-        for r in mc_rows
-    ]
-
-def _quote_calc_load_brass(cur, quote_id: str, out: dict) -> None:
-    """t_真鍮材料 を見積りIDで検索し、真鍮詳細欄へ反映する値を out に格納する。"""
-    cur.execute("SELECT * FROM t_真鍮材料 WHERE 見積りID = ?", (quote_id,))
-    row = cur.fetchone()
-    if not row:
-        out["brass_has_row"] = False
-        out["brass_id"] = ""
-        return
-
-    col_names = [c[0] for c in (cur.description or [])]
-    rec = dict(zip(col_names, row))
-
-    def _s(key):
-        v = rec.get(key)
-        if v is None:
-            return ""
-        return str(v)
-
-    r1 = _s("RM区分")
-    r2 = _s("重量計算区分")
-    out["brass_has_row"] = True
-    out["brass_id"] = _s("ID")
-    out["brass_rm_category"] = r1 if r1 in ("1", "2") else "1"
-    out["brass_weight_calc_category"] = r2 if r2 in ("1", "2") else "1"
-    out["brass_n_company_price"] = _s("N社価格")
-    out["brass_rm"] = _s("見積RM")
-    out["brass_par_value"] = _s("建値")
-    out["brass_premium_value"] = _s("増値")
-    out["brass_unit_weight"] = _s("単重")
-    out["brass_scrap_weight"] = _s("スクラップ重")
-    out["brass_scrap_base"] = _s("スクラップベース")
-    out["brass_scrap_unit_price"] = _s("スクラップ単価")
-    out["brass_chip_recovery_rate_display"] = format_cutting_recovery_rate_display(
-        rec.get("切粉回収率")
-    )
-    out["brass_material_cost"] = _s("材料費")
 
 def delete_quote_calc_brass(payload=None):
     """真鍮詳細データを ID 指定で削除する。"""
@@ -598,29 +435,6 @@ def delete_quote_calc_brass(payload=None):
     except Exception as e:
         return {"error": str(e)}
 
-def _quote_calc_load_processing_rows(cur, quote_id: str, out: dict) -> None:
-    proc_sql = (
-        "SELECT ID, ロット数, サイクルタイム, 日産数, 日数, 機械, チャージ, 加工費, "
-        "刃工具費, 刃工具費個別, 検査費, 検査費個別, 利益率, 利益, 管理費, 材料費 "
-        "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数"
-    )
-    cur.execute(proc_sql, (quote_id,))
-    rows = cur.fetchall()
-    col_names = [c[0] for c in cur.description] if cur.description else []
-    display_map = {
-        "サイクルタイム": "C/T",
-        "刃工具費個別": "刃個別",
-        "検査費個別": "検個別",
-    }
-    out["processing_columns"] = [display_map.get(c, c) for c in col_names]
-    out["processing_rows"] = []
-    for r in rows:
-        row_dict = {}
-        for i, c in enumerate(col_names):
-            key = display_map.get(c, c)
-            row_dict[key] = _json_safe_cell_value(r[i])
-        out["processing_rows"].append(row_dict)
-
 def _quote_format_lot_display(raw) -> str:
     if raw is None:
         return ""
@@ -632,48 +446,13 @@ def _quote_format_lot_display(raw) -> str:
     except (InvalidOperation, ValueError, TypeError, OverflowError):
         return str(raw).strip()
 
-def _quote_load_lot_options(cur, quote_id: str) -> list[dict]:
-    cur.execute(
-        "SELECT t_加工費.ID, t_加工費.ロット数, t_加工費.見積りID "
-        "FROM t_加工費 WHERE t_加工費.見積りID = ? ORDER BY t_加工費.ロット数",
-        (quote_id,),
-    )
-    rows = cur.fetchall()
-    out: list[dict] = []
-    for r in rows:
-        out.append(
-            {
-                "ID": _json_safe_cell_value(r[0]),
-                "Lot": _quote_format_lot_display(r[1]),
-                "見積りID": _json_safe_cell_value(r[2]),
-            }
-        )
-    return out
 
 def _quote_initial_cost_rows_for_api(cur, quote_id: str) -> list[dict]:
-    cur.execute(
-        "SELECT ID, 見積りID, 品名, 数量, 単位, 単価, 金額 "
-        "FROM t_初期費用 WHERE 見積りID = ? ORDER BY ID",
-        (quote_id,),
-    )
+    cur.execute("SELECT ID, 見積りID, 品名, 数量, 単位, 単価, 金額 FROM t_初期費用 WHERE 見積りID = ? ORDER BY ID",(quote_id,))
     col_names = [c[0] for c in (cur.description or [])]
     return [
         {k: _initial_cost_display_str(k, v) for k, v in zip(col_names, ic_row)}
         for ic_row in cur.fetchall()
-    ]
-
-def _quote_load_surface_master_options(cur) -> list[dict]:
-    cur.execute(
-        "SELECT t_表面処理マスタ.ID, t_表面処理マスタ.表面処理名, t_表面処理マスタ.並び順 "
-        "FROM t_表面処理マスタ ORDER BY t_表面処理マスタ.並び順"
-    )
-    return [
-        {
-            "ID": _json_safe_cell_value(r[0]),
-            "表面処理名": _json_safe_cell_value(r[1]),
-            "並び順": _json_safe_cell_value(r[2]),
-        }
-        for r in cur.fetchall()
     ]
 
 def _quote_load_conditions(cur, quote_id: str) -> dict:
@@ -698,17 +477,8 @@ def _quote_load_conditions(cur, quote_id: str) -> dict:
         "delivery_packaging_form": _rec_str(rec, "納入梱包形態"),
     }
 
-def _quote_calc_load_packaging_tab(cur, quote_id: str, out: dict) -> None:
-    out["lot_options"] = _quote_load_lot_options(cur, quote_id)
-    out["initial_cost_rows"] = _quote_initial_cost_rows_for_api(cur, quote_id)
-    out["surface_master_options"] = _quote_load_surface_master_options(cur)
-    out["conditions"] = _quote_load_conditions(cur, quote_id)
-
 def _quote_packaging_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
-    cur.execute(
-        "SELECT ID, 梱包仕様, 単価 FROM t_梱包輸送費 WHERE 加工費ID = ?",
-        (processing_cost_id,),
-    )
+    cur.execute("SELECT ID, 梱包仕様, 単価 FROM t_梱包輸送費 WHERE 加工費ID = ?",(processing_cost_id,))
     col_names = [c[0] for c in (cur.description or [])]
     rows: list[dict] = []
     for r in cur.fetchall():
@@ -717,10 +487,7 @@ def _quote_packaging_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
     return rows
 
 def _quote_surface_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
-    cur.execute(
-        "SELECT ID, 加工費ID, 処理名, 単価 FROM t_表面処理費 WHERE 加工費ID = ?",
-        (processing_cost_id,),
-    )
+    cur.execute("SELECT ID, 加工費ID, 処理名, 単価 FROM t_表面処理費 WHERE 加工費ID = ?",(processing_cost_id,))
     col_names = [c[0] for c in (cur.description or [])]
     rows: list[dict] = []
     for r in cur.fetchall():
@@ -810,18 +577,12 @@ def api_quote_calc_packaging_save(payload=None):
         conn = get_connection()
         cur = conn.cursor()
         if row_id:
-            cur.execute(
-                "UPDATE t_梱包輸送費 SET 梱包仕様 = ?, 単価 = ? WHERE ID = ?",
-                (packaging_spec, unit_price, row_id),
-            )
+            cur.execute("UPDATE t_梱包輸送費 SET 梱包仕様 = ?, 単価 = ? WHERE ID = ?",(packaging_spec, unit_price, row_id))
             if cur.rowcount == 0:
                 conn.close()
                 return {"error": "該当IDの行がありません"}
         else:
-            cur.execute(
-                "INSERT INTO t_梱包輸送費 (加工費ID, 梱包仕様, 単価) VALUES (?, ?, ?)",
-                (processing_cost_id, packaging_spec, unit_price),
-            )
+            cur.execute("INSERT INTO t_梱包輸送費 (加工費ID, 梱包仕様, 単価) VALUES (?, ?, ?)",(processing_cost_id, packaging_spec, unit_price))
         conn.commit()
         rows = _quote_packaging_rows_for_api(cur, processing_cost_id)
         conn.close()
@@ -885,10 +646,7 @@ def api_quote_calc_initial_cost_row(payload=None):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute(
-            "SELECT * FROM t_初期費用 WHERE ID = ? AND 見積りID = ?",
-            (row_id, quote_id),
-        )
+        cur.execute("SELECT * FROM t_初期費用 WHERE ID = ? AND 見積りID = ?",(row_id, quote_id))
         row = cur.fetchone()
         if not row:
             conn.close()
@@ -1088,18 +846,12 @@ def api_quote_calc_surface_save(payload=None):
         conn = get_connection()
         cur = conn.cursor()
         if row_id:
-            cur.execute(
-                "UPDATE t_表面処理費 SET 処理名 = ?, 単価 = ? WHERE ID = ?",
-                (treatment_name, unit_price, row_id),
-            )
+            cur.execute("UPDATE t_表面処理費 SET 処理名 = ?, 単価 = ? WHERE ID = ?",(treatment_name, unit_price, row_id))
             if cur.rowcount == 0:
                 conn.close()
                 return {"error": "該当IDの行がありません"}
         else:
-            cur.execute(
-                "INSERT INTO t_表面処理費 (加工費ID, 処理名, 単価) VALUES (?, ?, ?)",
-                (processing_cost_id, treatment_name, unit_price),
-            )
+            cur.execute("INSERT INTO t_表面処理費 (加工費ID, 処理名, 単価) VALUES (?, ?, ?)",(processing_cost_id, treatment_name, unit_price))
         conn.commit()
         rows = _quote_surface_rows_for_api(cur, processing_cost_id)
         conn.close()
@@ -1197,10 +949,7 @@ def api_quote_calc_conditions_save(payload=None):
                 conn.close()
                 return {"error": "該当IDの行がありません"}
         else:
-            cur.execute(
-                "SELECT ID FROM t_諸条件 WHERE 見積りID = ?",
-                (quote_id,),
-            )
+            cur.execute("SELECT ID FROM t_諸条件 WHERE 見積りID = ?",(quote_id,))
             existing = cur.fetchone()
             if existing:
                 row_id = str(existing[0])
@@ -1249,37 +998,27 @@ def api_quote_calc_conditions_save(payload=None):
             except Exception:
                 pass
 
-# def _quote_blank_recorded_remarks_lines(count: int = 10) -> list[dict]:
-#     return [{"id": "", "text": ""} for _ in range(count)]
+def _quote_load_recorded_remarks(cur, quote_id: str) -> list[dict]:
+    cur.execute("SELECT ID, 備考 FROM t_記載事項 WHERE 見積りID = ? ORDER BY ID ASC",(quote_id,))
+    rows = cur.fetchall()[:10]
+    lines: list[dict] = []
+    for row in rows:
+        lines.append(
+            {
+                "id": _json_safe_cell_value(row[0]),
+                "text": _json_safe_cell_value(row[1]) if row[1] is not None else "",
+            }
+        )
+    while len(lines) < 10:
+        lines.append({"id": "", "text": ""})
+    return lines
 
-# def _quote_load_recorded_remarks(cur, quote_id: str) -> list[dict]:
-#     cur.execute(
-#         "SELECT ID, 備考 FROM t_記載事項 WHERE 見積りID = ? ORDER BY ID ASC",
-#         (quote_id,),
-#     )
-#     rows = cur.fetchall()[:10]
-#     lines: list[dict] = []
-#     for row in rows:
-#         lines.append(
-#             {
-#                 "id": _json_safe_cell_value(row[0]),
-#                 "text": _json_safe_cell_value(row[1]) if row[1] is not None else "",
-#             }
-#         )
-#     while len(lines) < 10:
-#         lines.append({"id": "", "text": ""})
-#     return lines
-
-# def _quote_load_internal_remarks(cur, quote_id: str) -> str:
-#     cur.execute("SELECT 備考 FROM t_見積り履歴 WHERE 見積りID = ?", (quote_id,))
-#     row = cur.fetchone()
-#     if not row or row[0] is None:
-#         return ""
-#     return _json_safe_cell_value(row[0])
-
-# def _quote_calc_load_remarks(cur, quote_id: str, out: dict) -> None:
-#     out["recorded_remarks_lines"] = _quote_load_recorded_remarks(cur, quote_id)
-#     out["internal_remarks"] = _quote_load_internal_remarks(cur, quote_id)
+def _quote_load_internal_remarks(cur, quote_id: str) -> str:
+    cur.execute("SELECT 備考 FROM t_見積り履歴 WHERE 見積りID = ?", (quote_id,))
+    row = cur.fetchone()
+    if not row or row[0] is None:
+        return ""
+    return _json_safe_cell_value(row[0])
 
 def api_quote_calc_remarks_save(payload=None):
     """備考タブ: 記載事項の登録・更新・削除と見積り履歴備考の更新"""
@@ -1318,24 +1057,12 @@ def api_quote_calc_remarks_save(payload=None):
             if not row_id and not text:
                 continue
             if not row_id:
-                cur.execute(
-                    "INSERT INTO t_記載事項 (見積りID, 備考) VALUES (?, ?)",
-                    (quote_id, text),
-                )
+                cur.execute("INSERT INTO t_記載事項 (見積りID, 備考) VALUES (?, ?)",(quote_id, text))
             elif not text:
-                cur.execute(
-                    "DELETE FROM t_記載事項 WHERE ID = ? AND 見積りID = ?",
-                    (row_id, quote_id),
-                )
+                cur.execute("DELETE FROM t_記載事項 WHERE ID = ? AND 見積りID = ?",(row_id, quote_id))
             else:
-                cur.execute(
-                    "UPDATE t_記載事項 SET 備考 = ? WHERE ID = ? AND 見積りID = ?",
-                    (text, row_id, quote_id),
-                )
-        cur.execute(
-            "UPDATE t_見積り履歴 SET 備考 = ? WHERE 見積りID = ?",
-            (internal_remarks, quote_id),
-        )
+                cur.execute("UPDATE t_記載事項 SET 備考 = ? WHERE ID = ? AND 見積りID = ?",(text, row_id, quote_id))
+        cur.execute("UPDATE t_見積り履歴 SET 備考 = ? WHERE 見積りID = ?",(internal_remarks, quote_id))
         conn.commit()
         recorded_remarks_lines = _quote_load_recorded_remarks(cur, quote_id)
         internal_loaded = _quote_load_internal_remarks(cur, quote_id)

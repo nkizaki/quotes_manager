@@ -212,9 +212,9 @@
   }
 
   function applyBrassData(data) {
-    var hasRow = !!(data && data.brass_has_row);
-    var r1 = String((data && data.brass_rm_category) || "1");
-    var r2 = String((data && data.brass_weight_calc_category) || "1");
+    var hasRow = !!(data && data.brass_id);
+    var r1 = String((data && data.rm) || "1");
+    var r2 = String((data && data.qc_br_scrap) || "1");
 
     brassId = hasRow && data.brass_id != null && String(data.brass_id).trim() !== ""
       ? String(data.brass_id).trim()
@@ -226,16 +226,16 @@
     setChecked("qc-br-scrap-weight", r2 === "2");
 
     if (hasRow) {
-      setVal("qc-br-quote-rm", data.brass_rm);
-      setVal("qc-br-n-price", data.brass_n_company_price);
-      setVal("qc-br-par", data.brass_par_value);
-      setVal("qc-br-premium", data.brass_premium_value);
-      setVal("qc-br-unit-weight", data.brass_unit_weight);
-      setVal("qc-br-scrap-w", data.brass_scrap_weight);
-      setVal("qc-br-scrap-base", data.brass_scrap_base);
-      setVal("qc-br-chip-rate", data.brass_chip_recovery_rate_display);
-      setVal("qc-br-scrap-unit-price", data.brass_scrap_unit_price);
-      setVal("qc-br-material-cost", data.brass_material_cost);
+      setVal("qc-br-quote-rm", data.rm);
+      setVal("qc-br-n-price", data.n_company_price);
+      setVal("qc-br-par", data.par_value);
+      setVal("qc-br-premium", data.premium_value);
+      setVal("qc-br-unit-weight", data.unit_weight);
+      setVal("qc-br-scrap-w", data.scrap_weight);
+      setVal("qc-br-scrap-base", data.scrap_base);
+      setVal("qc-br-chip-rate", data.chip_recovery_rate);
+      setVal("qc-br-scrap-unit-price", data.scrap_unit_price);
+      setVal("qc-br-material-cost", data.material_cost);
       setBrassEnabled(true, { reset: false });
     } else {
       setBrassEnabled(false, { reset: true });
