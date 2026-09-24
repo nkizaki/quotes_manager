@@ -112,10 +112,13 @@
                 </div>
                 <div class="kakou-item kakou-row-1 kakou-col-11">
                   <label for="qc-mat-pieces-input">取り数入力</label>
-                  <input type="text" id="qc-mat-pieces-input" name="pieces_per_stock_input" autocomplete="off">
+                  <input type="text" id="qc-mat-pieces-input" name="pieces_per_stock_input" inputmode="numeric" autocomplete="off">
                 </div>
                 <div class="kakou-item kakou-row-1 kakou-col-12 qc-mat-register-cell">
-                  <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
+                  <div class="qc-mat-reg-status" id="qc-mat-reg-status">
+                    <span class="qc-mat-reg-status-label">材料費登録状況</span>
+                    <span class="qc-mat-reg-status-badge is-unset" id="qc-mat-reg-status-badge" aria-live="polite">未</span>
+                  </div>
                   <button type="button" class="est-save-btn" id="qc-mat-btn-register">登録</button>
                 </div>
 
@@ -141,7 +144,7 @@
                   <input type="text" id="qc-mat-cost" name="material_cost" class="quote-calc-readonly-field" readonly tabindex="-1" aria-readonly="true" autocomplete="off">
                 </div>
                 <div class="kakou-item kakou-row-2 kakou-col-6">
-                  <label for="qc-mat-yield">歩留り</label>
+                  <label for="qc-mat-yield">歩留り(%)</label>
                   <input type="text" id="qc-mat-yield" name="yield_rate_decimal" autocomplete="off">
                 </div>
                 <div class="kakou-item kakou-row-2 kakou-col-7">
@@ -151,6 +154,13 @@
                 <div class="kakou-item kakou-row-2 kakou-col-8">
                   <label for="qc-mat-total">材料費合計</label>
                   <input type="text" id="qc-mat-total" name="material_cost_total" class="quote-calc-readonly-field" readonly tabindex="-1" aria-readonly="true" autocomplete="off">
+                </div>
+                <div class="kakou-item kakou-row-2 kakou-col-11">
+                  <label for="qc-mat-cost-input">材料費</label>
+                  <input type="text" id="qc-mat-cost-input" name="material_cost_input" autocomplete="off">
+                </div>
+                <div class="kakou-item kakou-row-2 kakou-col-12 qc-mat-delete-cell">
+                  <button type="button" class="est-delete-btn" id="qc-mat-btn-delete" disabled>削除</button>
                 </div>
               </div>
             </section>

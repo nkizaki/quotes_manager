@@ -120,6 +120,21 @@ def format_cutting_recovery_rate_display(raw):
 # 見積り管理
 # ---------------------------------------------------------------------------
 
+def _quote_material_specific_gravity(options, steel_grade) -> str:
+    key = str(steel_grade or "").strip()
+    if not key:
+        return ""
+    for item in options or []:
+        item_id = "" if item.get("id") is None else str(item.get("id")).strip()
+        if item_id != key:
+            continue
+        sg = item.get("specgravity")
+        if sg is None or str(sg).strip() == "":
+            return ""
+        return str(sg)
+    return ""
+
+
 def get_quote_calc_page(payload=None):
     """見積りID を元に quote_calc.html 用の基本情報・マスタ・加工費一覧を返す"""
     payload = payload or {}
@@ -128,9 +143,10 @@ def get_quote_calc_page(payload=None):
     customer_name = department = contact = ""
     
     material_diameter = steel_grade = shape = ""
-    diameter = length = overall_length = cutoff = piece_per_stock = pieces_per_stock_input = ""
-    specific_gravity = weight_per_bar = weight_per_piece = ""
+    diameter = length = overall_length = cutoff = pieces_per_stock_input = ""
+    specific_gravity = ""
     material_unit_price = material_cost = yield_rate_decimal = yield_amount_decimal = material_cost_total = ""
+    material_registered = False
 
     brass_id = ""
     rm_general = rm_fuji_koki = ""
@@ -251,45 +267,66 @@ def get_quote_calc_page(payload=None):
                 department = _rec_str(rec, "客先部署")
                 contact = _rec_str(rec, "客先担当者")
 
-                # 材料費
-                material_diameter = _rec_str(rec, "材質径")
-                steel_grade = _rec_str(rec, "鋼種")
-                shape = _rec_str(rec, "形状")
-                diameter = _rec_str(rec, "径")
-                length = _rec_str(rec, "長さ")
-                overall_length = _rec_str(rec, "全長")
-                cutoff = _rec_str(rec, "突切り")
-                pieces_per_stock_input = _rec_str(rec, "取り数入力")
-                specific_gravity = str(next((item for item in zairyo_2_options if item["id"] == int(steel_grade)), None)["specgravity"])
-                material_unit_price = _rec_str(rec, "材料単価")
-                material_cost = _rec_str(rec, "材料費")
-                yield_rate_decimal = _rec_str(rec, "歩留")
-                yield_amount_decimal = _rec_str(rec, "歩留金額")
-                material_cost_total = _rec_str(rec, "材料費合計")
+                # 材料費（t_真鍮材料にも材料費があるため、t_材料費を別クエリで取る）
+                cur.execute(
+                    "SELECT 材質径, 鋼種, 形状, 径, 長さ, 全長, 突切り, 取り数入力, "
+                    "材料単価, 歩留, 材料費, 歩留金額, 材料費合計 "
+                    "FROM t_材料費 WHERE 見積りID = ?",
+                    (quote_id,),
+                )
+                mat_row = cur.fetchone()
+                if mat_row:
+                    material_registered = True
+                    mat_cols = [c[0] for c in (cur.description or [])]
+                    mat = dict(zip(mat_cols, mat_row))
+                    material_diameter = _rec_str(mat, "材質径")
+                    steel_grade = _rec_str(mat, "鋼種")
+                    shape = _rec_str(mat, "形状")
+                    diameter = _rec_str(mat, "径")
+                    length = _rec_str(mat, "長さ")
+                    overall_length = _rec_str(mat, "全長")
+                    cutoff = _rec_str(mat, "突切り")
+                    pieces_per_stock_input = _rec_str(mat, "取り数入力")
+                    specific_gravity = _quote_material_specific_gravity(zairyo_2_options, steel_grade)
+                    material_unit_price = _rec_str(mat, "材料単価")
+                    material_cost = _rec_str(mat, "材料費")
+                    yield_rate_decimal = format_yield_rate_display(mat.get("歩留"))
+                    yield_amount_decimal = _rec_str(mat, "歩留金額")
+                    material_cost_total = _rec_str(mat, "材料費合計")
+                # 材料費が無くても加工費テーブル等の取得は続行する
 
-                # 真鍮詳細
-                brass_id = _rec_str(rec, "ID")
-                if brass_id:
-                    qc_br_rm = _rec_str(rec, "RM区分")
-                    qc_br_scrap = _rec_str(rec, "重量計算区分")
-                    if qc_br_rm == "1":
-                        rm = _rec_str(rec, "一般")
+                # 真鍮詳細（材料費は t_材料費 と列名が重なるため別クエリ）
+                cur.execute(
+                    "SELECT ID, RM区分, 重量計算区分, 見積RM, N社価格, 建値, 増値, "
+                    "単重, スクラップ重, スクラップベース, 切粉回収率, スクラップ単価, 材料費 "
+                    "FROM t_真鍮材料 WHERE 見積りID = ?",
+                    (quote_id,),
+                )
+                brass_row = cur.fetchone()
+                if brass_row:
+                    brass_cols = [c[0] for c in (cur.description or [])]
+                    brass = dict(zip(brass_cols, brass_row))
+                    brass_id = _rec_str(brass, "ID")
+                    qc_br_rm = _rec_str(brass, "RM区分")
+                    qc_br_scrap = _rec_str(brass, "重量計算区分")
+                    if qc_br_rm == "1":  # RM
                         raw_material_unit_price = material_cost_total
-                    elif qc_br_rm == "2":
-                        rm = _rec_str(rec, "不二工機")
+                    elif qc_br_rm == "2":  # 不二工機
                         if qc_br_scrap == "1":
                             raw_material_unit_price = "1"
-                    raw_material_unit_price = _rec_str(rec, "")
-                    n_company_price = _rec_str(rec, "N社価格")
-                    par_value = _rec_str(rec, "建値")
-                    premium_value = _rec_str(rec, "増値")
-                    unit_weight = _rec_str(rec, "単重")
-                    scrap_weight = _rec_str(rec, "スクラップ重")
-                    scrap_base = _rec_str(rec, "スクラップベース")
-                    chip_recovery_rate = format_cutting_recovery_rate_display(_rec_str(rec, "切粉回収率"))
-                    scrap_unit_price = _rec_str(rec, "スクラップ単価")
-                    brass_material_cost = _rec_str(rec, "材料費")
-                
+                    rm = _rec_str(brass, "見積RM")
+                    n_company_price = _rec_str(brass, "N社価格")
+                    par_value = _rec_str(brass, "建値")
+                    premium_value = _rec_str(brass, "増値")
+                    unit_weight = _rec_str(brass, "単重")
+                    scrap_weight = _rec_str(brass, "スクラップ重")
+                    scrap_base = _rec_str(brass, "スクラップベース")
+                    chip_recovery_rate = format_cutting_recovery_rate_display(
+                        _rec_str(brass, "切粉回収率")
+                    )
+                    scrap_unit_price = _rec_str(brass, "スクラップ単価")
+                    brass_material_cost = _rec_str(brass, "材料費")
+
                 # 加工費のテーブル
                 proc_sql = (
                     "SELECT ID, ロット数, サイクルタイム AS \"C/T\", 日産数, 日数, 機械, チャージ, 加工費, "
@@ -354,16 +391,14 @@ def get_quote_calc_page(payload=None):
         "length": length,
         "overall_length": overall_length,
         "cutoff": cutoff,
-        "pieces_per_stock": piece_per_stock,
         "pieces_per_stock_input": pieces_per_stock_input,
         "specific_gravity": specific_gravity,
-        "weight_per_bar": weight_per_bar,
-        "weight_per_piece": weight_per_piece,
         "material_unit_price": material_unit_price,
         "material_cost": material_cost,
         "yield_rate_decimal": yield_rate_decimal,
         "yield_amount_decimal": yield_amount_decimal,
         "material_cost_total": material_cost_total,
+        "material_registered": material_registered,
         "rm_general": rm_general,
         "rm_fuji_koki": rm_fuji_koki,
         "brass_id": brass_id,
@@ -433,6 +468,206 @@ def delete_quote_calc_brass(payload=None):
         conn.close()
         return {"ok": True}
     except Exception as e:
+        return {"error": str(e)}
+
+
+def delete_quote_calc_material(payload=None):
+    """見積りID 指定で材料費・真鍮材料を削除する。"""
+    payload = payload or {}
+    quote_id = str(payload.get("quote_id") or payload.get("見積りID") or "").strip()
+    if not quote_id:
+        return {"error": "見積りIDが必要です"}
+    try:
+        quote_param = int(quote_id)
+    except ValueError:
+        quote_param = quote_id
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM t_材料費 WHERE 見積りID = ?", (quote_param,))
+        cur.execute("DELETE FROM t_真鍮材料 WHERE 見積りID = ?", (quote_param,))
+        conn.commit()
+        conn.close()
+        return {"ok": True, "material_registered": False}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _quote_num_or_none(raw):
+    if raw is None:
+        return None
+    s = str(raw).strip().replace(",", "")
+    if s == "":
+        return None
+    try:
+        return Decimal(s)
+    except InvalidOperation:
+        return None
+
+
+def _quote_chip_rate_for_db(raw):
+    """画面の百分率（90）を DB 小数（0.9）へ。"""
+    n = _quote_num_or_none(raw)
+    if n is None:
+        return None
+    f = float(n)
+    if f > 1:
+        return f / 100.0
+    return f
+
+
+def save_quote_calc_material(payload=None):
+    """材料費の登録・更新。真鍮有効時は真鍮材料も合わせて保存する。"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or "").strip()
+    if not quote_id:
+        return {"error": "見積りIDが必要です"}
+    try:
+        quote_param = int(quote_id)
+    except ValueError:
+        quote_param = quote_id
+
+    brass_enabled = bool(data.get("brass_enabled"))
+
+    mat_cols = [
+        ("材質径", "material_diameter"),
+        ("鋼種", "steel_grade"),
+        ("形状", "shape"),
+        ("径", "diameter"),
+        ("長さ", "length"),
+        ("全長", "overall_length"),
+        ("突切り", "cutoff"),
+        ("取り数入力", "pieces_per_stock_input"),
+        ("材料単価", "material_unit_price"),
+        ("歩留", "yield_rate"),
+        ("材料費", "material_cost"),
+        ("歩留金額", "yield_amount"),
+        ("材料費合計", "material_cost_total"),
+    ]
+
+    def _mat_val(key):
+        if key == "yield_rate":
+            return normalize_yield_rate_for_db(data.get(key))
+        v = data.get(key)
+        if v is None:
+            return None
+        s = str(v).strip().replace(",", "")
+        if s == "":
+            return None
+        if key in ("steel_grade", "length", "pieces_per_stock_input", "material_unit_price"):
+            try:
+                return int(Decimal(s))
+            except (InvalidOperation, ValueError, TypeError, OverflowError):
+                return s
+        return s
+
+    brass_cols = [
+        ("RM区分", "qc_br_rm"),
+        ("重量計算区分", "qc_br_scrap"),
+        ("見積RM", "rm"),
+        ("N社価格", "n_company_price"),
+        ("建値", "par_value"),
+        ("増値", "premium_value"),
+        ("単重", "unit_weight"),
+        ("スクラップ重", "scrap_weight"),
+        ("スクラップベース", "scrap_base"),
+        ("切粉回収率", "chip_recovery_rate"),
+        ("スクラップ単価", "scrap_unit_price"),
+        ("材料費", "brass_material_cost"),
+    ]
+
+    def _brass_val(key):
+        if key == "chip_recovery_rate":
+            return _quote_chip_rate_for_db(data.get(key))
+        v = data.get(key)
+        if v is None:
+            return None
+        s = str(v).strip().replace(",", "")
+        if s == "":
+            return None
+        if key in (
+            "qc_br_rm",
+            "qc_br_scrap",
+            "rm",
+            "n_company_price",
+            "par_value",
+            "premium_value",
+            "scrap_base",
+        ):
+            try:
+                return int(Decimal(s))
+            except (InvalidOperation, ValueError, TypeError, OverflowError):
+                return s
+        return s
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM t_材料費 WHERE 見積りID = ?", (quote_param,))
+        cnt = cur.fetchone()
+        exists = bool(cnt and cnt[0] and cnt[0] > 0)
+
+        mat_params = [_mat_val(k) for _, k in mat_cols]
+        if exists:
+            set_clause = ", ".join([f"[{col}] = ?" for col, _ in mat_cols])
+            cur.execute(
+                f"UPDATE t_材料費 SET {set_clause} WHERE 見積りID = ?",
+                mat_params + [quote_param],
+            )
+            action = "update"
+        else:
+            cols = "[見積りID], " + ", ".join([f"[{col}]" for col, _ in mat_cols])
+            placeholders = ", ".join(["?"] * (len(mat_cols) + 1))
+            cur.execute(
+                f"INSERT INTO t_材料費 ({cols}) VALUES ({placeholders})",
+                [quote_param] + mat_params,
+            )
+            action = "insert"
+
+        brass_id = ""
+        if brass_enabled:
+            cur.execute("SELECT ID FROM t_真鍮材料 WHERE 見積りID = ?", (quote_param,))
+            brass_row = cur.fetchone()
+            brass_params = [_brass_val(k) for _, k in brass_cols]
+            if brass_row and brass_row[0] is not None:
+                set_clause = ", ".join([f"[{col}] = ?" for col, _ in brass_cols])
+                cur.execute(
+                    f"UPDATE t_真鍮材料 SET {set_clause} WHERE 見積りID = ?",
+                    brass_params + [quote_param],
+                )
+                brass_id = str(brass_row[0])
+            else:
+                cols = "[見積りID], " + ", ".join([f"[{col}]" for col, _ in brass_cols])
+                placeholders = ", ".join(["?"] * (len(brass_cols) + 1))
+                cur.execute(
+                    f"INSERT INTO t_真鍮材料 ({cols}) VALUES ({placeholders})",
+                    [quote_param] + brass_params,
+                )
+                cur.execute("SELECT ID FROM t_真鍮材料 WHERE 見積りID = ?", (quote_param,))
+                new_row = cur.fetchone()
+                if new_row and new_row[0] is not None:
+                    brass_id = str(new_row[0])
+
+        conn.commit()
+        conn.close()
+        return {
+            "ok": True,
+            "action": action,
+            "material_registered": True,
+            "brass_id": brass_id,
+            "brass_enabled": brass_enabled,
+        }
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
         return {"error": str(e)}
 
 def _quote_format_lot_display(raw) -> str:

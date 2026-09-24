@@ -9,6 +9,8 @@
     "/api/est_calc/page": "get_est_calc_page",
     "/api/quote_calc/page": "get_quote_calc_page",
     "/api/quote_calc/brass_delete": "delete_quote_calc_brass",
+    "/api/quote_calc/material_delete": "delete_quote_calc_material",
+    "/api/quote_calc/material_save": "save_quote_calc_material",
     "/api/quote_calc/packaging_list": "quote_calc_packaging_list",
     "/api/quote_calc/packaging_row": "quote_calc_packaging_row",
     "/api/quote_calc/packaging_save": "quote_calc_packaging_save",

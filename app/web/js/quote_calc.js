@@ -16,6 +16,15 @@
   var brassDeleteYes = document.getElementById("qc-brass-delete-confirm-yes");
   var brassDeleteNo = document.getElementById("qc-brass-delete-confirm-no");
   var brassDeleteBusy = false;
+  var materialRegistered = false;
+  /** RMマスタ「一般」の値（計算用） */
+  var rmMasterGeneral = 125;
+  /** RMマスタ「不二工機」の値（計算用） */
+  var rmMasterFujiKoki = 97;
+  /** RMマスタ一般 − 不二工機（計算用） */
+  var rmMasterDelta = rmMasterGeneral - rmMasterFujiKoki;
+  /** 不二工機時のスクラップベース算出用定数 */
+  var ScBaseFuji = 140;
 
   var BRASS_TEXT_IDS = [
     "qc-br-quote-rm",
@@ -56,6 +65,50 @@
     var el = document.getElementById(id);
     if (!el) return;
     el.checked = !!checked;
+  }
+
+  function getVal(id) {
+    var el = document.getElementById(id);
+    return el ? el.value || "" : "";
+  }
+
+  function clearVals(ids) {
+    (ids || []).forEach(function (id) {
+      setVal(id, "");
+    });
+  }
+
+  function parseNum(v) {
+    if (v == null || v === "") return null;
+    var s = String(v).replace(/,/g, "").trim();
+    if (s === "") return null;
+    var n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function parseNumOrZero(v) {
+    var n = parseNum(v);
+    return n === null ? 0 : n;
+  }
+
+  /** 通常の四捨五入（銀行丸めではない）。小数第 (places+1) 位を見て places 桁にする */
+  function roundToDecimals(x, places) {
+    if (!Number.isFinite(x)) return x;
+    var factor = Math.pow(10, places);
+    var sign = x < 0 ? -1 : 1;
+    var scaled = Math.abs(x) * factor;
+    // 浮動小数の境界誤差を吸収しつつ 0.5 以上を切り上げ
+    return (sign * Math.floor(scaled + 0.5 + Number.EPSILON)) / factor;
+  }
+
+  /** 千の位カンマ + 小数 places 桁。useComma === false でカンマなし */
+  function formatNumberForDisplay(n, places, useComma) {
+    if (!Number.isFinite(n)) return "";
+    var fixed = roundToDecimals(n, places).toFixed(places);
+    if (useComma === false) return fixed;
+    var parts = fixed.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.length > 1 ? parts[0] + "." + parts[1] : parts[0];
   }
 
   function populateSteelOptions(options) {
@@ -156,7 +209,7 @@
       if (itemEl) itemEl.classList.toggle("field-disabled", !enabled || alwaysReadonly);
     });
 
-    document.querySelectorAll('input[name="qc-br-rm"], input[name="qc-br-scrap"]').forEach(function (radioEl) {
+    document.querySelectorAll('input[name="qc_br_rm"], input[name="qc_br_scrap"]').forEach(function (radioEl) {
       radioEl.disabled = !enabled;
     });
 
@@ -184,7 +237,7 @@
       return;
     }
 
-    var checked = document.querySelector('input[name="qc-br-scrap"]:checked');
+    var checked = document.querySelector('input[name="qc_br_scrap"]:checked');
     var isScrap = checked && checked.value === "2";
     clearPairVisual();
 
@@ -211,9 +264,22 @@
     applyScrapFieldState();
   }
 
+  function getRadioValue(name) {
+    var checked = document.querySelector('input[name="' + name + '"]:checked');
+    return checked ? checked.value : "";
+  }
+
+  function applyRmMasterForCalc(general, fujiKoki) {
+    var g = Number(String(general == null ? "" : general).replace(/,/g, "").trim());
+    var f = Number(String(fujiKoki == null ? "" : fujiKoki).replace(/,/g, "").trim());
+    if (Number.isFinite(g)) rmMasterGeneral = g;
+    if (Number.isFinite(f)) rmMasterFujiKoki = f;
+    rmMasterDelta = rmMasterGeneral - rmMasterFujiKoki;
+  }
+
   function applyBrassData(data) {
     var hasRow = !!(data && data.brass_id);
-    var r1 = String((data && data.rm) || "1");
+    var r1 = String((data && data.qc_br_rm) || "1");
     var r2 = String((data && data.qc_br_scrap) || "1");
 
     brassId = hasRow && data.brass_id != null && String(data.brass_id).trim() !== ""
@@ -235,7 +301,7 @@
       setVal("qc-br-scrap-base", data.scrap_base);
       setVal("qc-br-chip-rate", data.chip_recovery_rate);
       setVal("qc-br-scrap-unit-price", data.scrap_unit_price);
-      setVal("qc-br-material-cost", data.material_cost);
+      setVal("qc-br-material-cost", data.brass_material_cost);
       setBrassEnabled(true, { reset: false });
     } else {
       setBrassEnabled(false, { reset: true });
@@ -289,6 +355,700 @@
     }
     if (brEnable.checked) return;
     setBrassEnabled(true, { reset: false });
+    runBrassCalcChain();
+  }
+
+  function applyMaterialData(data) {
+    if (!data) return;
+    setVal("qc-mat-diameter", data.material_diameter);
+    setVal("qc-mat-steel", data.steel_grade);
+    setVal("qc-mat-shape", data.shape);
+    setVal("qc-mat-dia", data.diameter);
+    setVal("qc-mat-length", data.length);
+    setVal("qc-mat-overall", data.overall_length);
+    setVal("qc-mat-cutoff", data.cutoff);
+    setVal("qc-mat-pieces-input", data.pieces_per_stock_input);
+    setVal("qc-mat-gravity", data.specific_gravity);
+    setVal("qc-mat-unit-price", data.material_unit_price);
+    setVal("qc-mat-cost", data.material_cost);
+    setVal("qc-mat-yield", data.yield_rate_decimal);
+    setVal("qc-mat-yield-amt", data.yield_amount_decimal);
+    // 材料費合計は算出欄。手動入力の材料費(qc-mat-cost-input)に DB の材料費合計を載せる
+    setVal("qc-mat-total", "");
+    var costN = parseNum(data.material_cost);
+    var yieldAmtN = parseNum(data.yield_amount_decimal);
+    if (costN !== null && yieldAmtN !== null) {
+      setVal(
+        "qc-mat-total",
+        formatNumberForDisplay(roundToDecimals(costN + yieldAmtN, 2), 2)
+      );
+    } else if (costN !== null) {
+      setVal("qc-mat-total", formatNumberForDisplay(roundToDecimals(costN, 2), 2));
+    }
+    // 取り数・一本重・一個重は画面側で算出（取り数入力は DB 値を維持）
+    syncMaterialDerivedAfterLoad();
+    // 読み込み後に手動材料費を反映（連動計算では空にするが、初回表示は維持）
+    setVal("qc-mat-cost-input", data.material_cost_total);
+    setMaterialRegStatus(!!data.material_registered);
+  }
+
+  function setMaterialRegStatus(registered) {
+    materialRegistered = !!registered;
+    var badge = document.getElementById("qc-mat-reg-status-badge");
+    if (badge) {
+      badge.textContent = materialRegistered ? "済" : "未";
+      badge.classList.toggle("is-registered", materialRegistered);
+      badge.classList.toggle("is-unset", !materialRegistered);
+    }
+    var delBtn = document.getElementById("qc-mat-btn-delete");
+    if (delBtn) delBtn.disabled = !materialRegistered;
+  }
+
+  function clearMaterialFormAfterDelete() {
+    [
+      "qc-mat-diameter",
+      "qc-mat-steel",
+      "qc-mat-shape",
+      "qc-mat-dia",
+      "qc-mat-length",
+      "qc-mat-overall",
+      "qc-mat-cutoff",
+      "qc-mat-pieces",
+      "qc-mat-pieces-input",
+      "qc-mat-gravity",
+      "qc-mat-bar-weight",
+      "qc-mat-piece-weight",
+      "qc-mat-unit-price",
+      "qc-mat-cost",
+      "qc-mat-yield",
+      "qc-mat-yield-amt",
+      "qc-mat-total",
+      "qc-mat-cost-input",
+    ].forEach(function (id) {
+      setVal(id, "");
+    });
+    brassId = "";
+    setBrassEnabled(false, { reset: true });
+    setMaterialRegStatus(false);
+  }
+
+  async function deleteMaterialRows() {
+    if (typeof window.quotesApi !== "function") {
+      throw new Error("APIが利用できません");
+    }
+    var quoteId = getQuoteId();
+    if (!quoteId) {
+      throw new Error("見積りIDがありません");
+    }
+    var data = await window.quotesApi("/api/quote_calc/material_delete", {
+      quote_id: quoteId,
+    });
+    if (data && data.error) {
+      throw new Error(data.error);
+    }
+    return data;
+  }
+
+  function clearMaterialCostInput() {
+    setVal("qc-mat-cost-input", "");
+  }
+
+  function syncMaterialDerivedAfterLoad() {
+    if (!getVal("qc-mat-gravity")) reflectSteelSpecgravityToGravity();
+    setVal("qc-mat-pieces", "");
+    // 突切りが空なら取り数・取り数入力を空にし、一個重以降は算出しない
+    if (parseNum(getVal("qc-mat-cutoff")) === null) {
+      setVal("qc-mat-pieces-input", "");
+      setVal("qc-mat-piece-weight", "");
+      recalcBarWeight();
+      return;
+    }
+    var L = parseNumOrZero(getVal("qc-mat-length"));
+    var Z = parseNumOrZero(getVal("qc-mat-overall"));
+    var T = parseNumOrZero(getVal("qc-mat-cutoff"));
+    var denom = Z + T;
+    if (denom !== 0) {
+      var x = (L - 300) / denom;
+      if (Number.isFinite(x)) {
+        setVal("qc-mat-pieces", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+        if (!String(getVal("qc-mat-pieces-input") || "").trim()) {
+          setVal("qc-mat-pieces-input", formatNumberForDisplay(Math.trunc(x), 0));
+        }
+      }
+    }
+    recalcBarWeight();
+    recalcPieceWeight();
+  }
+
+  /* ----- 材料費 連動計算（est_calc.js 相当） ----- */
+
+  function reflectSteelSpecgravityToGravity() {
+    if (!matSteelSelect) return;
+    var selected = matSteelSelect.options[matSteelSelect.selectedIndex];
+    if (!selected) return;
+    setVal("qc-mat-gravity", selected.getAttribute("data-specgravity") || "");
+  }
+
+  function applyCutoffFromDiameter() {
+    setVal("qc-mat-cutoff", "");
+    var x = parseNum(getVal("qc-mat-dia"));
+    if (x === null || x <= 0) return;
+    if (x <= 7) setVal("qc-mat-cutoff", "2");
+    else if (x <= 16) setVal("qc-mat-cutoff", "2.5");
+    else setVal("qc-mat-cutoff", "3");
+  }
+
+  /** @returns {boolean} 取り数を算出できたとき true */
+  function recalcPiecesPerStock() {
+    setVal("qc-mat-pieces", "");
+    setVal("qc-mat-pieces-input", "");
+    // 突切りが空なら取り数系を空のまま、以降の計算は呼び出し側で行わない
+    if (parseNum(getVal("qc-mat-cutoff")) === null) return false;
+    var L = parseNumOrZero(getVal("qc-mat-length"));
+    var Z = parseNumOrZero(getVal("qc-mat-overall"));
+    var T = parseNumOrZero(getVal("qc-mat-cutoff"));
+    var denom = Z + T;
+    if (denom === 0) return false;
+    var x = (L - 300) / denom;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-mat-pieces", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+    setVal("qc-mat-pieces-input", formatNumberForDisplay(Math.trunc(x), 0));
+    return true;
+  }
+
+  function clearMaterialDownstreamFromPieces() {
+    clearVals(["qc-mat-piece-weight", "qc-mat-cost", "qc-mat-yield-amt", "qc-mat-total"]);
+    clearMaterialCostInput();
+  }
+
+  function recalcBarWeight() {
+    setVal("qc-mat-bar-weight", "");
+    var d = parseNum(getVal("qc-mat-dia"));
+    var len = parseNum(getVal("qc-mat-length"));
+    var sg = parseNum(getVal("qc-mat-gravity"));
+    if (d === null || len === null || sg === null) return;
+    if (d <= 0 || len <= 0) return;
+    var shapeEl = document.getElementById("qc-mat-shape");
+    var shape = shapeEl ? String(shapeEl.value || "").trim() : "";
+    var r10 = (d / 2) / 10;
+    var x = r10 * r10 * 3.14 * (len / 10) * sg;
+    if (shape === "2") x *= 1.15;
+    else if (shape === "3") x *= 1.263;
+    if (!Number.isFinite(x)) return;
+    setVal("qc-mat-bar-weight", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+  }
+
+  function recalcPieceWeight() {
+    setVal("qc-mat-piece-weight", "");
+    if (parseNum(getVal("qc-mat-cutoff")) === null) return;
+    var unit = parseNum(getVal("qc-mat-bar-weight"));
+    var take = parseNum(getVal("qc-mat-pieces-input"));
+    if (unit === null || take === null || take <= 0) return;
+    var x = unit / take;
+    if (!Number.isFinite(x)) return;
+    setVal("qc-mat-piece-weight", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+  }
+
+  function recalcMaterialCostFields() {
+    clearVals(["qc-mat-cost", "qc-mat-yield-amt", "qc-mat-total"]);
+    clearMaterialCostInput();
+    if (parseNum(getVal("qc-mat-cutoff")) === null) return;
+    var one = parseNum(getVal("qc-mat-piece-weight"));
+    var price = parseNum(getVal("qc-mat-unit-price"));
+    if (one === null || price === null) return;
+    var x = roundToDecimals((one / 1000) * price, 2);
+    setVal("qc-mat-cost", formatNumberForDisplay(x, 2));
+    var yieldPct = parseNumOrZero(getVal("qc-mat-yield"));
+    var y = roundToDecimals(x * (yieldPct / 100), 2);
+    setVal("qc-mat-yield-amt", formatNumberForDisplay(y, 2));
+    setVal("qc-mat-total", formatNumberForDisplay(roundToDecimals(x + y, 2), 2));
+  }
+
+  function runMaterialChainFromDiameter() {
+    clearMaterialCostInput();
+    applyCutoffFromDiameter();
+    if (!recalcPiecesPerStock()) {
+      clearMaterialDownstreamFromPieces();
+      recalcBarWeight();
+      runBrassCalcChain({ resetMaterialCostInput: false });
+      return;
+    }
+    recalcBarWeight();
+    recalcPieceWeight();
+    recalcMaterialCostFields();
+    runBrassCalcChain({ resetMaterialCostInput: false });
+  }
+
+  function runMaterialChainFromLengthCutoff() {
+    clearMaterialCostInput();
+    if (!recalcPiecesPerStock()) {
+      clearMaterialDownstreamFromPieces();
+      recalcBarWeight();
+      runBrassCalcChain({ resetMaterialCostInput: false });
+      return;
+    }
+    recalcBarWeight();
+    recalcPieceWeight();
+    recalcMaterialCostFields();
+    runBrassCalcChain({ resetMaterialCostInput: false });
+  }
+
+  function runMaterialChainFromOverall() {
+    clearMaterialCostInput();
+    if (!recalcPiecesPerStock()) {
+      clearMaterialDownstreamFromPieces();
+      runBrassCalcChain({ resetMaterialCostInput: false });
+      return;
+    }
+    recalcPieceWeight();
+    recalcMaterialCostFields();
+    runBrassCalcChain({ resetMaterialCostInput: false });
+  }
+
+  function runMaterialChainFromShapeGravity() {
+    clearMaterialCostInput();
+    if (parseNum(getVal("qc-mat-cutoff")) === null) {
+      clearMaterialDownstreamFromPieces();
+      recalcBarWeight();
+      runBrassCalcChain({ resetMaterialCostInput: false });
+      return;
+    }
+    recalcBarWeight();
+    recalcPieceWeight();
+    recalcMaterialCostFields();
+    runBrassCalcChain({ resetMaterialCostInput: false });
+  }
+
+  function runMaterialChainFromPiecesInput() {
+    clearMaterialCostInput();
+    if (parseNum(getVal("qc-mat-cutoff")) === null) {
+      clearMaterialDownstreamFromPieces();
+      runBrassCalcChain({ resetMaterialCostInput: false });
+      return;
+    }
+    recalcPieceWeight();
+    recalcMaterialCostFields();
+    runBrassCalcChain({ resetMaterialCostInput: false });
+  }
+
+  function runMaterialChainFromUnitPriceYield() {
+    clearMaterialCostInput();
+    if (parseNum(getVal("qc-mat-cutoff")) === null) {
+      clearVals(["qc-mat-cost", "qc-mat-yield-amt", "qc-mat-total"]);
+      runBrassCalcChain({ resetMaterialCostInput: false });
+      return;
+    }
+    recalcMaterialCostFields();
+    runBrassCalcChain({ resetMaterialCostInput: false });
+  }
+
+  /**
+   * 真鍮連動の一連計算（建値・増値 → スクラップベース → 素材単価・材料費）。
+   * 真鍮計算時も手動材料費をリセットする。
+   */
+  function runBrassCalcChain(opts) {
+    opts = opts || {};
+    if (opts.resetMaterialCostInput !== false) {
+      clearMaterialCostInput();
+    }
+    recalcBrRmParPremium();
+    if (opts.skipScrapBase !== true) {
+      recalcBrScrapBase();
+    }
+    recalcBrMaterialUnitAndCosts();
+  }
+
+  /**
+   * 真鍮: RM区分ラジオに応じて建値・増値を算出。
+   * 使用項目が空白なら以降は空のまま。
+   */
+  function recalcBrRmParPremium() {
+    setVal("qc-br-par", "");
+    setVal("qc-br-premium", "");
+    if (!brEnable || !brEnable.checked) return;
+
+    var r1 = getRadioValue("qc_br_rm");
+    var nPrice = parseNum(getVal("qc-br-n-price"));
+    if (nPrice === null) return;
+
+    var tate;
+    if (r1 === "2") {
+      tate = nPrice + rmMasterFujiKoki;
+    } else {
+      tate = nPrice + rmMasterGeneral;
+    }
+    if (!Number.isFinite(tate)) return;
+    setVal("qc-br-par", formatNumberForDisplay(roundToDecimals(tate, 0), 0));
+
+    var matUnit = parseNum(getVal("qc-mat-unit-price"));
+    if (matUnit === null) return;
+
+    var premium;
+    if (r1 === "2") {
+      premium = matUnit - tate - rmMasterDelta;
+    } else {
+      premium = matUnit - tate;
+    }
+    if (!Number.isFinite(premium)) return;
+    setVal("qc-br-premium", formatNumberForDisplay(roundToDecimals(premium, 0), 0));
+  }
+
+  /** 建値の後: スクラップベース */
+  function recalcBrScrapBase() {
+    setVal("qc-br-scrap-base", "");
+    if (!brEnable || !brEnable.checked) return;
+
+    var r1 = getRadioValue("qc_br_rm");
+    if (r1 !== "2") return;
+
+    var tate = parseNum(getVal("qc-br-par"));
+    if (tate === null) return;
+    var scrapBase = tate - ScBaseFuji;
+    if (!Number.isFinite(scrapBase)) return;
+    setVal("qc-br-scrap-base", formatNumberForDisplay(roundToDecimals(scrapBase, 0), 0, false));
+  }
+
+  /**
+   * スクラップベースの後: 素材単価・スクラップ単価・真鍮材料費。
+   * 不二工機×単重のとき材料費(qc-mat-cost)も再計算する。
+   */
+  function recalcBrMaterialUnitAndCosts() {
+    clearVals([
+      "qc-br-material-unit",
+      "qc-br-scrap-unit-price",
+      "qc-br-material-cost",
+    ]);
+    if (!brEnable || !brEnable.checked) return;
+
+    var r1 = getRadioValue("qc_br_rm");
+    var r2 = getRadioValue("qc_br_scrap");
+    var isFujiUnitWeight = r1 === "2" && r2 === "1";
+
+    if (isFujiUnitWeight) {
+      var pieceW = parseNum(getVal("qc-mat-piece-weight"));
+      var matPrice = parseNum(getVal("qc-mat-unit-price"));
+      if (pieceW === null || matPrice === null) return;
+
+      var xRaw = (pieceW * (matPrice - rmMasterDelta)) / 1000;
+      var x = roundToDecimals(xRaw, 2);
+      if (!Number.isFinite(x)) return;
+      setVal("qc-mat-cost", formatNumberForDisplay(x, 2));
+
+      // 歩留りを百分率で計算
+      var yieldPct = parseNum(getVal("qc-mat-yield"));
+      if (yieldPct !== null) {
+        var y = x + roundToDecimals(x * (yieldPct / 100), 2);
+        if (Number.isFinite(y)) {
+          setVal("qc-br-material-unit", formatNumberForDisplay(y, 2));
+        }
+      }
+    } else {
+      var matTotal = parseNum(getVal("qc-mat-total"));
+      if (matTotal === null) return;
+      setVal("qc-br-material-unit", formatNumberForDisplay(roundToDecimals(matTotal, 2), 2));
+    }
+
+    var scrapW = parseNum(getVal("qc-br-scrap-w"));
+    var scrapBase = parseNum(getVal("qc-br-scrap-base"));
+    var chipRate = parseNum(getVal("qc-br-chip-rate"));
+    if (scrapW === null || scrapBase === null || chipRate === null) return;
+
+    // 切粉回収率を百分率で計算
+    var z = roundToDecimals((scrapW * scrapBase * (chipRate / 100)) / 1000, 2);
+    if (!Number.isFinite(z)) return;
+    setVal("qc-br-scrap-unit-price", formatNumberForDisplay(z, 2));
+
+    var materialUnit = parseNum(getVal("qc-br-material-unit"));
+    if (materialUnit === null) return;
+    var brassCost = roundToDecimals(materialUnit - z, 2);
+    if (!Number.isFinite(brassCost)) return;
+    setVal("qc-br-material-cost", formatNumberForDisplay(brassCost, 2));
+  }
+
+  /** 単重↔スクラップ重の相互更新ループ防止 */
+  var brUnitScrapSyncing = false;
+
+  /**
+   * 単重変更時: スクラップ重 = 一個重 - 単重 を反映して再計算
+   */
+  function syncScrapWFromUnitWeight() {
+    if (!brEnable || !brEnable.checked) return;
+    if (brUnitScrapSyncing) return;
+    brUnitScrapSyncing = true;
+    setVal("qc-br-scrap-w", "");
+    var pieceW = parseNum(getVal("qc-mat-piece-weight"));
+    var unitW = parseNum(getVal("qc-br-unit-weight"));
+    if (pieceW !== null && unitW !== null) {
+      var scrapW = roundToDecimals(pieceW - unitW, 2);
+      if (Number.isFinite(scrapW)) {
+        setVal("qc-br-scrap-w", formatNumberForDisplay(scrapW, 2));
+      }
+    }
+    brUnitScrapSyncing = false;
+    clearMaterialCostInput();
+    recalcBrMaterialUnitAndCosts();
+  }
+
+  /**
+   * スクラップ重変更時: 単重 = 一個重 - スクラップ重 を反映して再計算
+   */
+  function syncUnitWeightFromScrapW() {
+    if (!brEnable || !brEnable.checked) return;
+    if (brUnitScrapSyncing) return;
+    brUnitScrapSyncing = true;
+    setVal("qc-br-unit-weight", "");
+    var pieceW = parseNum(getVal("qc-mat-piece-weight"));
+    var scrapW = parseNum(getVal("qc-br-scrap-w"));
+    if (pieceW !== null && scrapW !== null) {
+      var unitW = roundToDecimals(pieceW - scrapW, 2);
+      if (Number.isFinite(unitW)) {
+        setVal("qc-br-unit-weight", formatNumberForDisplay(unitW, 2));
+      }
+    }
+    brUnitScrapSyncing = false;
+    clearMaterialCostInput();
+    recalcBrMaterialUnitAndCosts();
+  }
+
+  function bindBrassCalcEvents() {
+    document.querySelectorAll('input[name="qc_br_rm"]').forEach(function (radio) {
+      radio.addEventListener("change", function () {
+        if (!brEnable || !brEnable.checked) return;
+        runBrassCalcChain();
+      });
+    });
+    document.querySelectorAll('input[name="qc_br_scrap"]').forEach(function (radio) {
+      radio.addEventListener("change", function () {
+        applyScrapFieldState();
+        if (!brEnable || !brEnable.checked) return;
+        // 単重・スクラップ重の切替ではスクラップベースを維持する
+        runBrassCalcChain({ skipScrapBase: true });
+      });
+    });
+    var nPrice = document.getElementById("qc-br-n-price");
+    if (nPrice) {
+      nPrice.addEventListener("input", function () {
+        if (!brEnable || !brEnable.checked) return;
+        runBrassCalcChain();
+      });
+      nPrice.addEventListener("change", function () {
+        if (!brEnable || !brEnable.checked) return;
+        runBrassCalcChain();
+      });
+    }
+    var unitWeight = document.getElementById("qc-br-unit-weight");
+    if (unitWeight) {
+      unitWeight.addEventListener("input", syncScrapWFromUnitWeight);
+      unitWeight.addEventListener("change", syncScrapWFromUnitWeight);
+    }
+    var scrapW = document.getElementById("qc-br-scrap-w");
+    if (scrapW) {
+      scrapW.addEventListener("input", syncUnitWeightFromScrapW);
+      scrapW.addEventListener("change", syncUnitWeightFromScrapW);
+    }
+    ["qc-br-scrap-base", "qc-br-chip-rate"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", function () {
+        if (!brEnable || !brEnable.checked) return;
+        clearMaterialCostInput();
+        recalcBrMaterialUnitAndCosts();
+      });
+      el.addEventListener("change", function () {
+        if (!brEnable || !brEnable.checked) return;
+        clearMaterialCostInput();
+        recalcBrMaterialUnitAndCosts();
+      });
+    });
+  }
+
+  function bindNumericOnlyInput(inputEl, options) {
+    if (!inputEl) return;
+    var allowDecimal = !options || options.allowDecimal !== false;
+    inputEl.addEventListener("keydown", function (e) {
+      if (e.key === "e" || e.key === "E" || e.key === "+" || e.key === "-") {
+        e.preventDefault();
+        return;
+      }
+      if (!allowDecimal && e.key === ".") {
+        e.preventDefault();
+      }
+    });
+    inputEl.addEventListener("input", function () {
+      var raw = inputEl.value || "";
+      var cleaned;
+      if (allowDecimal) {
+        cleaned = raw.replace(/[^0-9.]/g, "");
+        var firstDot = cleaned.indexOf(".");
+        if (firstDot !== -1) {
+          cleaned =
+            cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+        }
+      } else {
+        cleaned = raw.replace(/[^0-9]/g, "");
+      }
+      if (cleaned !== raw) inputEl.value = cleaned;
+    });
+  }
+
+  function bindIntegerOnlyInput(inputEl) {
+    bindNumericOnlyInput(inputEl, { allowDecimal: false });
+  }
+
+  function bindMaterialNumericInputs() {
+    var integerIds = [
+      "qc-mat-length",
+      "qc-mat-pieces-input",
+      "qc-mat-gravity",
+      "qc-mat-unit-price",
+    ];
+    var decimalIds = [
+      "qc-mat-dia",
+      "qc-mat-overall",
+      "qc-mat-cutoff",
+      "qc-mat-yield",
+      "qc-mat-cost-input",
+      "qc-br-n-price",
+      "qc-br-unit-weight",
+      "qc-br-scrap-w",
+      "qc-br-scrap-base",
+      "qc-br-chip-rate",
+    ];
+    integerIds.forEach(function (id) {
+      bindNumericOnlyInput(document.getElementById(id), { allowDecimal: false });
+    });
+    decimalIds.forEach(function (id) {
+      bindNumericOnlyInput(document.getElementById(id), { allowDecimal: true });
+    });
+  }
+
+  function isBlankField(id) {
+    var el = document.getElementById(id);
+    if (!el) return true;
+    return String(el.value || "").trim() === "";
+  }
+
+  function getMaterialRequiredMissing() {
+    var ids = [
+      "qc-mat-diameter",
+      "qc-mat-steel",
+      "qc-mat-shape",
+      "qc-mat-dia",
+      "qc-mat-length",
+      "qc-mat-overall",
+      "qc-mat-cutoff",
+      "qc-mat-pieces-input",
+      "qc-mat-unit-price",
+      "qc-mat-yield",
+      "qc-mat-cost-input",
+    ];
+    for (var i = 0; i < ids.length; i++) {
+      if (isBlankField(ids[i])) return true;
+    }
+    return false;
+  }
+
+  function getBrassRequiredMissing() {
+    var ids = ["qc-br-n-price", "qc-br-scrap-base", "qc-br-chip-rate"];
+    var scrapMode = getRadioValue("qc_br_scrap");
+    if (scrapMode === "2") {
+      ids.push("qc-br-scrap-w");
+    } else {
+      ids.push("qc-br-unit-weight");
+    }
+    for (var i = 0; i < ids.length; i++) {
+      if (isBlankField(ids[i])) return true;
+    }
+    return false;
+  }
+
+  function collectMaterialSavePayload() {
+    var brassEnabled = !!(brEnable && brEnable.checked);
+    var payload = {
+      quote_id: getQuoteId(),
+      material_diameter: getVal("qc-mat-diameter").trim(),
+      steel_grade: getVal("qc-mat-steel").trim(),
+      shape: getVal("qc-mat-shape").trim(),
+      diameter: getVal("qc-mat-dia").trim(),
+      length: getVal("qc-mat-length").trim(),
+      overall_length: getVal("qc-mat-overall").trim(),
+      cutoff: getVal("qc-mat-cutoff").trim(),
+      pieces_per_stock_input: getVal("qc-mat-pieces-input").trim(),
+      material_unit_price: getVal("qc-mat-unit-price").trim(),
+      yield_rate: getVal("qc-mat-yield").trim(),
+      material_cost: getVal("qc-mat-cost").trim(),
+      yield_amount: getVal("qc-mat-yield-amt").trim(),
+      material_cost_total: getVal("qc-mat-cost-input").trim(),
+      brass_enabled: brassEnabled,
+    };
+    if (brassEnabled) {
+      payload.qc_br_rm = getRadioValue("qc_br_rm") || "1";
+      payload.qc_br_scrap = getRadioValue("qc_br_scrap") || "1";
+      payload.rm = getVal("qc-br-quote-rm").trim();
+      payload.n_company_price = getVal("qc-br-n-price").trim();
+      payload.par_value = getVal("qc-br-par").trim();
+      payload.premium_value = getVal("qc-br-premium").trim();
+      payload.unit_weight = getVal("qc-br-unit-weight").trim();
+      payload.scrap_weight = getVal("qc-br-scrap-w").trim();
+      payload.scrap_base = getVal("qc-br-scrap-base").trim();
+      payload.chip_recovery_rate = getVal("qc-br-chip-rate").trim();
+      payload.scrap_unit_price = getVal("qc-br-scrap-unit-price").trim();
+      payload.brass_material_cost = getVal("qc-br-material-cost").trim();
+    }
+    return payload;
+  }
+
+  async function saveMaterialRows() {
+    if (typeof window.quotesApi !== "function") {
+      throw new Error("APIが利用できません");
+    }
+    var data = await window.quotesApi(
+      "/api/quote_calc/material_save",
+      collectMaterialSavePayload()
+    );
+    if (data && data.error) {
+      throw new Error(data.error);
+    }
+    return data;
+  }
+
+  function bindMaterialCalcEvents() {
+    var dia = document.getElementById("qc-mat-dia");
+    if (dia) {
+      dia.addEventListener("input", runMaterialChainFromDiameter);
+      dia.addEventListener("change", runMaterialChainFromDiameter);
+    }
+    ["qc-mat-length", "qc-mat-cutoff"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", runMaterialChainFromLengthCutoff);
+      el.addEventListener("change", runMaterialChainFromLengthCutoff);
+    });
+    var overall = document.getElementById("qc-mat-overall");
+    if (overall) {
+      overall.addEventListener("input", runMaterialChainFromOverall);
+      overall.addEventListener("change", runMaterialChainFromOverall);
+    }
+    var shape = document.getElementById("qc-mat-shape");
+    if (shape) {
+      shape.addEventListener("change", runMaterialChainFromShapeGravity);
+    }
+    var gravity = document.getElementById("qc-mat-gravity");
+    if (gravity) {
+      gravity.addEventListener("input", runMaterialChainFromShapeGravity);
+      gravity.addEventListener("change", runMaterialChainFromShapeGravity);
+    }
+    var piecesInput = document.getElementById("qc-mat-pieces-input");
+    if (piecesInput) {
+      piecesInput.addEventListener("input", runMaterialChainFromPiecesInput);
+      piecesInput.addEventListener("change", runMaterialChainFromPiecesInput);
+    }
+    ["qc-mat-unit-price", "qc-mat-yield"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", runMaterialChainFromUnitPriceYield);
+      el.addEventListener("change", runMaterialChainFromUnitPriceYield);
+    });
   }
 
   function applyPage(data) {
@@ -304,6 +1064,7 @@
 
     populateSteelOptions(data.zairyo_2_options);
     populateMachineOptions(data.machine_options);
+    applyMaterialData(data);
 
     if (data.rm_general != null && data.rm_general !== "") {
       setText("qc-br-rm-general-val", " " + data.rm_general);
@@ -311,6 +1072,7 @@
     if (data.rm_fuji_koki != null && data.rm_fuji_koki !== "") {
       setText("qc-br-rm-fuji-val", " " + data.rm_fuji_koki);
     }
+    applyRmMasterForCalc(data.rm_general, data.rm_fuji_koki);
 
     applyBrassData(data);
     renderProcessingTable(data.processing_columns, data.processing_rows);
@@ -476,6 +1238,7 @@
     }
     return new Promise(function (resolve) {
       if (pkgAlertMessage) {
+        pkgAlertMessage.style.whiteSpace = "pre-line";
         pkgAlertMessage.textContent = message == null ? "" : String(message);
       }
       function finish() {
@@ -1204,6 +1967,70 @@
     });
   }
 
+  var matDeleteBtn = document.getElementById("qc-mat-btn-delete");
+  if (matDeleteBtn) {
+    matDeleteBtn.addEventListener("click", function () {
+      if (!getQuoteId()) {
+        openPkgAlert("見積りIDがありません");
+        return;
+      }
+      openPkgConfirm("材料費を削除しますか？")
+        .then(function (choice) {
+          if (choice !== "yes") return;
+          return deleteMaterialRows();
+        })
+        .then(function (data) {
+          if (!data) return;
+          clearMaterialFormAfterDelete();
+          return openPkgAlert("材料費を削除しました\n加工費の再登録を行ってください");
+        })
+        .catch(function (err) {
+          console.error(err);
+          window.alert(err && err.message ? err.message : String(err));
+        });
+    });
+  }
+
+  var matRegisterBtn = document.getElementById("qc-mat-btn-register");
+  if (matRegisterBtn) {
+    matRegisterBtn.addEventListener("click", function () {
+      if (!getQuoteId()) {
+        openPkgAlert("見積りIDがありません");
+        return;
+      }
+      if (getMaterialRequiredMissing()) {
+        openPkgAlert("必要項目が入力されていません");
+        return;
+      }
+      if (brEnable && brEnable.checked && getBrassRequiredMissing()) {
+        openPkgAlert("必要項目が入力されていません");
+        return;
+      }
+      var isUpdate = materialRegistered;
+      var confirmMessage = isUpdate ? "更新しますか？" : "登録しますか？";
+      var doneMessage = isUpdate ? "更新しました" : "登録しました";
+      openPkgConfirm(confirmMessage)
+        .then(function (choice) {
+          if (choice !== "yes") return;
+          return saveMaterialRows();
+        })
+        .then(function (data) {
+          if (!data) return;
+          setMaterialRegStatus(true);
+          if (data.brass_enabled && data.brass_id) {
+            brassId = String(data.brass_id);
+          } else if (!data.brass_enabled) {
+            brassId = "";
+          }
+          return openPkgAlert(doneMessage);
+        })
+        .catch(function (err) {
+          console.error(err);
+          window.alert(err && err.message ? err.message : String(err));
+        });
+    });
+  }
+
   function activateTab(tabKey) {
     tabs.forEach(function (tab) {
       var isActive = tab.getAttribute("data-tab") === tabKey;
@@ -1229,6 +2056,7 @@
 
       if (brEnable.checked) {
         setBrassEnabled(true, { reset: false });
+        runBrassCalcChain();
         return;
       }
 
@@ -1269,15 +2097,16 @@
     });
   }
 
-  document.querySelectorAll('input[name="qc-br-scrap"]').forEach(function (radio) {
-    radio.addEventListener("change", function () {
-      applyScrapFieldState();
-    });
-  });
+  bindMaterialNumericInputs();
+  bindMaterialCalcEvents();
+  bindBrassCalcEvents();
 
   if (matSteelSelect) {
+    // ページ読み込み時は反映しない。ユーザー変更時のみ実行（est_calc と同じ）
     matSteelSelect.addEventListener("change", function () {
       syncBrassFromMatSteel();
+      reflectSteelSpecgravityToGravity();
+      runMaterialChainFromShapeGravity();
     });
   }
 

@@ -140,6 +140,26 @@ body.quote-calc-page {
   user-select: none;
 }
 
+/* 入力可: 白 / 入力不可: 灰（手動材料費のみ強調色を維持） */
+.quote-calc-page .kakou-item input[type="text"]:not([readonly]):not(.quote-calc-readonly-field):not(.dynamic-disabled),
+.quote-calc-page .kakou-item select:not([disabled]):not(.dynamic-disabled),
+.quote-calc-page .shinchuu-item input[type="text"]:not([readonly]):not(.dynamic-disabled),
+.quote-calc-page .shinchuu-item select:not([disabled]):not(.dynamic-disabled) {
+  background-color: #ffffff;
+}
+
+.quote-calc-page input[readonly],
+.quote-calc-page .quote-calc-readonly-field,
+.quote-calc-page input.dynamic-disabled,
+.quote-calc-page select.dynamic-disabled,
+.quote-calc-page select[disabled] {
+  background-color: #d8d8d8 !important;
+}
+
+.quote-calc-page #qc-mat-cost-input {
+  background-color: var(--cell-highlight-bg, #ffffcc) !important;
+}
+
 .quote-calc-fixed-section .quote-calc-readonly-field:focus,
 .quote-calc-page .quote-calc-readonly-field:focus {
   outline: none;
@@ -226,12 +246,54 @@ body.quote-calc-page {
 .quote-calc-page .kakou-empty { min-height: 0; }
 
 .quote-calc-page .qc-mat-register-cell {
+  align-items: stretch;
+  gap: calc(4px * var(--ui-scale, 1));
+}
+
+.quote-calc-page .qc-mat-register-cell button,
+.quote-calc-page .qc-mat-delete-cell button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.quote-calc-page .qc-mat-delete-cell {
   align-items: flex-end;
 }
 
-.quote-calc-page .qc-mat-register-cell button {
-  width: 100%;
+.quote-calc-page .qc-mat-reg-status {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: calc(6px * var(--ui-scale, 1));
+  flex-wrap: nowrap;
+  min-height: calc(15px * var(--ui-scale, 1));
+}
+
+.quote-calc-page .qc-mat-reg-status-label {
+  font-size: calc(12px * var(--font-scale, 1));
+  color: var(--ui-text, #333);
+  white-space: nowrap;
+}
+
+.quote-calc-page .qc-mat-reg-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(1.6em * var(--font-scale, 1));
+  padding: 0 calc(4px * var(--ui-scale, 1));
+  border: 1px solid #666;
+  font-size: calc(12px * var(--font-scale, 1));
+  line-height: 1.4;
   box-sizing: border-box;
+}
+
+.quote-calc-page .qc-mat-reg-status-badge.is-unset {
+  background-color: #f7b6b6;
+}
+
+.quote-calc-page .qc-mat-reg-status-badge.is-registered {
+  background-color: #b6d7f7;
 }
 
 .quote-calc-page .qc-grid-btn-spacer {
