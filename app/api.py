@@ -87,6 +87,12 @@ class Api:
     def save_quote_calc_material(self, payload=None):
         return _call(svc.save_quote_calc_material, payload)
 
+    def save_quote_calc_processing(self, payload=None):
+        return _call(svc.save_quote_calc_processing, payload)
+
+    def delete_quote_calc_processing(self, payload=None):
+        return _call(svc.delete_quote_calc_processing, payload)
+
     def quote_calc_packaging_list(self, payload=None):
         return _call(svc.api_quote_calc_packaging_list, payload)
 

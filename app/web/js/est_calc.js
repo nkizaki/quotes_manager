@@ -1133,33 +1133,51 @@
     el.addEventListener("change", applyProc5ModeAndCosts);
   });
 
+  function sanitizeNumericInputValue(raw, allowDecimal) {
+    var cleaned;
+    if (allowDecimal) {
+      cleaned = String(raw || "").replace(/[^0-9.]/g, "");
+      var firstDot = cleaned.indexOf(".");
+      if (firstDot !== -1) {
+        cleaned =
+          cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+      }
+    } else {
+      cleaned = String(raw || "").replace(/[^0-9]/g, "");
+    }
+    return cleaned;
+  }
+
   function bindNumericOnlyInput(inputEl, options) {
     if (!inputEl) return;
     var allowDecimal = !options || options.allowDecimal !== false;
+    var lastValidValue = sanitizeNumericInputValue(inputEl.value || "", allowDecimal);
+    // ページ読込・setInputValue 後の基準ずれを防ぐ
+    inputEl.addEventListener("focus", function () {
+      lastValidValue = sanitizeNumericInputValue(inputEl.value || "", allowDecimal);
+    });
     inputEl.addEventListener("keydown", function (e) {
-      if (e.key === "e" || e.key === "E" || e.key === "+" || e.key === "-") {
-        e.preventDefault();
-        return;
-      }
-      if (!allowDecimal && e.key === ".") {
-        e.preventDefault();
-      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length !== 1) return; // Backspace / Delete / arrows 等は許可
+      if (/[0-9]/.test(e.key)) return;
+      if (allowDecimal && e.key === ".") return;
+      e.preventDefault();
     });
-    inputEl.addEventListener("input", function () {
-      var raw = inputEl.value || "";
-      var cleaned;
-      if (allowDecimal) {
-        cleaned = raw.replace(/[^0-9.]/g, "");
-        var firstDot = cleaned.indexOf(".");
-        if (firstDot !== -1) {
-          cleaned =
-            cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+    // capture で先に正規化し、値が変わらない無効入力では後続の計算 listener を止める
+    inputEl.addEventListener(
+      "input",
+      function (e) {
+        var raw = inputEl.value || "";
+        var cleaned = sanitizeNumericInputValue(raw, allowDecimal);
+        if (cleaned !== raw) inputEl.value = cleaned;
+        if (cleaned === lastValidValue) {
+          e.stopImmediatePropagation();
+          return;
         }
-      } else {
-        cleaned = raw.replace(/[^0-9]/g, "");
-      }
-      if (cleaned !== raw) inputEl.value = cleaned;
-    });
+        lastValidValue = cleaned;
+      },
+      true
+    );
   }
 
   function bindNumericOnlyInputsFromConfig() {
@@ -1272,19 +1290,19 @@
     var tani = (document.getElementById("shoki-hiyou-tani").value || "").trim();
     var tanka = (document.getElementById("shoki-hiyou-tanka").value || "").replace(/,/g, "").trim();
     if (!hin) {
-      window.alert("品名を入力してください");
+      showOkDialog("確認", "品名を入力してください");
       return false;
     }
     if (!suryo) {
-      window.alert("数量を入力してください");
+      showOkDialog("確認", "数量を入力してください");
       return false;
     }
     if (!tani) {
-      window.alert("単位を選択してください");
+      showOkDialog("確認", "単位を選択してください");
       return false;
     }
     if (!tanka) {
-      window.alert("単価を入力してください");
+      showOkDialog("確認", "単価を入力してください");
       return false;
     }
     return true;
@@ -2901,7 +2919,7 @@
     shokiRegisterBtn.addEventListener("click", function () {
       var estimateId = getActiveEstimateId();
       if (!estimateId) {
-        window.alert("原価見積りIDがありません");
+        showOkDialog("確認", "原価見積りIDがありません");
         return;
       }
       if (!shokiHiyouValidateRegisterFields()) return;
@@ -2936,7 +2954,7 @@
             });
         })
         .catch(function (err) {
-          window.alert(err.message || "保存に失敗しました");
+          showOkDialog("確認", err.message || "保存に失敗しました");
         });
     });
   }
@@ -3021,7 +3039,7 @@
         return;
       }
       if (!currentLotId) {
-        alert("ロットID(est-6)がありません。");
+        showOkDialog("確認", "ロットIDが選択されていません");
         return;
       }
 
@@ -3108,4 +3126,74 @@
   formatAllNonRateTextBoxesTo2();
   formatAllRateTextBoxesTo3();
   applyConditionalTextboxBackgrounds();
+
+  /**
+   * Enter で Tab と同様に次の入力項目へ移動する。
+   * テキストエリア・ボタン・ダイアログ内は対象外。readonly / disabled は飛ばす。
+   */
+  function bindEnterMovesToNextField() {
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      var el = e.target;
+      if (!el || !el.tagName) return;
+      var tag = el.tagName;
+      if (tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
+      if (tag !== "INPUT" && tag !== "SELECT") return;
+      if (el.type === "button" || el.type === "submit" || el.type === "reset") return;
+      if (el.closest(".search-dialog-overlay, [role='alertdialog'], [role='dialog']")) return;
+
+      e.preventDefault();
+      var next = findNextEnterFocusTarget(el);
+      if (!next) return;
+      next.focus();
+      if (typeof next.select === "function" && next.tagName === "INPUT" && next.type === "text") {
+        try {
+          next.select();
+        } catch (err) {
+          /* ignore */
+        }
+      }
+    });
+  }
+
+  function isEnterFocusTarget(el) {
+    if (!el || el.disabled) return false;
+    if (el.tabIndex < 0) return false;
+    if (el.readOnly) return false;
+    var tag = el.tagName;
+    if (tag !== "INPUT" && tag !== "SELECT") return false;
+    if (el.type === "hidden" || el.type === "button" || el.type === "submit" || el.type === "reset") {
+      return false;
+    }
+    if (el.offsetParent === null && el.getClientRects().length === 0) return false;
+    if (el.closest("[hidden]")) return false;
+    return true;
+  }
+
+  function findNextEnterFocusTarget(current) {
+    var candidates = document.querySelectorAll("input, select");
+    var list = [];
+    for (var i = 0; i < candidates.length; i++) {
+      if (isEnterFocusTarget(candidates[i])) list.push(candidates[i]);
+    }
+    var idx = list.indexOf(current);
+    if (idx < 0) {
+      for (var j = 0; j < candidates.length; j++) {
+        if (candidates[j] === current) {
+          for (var k = j + 1; k < candidates.length; k++) {
+            if (isEnterFocusTarget(candidates[k])) return candidates[k];
+          }
+          return null;
+        }
+      }
+      return null;
+    }
+    if (idx + 1 < list.length) return list[idx + 1];
+    return null;
+  }
+
+  bindEnterMovesToNextField();
 })();

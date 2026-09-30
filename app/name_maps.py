@@ -333,7 +333,7 @@ COLUMN_NAME_MAP: dict[str, str] = {
     "表面処理名ID": "surface_treatment_name_id",
     "表面処理名ID2": "surface_treatment_name_id_2",
     "表面処理費": "surface_treatment_cost",
-    "表面処理費2": "2",
+    "表面処理費2": "surface_treatment_cost_2",
     "製品納入条件": "product_delivery_conditions",
     "製品納入状態": "product_delivery_status",
     "製造原価": "manufacturing_base_cost",

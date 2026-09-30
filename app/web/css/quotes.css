@@ -146,10 +146,6 @@ input[readonly],
   color: var(--color-text);
 }
 
-.floating-window input[readonly] {
-  background-color: var(--color-surface);
-}
-
 input.dynamic-disabled,
 select.dynamic-disabled,
 .shinchuu-grid.shinchuu-disabled .shinchuu-item input[type="text"],
@@ -170,10 +166,39 @@ select.dynamic-disabled,
   color: var(--state-disabled-text, #9e9e9e);
 }
 
-#mat-19,
-#br-1,
-#br-9 {
-  background-color: var(--cell-highlight-bg, #ffffcc);
+/* 原価見積り: 基本情報・材料費・真鍮・右側単価計算 — 入力可=#ffffff / 入力不可=#d8d8d8 */
+.est-calc-page .kihon-item input[type="text"]:not([readonly]):not(.dynamic-disabled),
+.est-calc-page .zairyo-item input[type="text"]:not([readonly]):not(.dynamic-disabled),
+.est-calc-page .zairyo-item select:not([disabled]):not(.dynamic-disabled),
+.est-calc-page .shinchuu-item input[type="text"]:not([readonly]):not(.dynamic-disabled),
+.est-calc-page .shinchuu-item select:not([disabled]):not(.dynamic-disabled),
+.est-calc-page .floating-window input[type="text"]:not([readonly]):not(.dynamic-disabled),
+.est-calc-page .floating-window select:not([disabled]):not(.dynamic-disabled) {
+  background-color: #ffffff;
+}
+
+.est-calc-page .kihon-item input[readonly],
+.est-calc-page .kihon-item input.dynamic-disabled,
+.est-calc-page .zairyo-item input[readonly],
+.est-calc-page .zairyo-item input.dynamic-disabled,
+.est-calc-page .zairyo-item select.dynamic-disabled,
+.est-calc-page .zairyo-item select[disabled],
+.est-calc-page .shinchuu-item input[readonly],
+.est-calc-page .shinchuu-item input.dynamic-disabled,
+.est-calc-page .shinchuu-item select.dynamic-disabled,
+.est-calc-page .shinchuu-item select[disabled],
+.est-calc-page .shinchuu-grid.shinchuu-disabled .shinchuu-item input[type="text"],
+.est-calc-page .shinchuu-grid.shinchuu-disabled .shinchuu-item input[type="number"],
+.est-calc-page .floating-window input[readonly],
+.est-calc-page .floating-window input.dynamic-disabled,
+.est-calc-page .floating-window select.dynamic-disabled,
+.est-calc-page .floating-window select[disabled] {
+  background-color: #d8d8d8 !important;
+}
+
+/* 手動材料費のみ強調（入力可） */
+.est-calc-page #mat-19 {
+  background-color: var(--cell-highlight-bg, #ffffcc) !important;
 }
 
 /* ----- セクション ----- */
@@ -304,6 +329,18 @@ select.dynamic-disabled,
 .est-delete-muted-btn:hover {
   background: var(--ui-surface-low, #f2f4f4);
   border-color: var(--ui-border-input, var(--color-border));
+}
+
+.est-delete-btn:disabled,
+.est-delete-muted-btn:disabled,
+.est-delete-btn:disabled:hover,
+.est-delete-muted-btn:disabled:hover {
+  background-color: #d8d8d8;
+  color: #9e9e9e;
+  border-color: #c0c0c0;
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 1;
 }
 
 .search-btn,

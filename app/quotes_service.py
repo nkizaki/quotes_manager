@@ -191,22 +191,16 @@ def get_quote_calc_page(payload=None):
             rm_general = "" if rm_rows[0][0] is None else str(rm_rows[0][0])
             rm_fuji_koki = "" if rm_rows[0][1] is None else str(rm_rows[0][1])
 
-        cur.execute("SELECT ID, 機種 FROM t_機械チャージ ORDER BY ID")
+        cur.execute(
+            "SELECT ID, 機種, チャージMin, チャージMax FROM t_機械チャージ ORDER BY ID"
+        )
         mc_rows = cur.fetchall()
         machine_options = [
             {
                 "id": (r[0] if r[0] is not None else ""),
                 "name": (r[1] if r[1] is not None else ""),
-            }
-            for r in mc_rows
-        ]
-        
-        cur.execute("SELECT ID, 機種 FROM t_機械チャージ ORDER BY ID")
-        mc_rows = cur.fetchall()
-        machine_options = [
-            {
-                "id": (r[0] if r[0] is not None else ""),
-                "name": (r[1] if r[1] is not None else ""),
+                "charge_min": (r[2] if len(r) > 2 and r[2] is not None else ""),
+                "charge_max": (r[3] if len(r) > 3 and r[3] is not None else ""),
             }
             for r in mc_rows
         ]
@@ -328,20 +322,9 @@ def get_quote_calc_page(payload=None):
                     brass_material_cost = _rec_str(brass, "材料費")
 
                 # 加工費のテーブル
-                proc_sql = (
-                    "SELECT ID, ロット数, サイクルタイム AS \"C/T\", 日産数, 日数, 機械, チャージ, 加工費, "
-                    "刃工具費, 刃工具費個別 AS 刃個別, 検査費, 検査費個別 AS 検個別, 利益率, 利益, 管理費, 材料費 "
-                    "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数"
+                processing_columns, processing_rows = _quote_processing_table_for_api(
+                    cur, quote_id
                 )
-                cur.execute(proc_sql, (quote_id,))
-                proc_result = cur.fetchall()
-
-                processing_columns = [c[0] for c in cur.description] if cur.description else []
-                for r in proc_result:
-                    row_dict = {}
-                    for i, c in enumerate(processing_columns):
-                        row_dict[c] = _json_safe_cell_value(r[i])
-                    processing_rows.append(row_dict)
                 
                 # 梱包・輸送費のテーブル.
                 cur.execute("SELECT ID, 梱包仕様, 単価 FROM t_梱包輸送費 WHERE 加工費ID = ?", (quote_id,))
@@ -490,6 +473,260 @@ def delete_quote_calc_material(payload=None):
         conn.close()
         return {"ok": True, "material_registered": False}
     except Exception as e:
+        return {"error": str(e)}
+
+
+_QUOTE_PROC_LIST_SQL = (
+    "SELECT ID, ロット数, サイクルタイム AS \"C/T\", 日産数, 日数, 機械, チャージ, 加工費, "
+    "刃工具費, 刃工具費個別 AS 刃個別, 検査費, 検査費個別 AS 検個別, 利益率, 利益, 管理費, 材料費 "
+    "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数"
+)
+
+
+def _quote_processing_table_for_api(cur, quote_id):
+    """加工費一覧（利益率は歩留り同様に画面用 % 表記）。"""
+    cur.execute(_QUOTE_PROC_LIST_SQL, (quote_id,))
+    result = cur.fetchall()
+    columns = [c[0] for c in cur.description] if cur.description else []
+    rows = []
+    for r in result:
+        row_dict = {}
+        for i, c in enumerate(columns):
+            if c == "利益率":
+                row_dict[c] = format_yield_rate_display(r[i])
+            else:
+                row_dict[c] = _json_safe_cell_value(r[i])
+        rows.append(row_dict)
+    return columns, rows
+
+
+def _quote_lot_options_for_api(cur, quote_id):
+    cur.execute(
+        "SELECT ID, ロット数, 見積りID FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数",
+        (quote_id,),
+    )
+    return [
+        {
+            "ID": _json_safe_cell_value(r[0]),
+            "Lot": _quote_format_lot_display(r[1]),
+            "見積りID": _json_safe_cell_value(r[2]),
+        }
+        for r in cur.fetchall()
+    ]
+
+
+def save_quote_calc_processing(payload=None):
+    """加工費・管理費の登録（INSERT）・更新（UPDATE）。"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or "").strip()
+    row_id = str(data.get("id") or data.get("processing_cost_id") or "").strip()
+    if not quote_id:
+        return {"error": "見積りIDが必要です"}
+    try:
+        quote_param = int(quote_id)
+    except ValueError:
+        quote_param = quote_id
+
+    lot_raw = data.get("lot_count")
+    cost_raw = data.get("processing_cost_input")
+    if str(lot_raw or "").strip() == "" or str(cost_raw or "").strip() == "":
+        return {"error": "加工費の必要項目が入力されていません"}
+
+    cols = [
+        ("ロット数", "lot_count"),
+        ("サイクルタイム", "cycle_time"),
+        ("日産数", "daily_production_quantity_input"),
+        ("日数", "days_correction"),
+        ("機械", "machine"),
+        ("チャージ", "charge"),
+        ("加工費", "processing_cost_input"),
+        ("刃工具費", "cutting_tool_cost"),
+        ("刃工具費個別", "cutting_tool_cost_per_piece"),
+        ("検査費", "inspection_cost"),
+        ("検査費個別", "inspection_cost_per_piece"),
+        ("利益率", "profit_rate"),
+        ("利益", "profit"),
+        ("管理費", "overhead_cost"),
+        ("材料費", "processing_material_cost"),
+    ]
+    # DB: processing_costs の型に合わせる
+    int_keys = {
+        "lot_count",
+        "cycle_time",
+        "daily_production_quantity_input",
+        "charge",
+        "cutting_tool_cost",
+        "inspection_cost",
+    }
+    float_keys = {
+        "days_correction",
+        "processing_cost_input",
+        "cutting_tool_cost_per_piece",
+        "inspection_cost_per_piece",
+        "profit_rate",
+        "profit",
+        "overhead_cost",
+        "processing_material_cost",
+    }
+
+    def _proc_val(key):
+        v = data.get(key)
+        if key == "machine":
+            s = "" if v is None else str(v).strip()
+            return s if s != "" else None
+
+        if key == "profit_rate":
+            # 画面% → DB小数。空は NULL（"" を double に渡さない）
+            normalized = normalize_yield_rate_for_db(v)
+            if normalized is None or str(normalized).strip() == "":
+                return None
+            try:
+                return float(normalized)
+            except (ValueError, TypeError):
+                return None
+
+        if v is None:
+            return None
+        s = str(v).strip().replace(",", "")
+        if s == "":
+            return None
+        try:
+            d = Decimal(s)
+        except (InvalidOperation, ValueError, TypeError):
+            return None
+        if key in int_keys:
+            try:
+                return int(d)
+            except (ValueError, TypeError, OverflowError):
+                return None
+        if key in float_keys:
+            try:
+                return float(d)
+            except (ValueError, TypeError, OverflowError):
+                return None
+        return s
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        params = [_proc_val(k) for _, k in cols]
+        if row_id:
+            try:
+                id_param = int(row_id)
+            except ValueError:
+                id_param = row_id
+            set_clause = ", ".join([f"[{col}] = ?" for col, _ in cols])
+            cur.execute(
+                f"UPDATE t_加工費 SET {set_clause} WHERE ID = ? AND 見積りID = ?",
+                params + [id_param, quote_param],
+            )
+            if cur.rowcount == 0:
+                conn.close()
+                return {"error": "該当IDの行がありません"}
+            action = "update"
+            saved_id = id_param
+        else:
+            col_sql = "[見積りID], " + ", ".join([f"[{col}]" for col, _ in cols])
+            placeholders = ", ".join(["?"] * (len(cols) + 1))
+            cur.execute(
+                f"INSERT INTO t_加工費 ({col_sql}) VALUES ({placeholders}) RETURNING ID",
+                [quote_param] + params,
+            )
+            new_row = cur.fetchone()
+            saved_id = new_row[0] if new_row and new_row[0] is not None else None
+            if saved_id is None:
+                # RETURNING が取れない場合のフォールバック
+                cur.execute(
+                    "SELECT ID FROM t_加工費 WHERE 見積りID = ? ORDER BY ID DESC",
+                    (quote_param,),
+                )
+                fb = cur.fetchone()
+                saved_id = fb[0] if fb and fb[0] is not None else None
+            if saved_id is None:
+                conn.rollback()
+                conn.close()
+                return {"error": "登録後のID取得に失敗しました"}
+            action = "insert"
+        conn.commit()
+        columns, rows = _quote_processing_table_for_api(cur, quote_param)
+        lot_options = _quote_lot_options_for_api(cur, quote_param)
+        conn.close()
+        saved_id_str = str(saved_id)
+        return {
+            "ok": True,
+            "action": action,
+            "id": saved_id_str,
+            "processing_cost_id": saved_id_str,
+            "processing_columns": columns,
+            "processing_rows": rows,
+            "lot_options": lot_options,
+        }
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
+        return {"error": str(e)}
+
+
+def delete_quote_calc_processing(payload=None):
+    """加工費・管理費の1件削除。"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or "").strip()
+    row_id = str(data.get("id") or data.get("processing_cost_id") or "").strip()
+    if not row_id:
+        return {"error": "IDが必要です"}
+    if not quote_id:
+        return {"error": "見積りIDが必要です"}
+    try:
+        quote_param = int(quote_id)
+    except ValueError:
+        quote_param = quote_id
+    try:
+        id_param = int(row_id)
+    except ValueError:
+        id_param = row_id
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        # 関連行を先に削除（FK 制約回避）
+        cur.execute("DELETE FROM t_梱包輸送費 WHERE 加工費ID = ?", (id_param,))
+        cur.execute("DELETE FROM t_表面処理費 WHERE 加工費ID = ?", (id_param,))
+        cur.execute(
+            "DELETE FROM t_加工費 WHERE ID = ? AND 見積りID = ?",
+            (id_param, quote_param),
+        )
+        if cur.rowcount == 0:
+            conn.close()
+            return {"error": "該当IDの行がありません"}
+        conn.commit()
+        columns, rows = _quote_processing_table_for_api(cur, quote_param)
+        lot_options = _quote_lot_options_for_api(cur, quote_param)
+        conn.close()
+        return {
+            "ok": True,
+            "processing_columns": columns,
+            "processing_rows": rows,
+            "lot_options": lot_options,
+        }
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
         return {"error": str(e)}
 
 
@@ -2739,7 +2976,7 @@ def api_est_calc_add_estimate_lot(payload=None):
                 else:
                     cols = "[ロットID], " + ", ".join([f"[{col}]" for col, _ in pairs])
                     placeholders = ", ".join(["?"] * (len(pairs) + 1))
-                    sql = f"INSERT INTO {table_name} ({cols} VALUES ({placeholders})"
+                    sql = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
                     params = [lot_id] + [_val(k) for _, k in pairs]
                     cur.execute(sql, params)
 
@@ -3102,7 +3339,7 @@ def api_est_calc_pre_export_save(payload=None):
         else:
             cols = "[ロットID], " + ", ".join([f"[{col}]" for col, _ in pairs])
             placeholders = ", ".join(["?"] * (len(pairs) + 1))
-            sql = f"INSERT INTO {table_name} ({cols} VALUES ({placeholders})"
+            sql = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
             params = [lot_id] + [_val(k) for _, k in pairs]
             cur.execute(sql, params)
 

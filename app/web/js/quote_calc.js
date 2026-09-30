@@ -142,37 +142,207 @@
     for (var i = 0; i < list.length; i++) {
       var o = list[i];
       var opt = document.createElement("option");
-      opt.value = o.name != null ? String(o.name) : "";
-      opt.textContent = o.name != null ? String(o.name) : "";
+      var name = o.name != null ? String(o.name) : "";
+      opt.value = name;
+      var minStr = o.charge_min != null && o.charge_min !== "" ? String(o.charge_min) : "";
+      var maxStr = o.charge_max != null && o.charge_max !== "" ? String(o.charge_max) : "";
+      opt.setAttribute("data-charge-min", minStr);
+      opt.setAttribute("data-charge-max", maxStr);
+      if (minStr !== "" || maxStr !== "") {
+        opt.textContent = name + "（" + minStr + "〜" + maxStr + "）";
+      } else {
+        opt.textContent = name;
+      }
       procMachineSelect.appendChild(opt);
     }
   }
 
+  var processingTableRows = [];
+
   function renderProcessingTable(columns, rows) {
     if (!procTheadRow || !procTbody) return;
+    processingTableRows = rows || [];
     procTheadRow.innerHTML = "";
     procTbody.innerHTML = "";
     var cols = columns && columns.length ? columns.slice() : [];
-    if (!cols.length && rows && rows.length) {
-      cols = Object.keys(rows[0]);
+    if (!cols.length && processingTableRows.length) {
+      cols = Object.keys(processingTableRows[0]);
     }
     for (var c = 0; c < cols.length; c++) {
       var th = document.createElement("th");
       th.textContent = cols[c];
       procTheadRow.appendChild(th);
     }
-    var dataRows = rows || [];
-    for (var r = 0; r < dataRows.length; r++) {
-      var row = dataRows[r];
+    for (var r = 0; r < processingTableRows.length; r++) {
+      var row = processingTableRows[r];
       var tr = document.createElement("tr");
       for (var ci = 0; ci < cols.length; ci++) {
         var td = document.createElement("td");
-        var v = row[cols[ci]];
-        td.textContent = v != null && v !== undefined ? String(v) : "";
+        var colName = cols[ci];
+        var v = row[colName];
+        var text = v != null && v !== undefined ? String(v) : "";
+        if (colName === "ID" && text) {
+          var a = document.createElement("a");
+          a.href = "#";
+          a.className = "qc-proc-id-link";
+          a.setAttribute("data-proc-id", text);
+          a.textContent = text;
+          td.appendChild(a);
+        } else {
+          td.textContent = text;
+        }
         tr.appendChild(td);
       }
       procTbody.appendChild(tr);
     }
+  }
+
+  function formatProfitRateForDisplay(raw) {
+    if (raw == null || raw === "") return "";
+    var s = String(raw).replace(/,/g, "").replace(/%/g, "").trim();
+    if (s === "") return "";
+    var n = Number(s);
+    if (!Number.isFinite(n)) return "";
+    if (n >= 0 && n <= 1) n = n * 100;
+    return String(n);
+  }
+
+  function getProcFormId() {
+    var el = document.getElementById("qc-proc-id");
+    return el ? (el.value || "").trim() : "";
+  }
+
+  function updateProcFormButtonState(idVal) {
+    updateFormButtonState(idVal, "qc-proc-btn-delete", "qc-proc-btn-cancel");
+  }
+
+  function getProcRequiredMissing() {
+    return isBlankField("qc-proc-lot") || isBlankField("qc-proc-cost-2");
+  }
+
+  function clearProcForm() {
+    [
+      "qc-proc-id",
+      "qc-proc-lot",
+      "qc-proc-ct",
+      "qc-proc-daily-1",
+      "qc-proc-daily-2",
+      "qc-proc-days-1",
+      "qc-proc-days-2",
+      "qc-proc-charge",
+      "qc-proc-cost-1",
+      "qc-proc-cost-2",
+      "qc-proc-tool-cost",
+      "qc-proc-tool-per",
+      "qc-proc-total",
+      "qc-proc-insp-amt",
+      "qc-proc-insp-per",
+      "qc-proc-profit-rate",
+      "qc-proc-profit",
+      "qc-proc-overhead",
+      "qc-proc-material-cost",
+    ].forEach(function (id) {
+      setVal(id, "");
+    });
+    if (procMachineSelect) procMachineSelect.value = "";
+    updateProcFormButtonState("");
+  }
+
+  function applyProcRowToForm(row) {
+    if (!row) return;
+    setVal("qc-proc-id", row.ID);
+    setVal("qc-proc-lot", row["ロット数"]);
+    setVal("qc-proc-ct", row["C/T"]);
+    setVal("qc-proc-daily-2", row["日産数"]);
+    setVal("qc-proc-days-2", row["日数"]);
+    var machine = row["機械"] != null ? String(row["機械"]) : "";
+    if (procMachineSelect) {
+      procMachineSelect.value = machine;
+      if (procMachineSelect.value !== machine) {
+        // 表示名付き option でも value は機種名
+        for (var i = 0; i < procMachineSelect.options.length; i++) {
+          if (procMachineSelect.options[i].value === machine) {
+            procMachineSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+    setVal("qc-proc-charge", row["チャージ"]);
+    setVal("qc-proc-cost-2", row["加工費"]);
+    setVal("qc-proc-tool-cost", row["刃工具費"]);
+    setVal("qc-proc-tool-per", row["刃個別"]);
+    setVal("qc-proc-insp-amt", row["検査費"]);
+    setVal("qc-proc-insp-per", row["検個別"]);
+    setVal("qc-proc-profit-rate", formatProfitRateForDisplay(row["利益率"]));
+    setVal("qc-proc-profit", row["利益"]);
+    setVal("qc-proc-overhead", row["管理費"]);
+    setVal("qc-proc-material-cost", row["材料費"]);
+
+    // 反映後は指定の算出のみ（他項目の再計算はしない）
+    recalcProcDaily1();
+    recalcProcDays1();
+    recalcProcCost1();
+    recalcProcTotal();
+    updateProcFormButtonState(row.ID);
+  }
+
+  function refreshProcLotsFromResponse(data) {
+    if (!data) return;
+    if (data.processing_columns || data.processing_rows) {
+      renderProcessingTable(data.processing_columns || [], data.processing_rows || []);
+    }
+    if (data.lot_options) {
+      lotOptions = data.lot_options;
+      populateLotSelect(pkgLotSelect, lotOptions, "");
+      populateLotSelect(surfLotSelect, lotOptions, "");
+    }
+  }
+
+  function collectProcessingSavePayload() {
+    return {
+      quote_id: getQuoteId(),
+      id: getProcFormId(),
+      lot_count: getVal("qc-proc-lot").trim(),
+      cycle_time: getVal("qc-proc-ct").trim(),
+      daily_production_quantity_input: getVal("qc-proc-daily-2").trim(),
+      days_correction: getVal("qc-proc-days-2").trim(),
+      machine: procMachineSelect ? (procMachineSelect.value || "").trim() : "",
+      charge: getVal("qc-proc-charge").trim(),
+      processing_cost_input: getVal("qc-proc-cost-2").trim(),
+      cutting_tool_cost: getVal("qc-proc-tool-cost").trim(),
+      cutting_tool_cost_per_piece: getVal("qc-proc-tool-per").trim(),
+      inspection_cost: getVal("qc-proc-insp-amt").trim(),
+      inspection_cost_per_piece: getVal("qc-proc-insp-per").trim(),
+      profit_rate: getVal("qc-proc-profit-rate").trim(),
+      profit: getVal("qc-proc-profit").trim(),
+      overhead_cost: getVal("qc-proc-overhead").trim(),
+      processing_material_cost: getVal("qc-proc-material-cost").trim(),
+    };
+  }
+
+  async function saveProcessingRow() {
+    if (typeof window.quotesApi !== "function") {
+      throw new Error("APIが利用できません");
+    }
+    var data = await window.quotesApi(
+      "/api/quote_calc/processing_save",
+      collectProcessingSavePayload()
+    );
+    if (data && data.error) throw new Error(data.error);
+    return data;
+  }
+
+  async function deleteProcessingRow() {
+    if (typeof window.quotesApi !== "function") {
+      throw new Error("APIが利用できません");
+    }
+    var data = await window.quotesApi("/api/quote_calc/processing_delete", {
+      quote_id: getQuoteId(),
+      id: getProcFormId(),
+    });
+    if (data && data.error) throw new Error(data.error);
+    return data;
   }
 
   function resetBrassValuesForOff() {
@@ -303,9 +473,48 @@
       setVal("qc-br-scrap-unit-price", data.scrap_unit_price);
       setVal("qc-br-material-cost", data.brass_material_cost);
       setBrassEnabled(true, { reset: false });
+      // 真鍮詳細反映後に素材単価のみ算出（他の反映値は維持）
+      recalcBrMaterialUnitAfterLoad();
     } else {
       setBrassEnabled(false, { reset: true });
     }
+  }
+
+  /** 選択中の RM ラジオに対応するマスタ表示値（一般 / 不二工機） */
+  function getSelectedRmMasterValue() {
+    var r1 = getRadioValue("qc_br_rm");
+    var id = r1 === "2" ? "qc-br-rm-fuji-val" : "qc-br-rm-general-val";
+    var el = document.getElementById(id);
+    return el ? String(el.textContent || "").trim() : "";
+  }
+
+  /**
+   * ページ読込後: 素材単価のみ計算。
+   * 建値・増値・スクラップ単価・真鍮材料費など DB 反映値は上書きしない。
+   */
+  function recalcBrMaterialUnitAfterLoad() {
+    setVal("qc-br-material-unit", "");
+    if (!brEnable || !brEnable.checked) return;
+
+    var r1 = getRadioValue("qc_br_rm");
+    var r2 = getRadioValue("qc_br_scrap");
+    if (r1 === "2" && r2 === "1") {
+      var pieceW = parseNum(getVal("qc-mat-piece-weight"));
+      var matPrice = parseNum(getVal("qc-mat-unit-price"));
+      if (pieceW === null || matPrice === null) return;
+      var x = roundToDecimals((pieceW * (matPrice - rmMasterDelta)) / 1000, 2);
+      if (!Number.isFinite(x)) return;
+      var yieldPct = parseNum(getVal("qc-mat-yield"));
+      if (yieldPct === null) return;
+      var y = x + roundToDecimals(x * (yieldPct / 100), 2);
+      if (!Number.isFinite(y)) return;
+      setVal("qc-br-material-unit", formatNumberForDisplay(y, 2));
+      return;
+    }
+
+    var matTotal = parseNum(getVal("qc-mat-total"));
+    if (matTotal === null) return;
+    setVal("qc-br-material-unit", formatNumberForDisplay(roundToDecimals(matTotal, 2), 2));
   }
 
   function openBrassDeleteConfirm() {
@@ -862,33 +1071,66 @@
     });
   }
 
+  function sanitizeNumericInputValue(raw, allowDecimal, maxDecimalPlaces) {
+    var cleaned;
+    if (allowDecimal) {
+      cleaned = String(raw || "").replace(/[^0-9.]/g, "");
+      var firstDot = cleaned.indexOf(".");
+      if (firstDot !== -1) {
+        cleaned =
+          cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+        if (maxDecimalPlaces != null && Number.isFinite(maxDecimalPlaces) && maxDecimalPlaces >= 0) {
+          cleaned =
+            cleaned.slice(0, firstDot + 1) +
+            cleaned.slice(firstDot + 1, firstDot + 1 + maxDecimalPlaces);
+        }
+      }
+    } else {
+      cleaned = String(raw || "").replace(/[^0-9]/g, "");
+    }
+    return cleaned;
+  }
+
   function bindNumericOnlyInput(inputEl, options) {
     if (!inputEl) return;
     var allowDecimal = !options || options.allowDecimal !== false;
+    var maxDecimalPlaces =
+      options && options.maxDecimalPlaces != null ? options.maxDecimalPlaces : null;
+    var lastValidValue = sanitizeNumericInputValue(
+      inputEl.value || "",
+      allowDecimal,
+      maxDecimalPlaces
+    );
+    // ページ読込・setVal 後の基準ずれを防ぐ
+    inputEl.addEventListener("focus", function () {
+      lastValidValue = sanitizeNumericInputValue(
+        inputEl.value || "",
+        allowDecimal,
+        maxDecimalPlaces
+      );
+    });
     inputEl.addEventListener("keydown", function (e) {
-      if (e.key === "e" || e.key === "E" || e.key === "+" || e.key === "-") {
-        e.preventDefault();
-        return;
-      }
-      if (!allowDecimal && e.key === ".") {
-        e.preventDefault();
-      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length !== 1) return; // Backspace / Delete / arrows 等は許可
+      if (/[0-9]/.test(e.key)) return;
+      if (allowDecimal && e.key === ".") return;
+      e.preventDefault();
     });
-    inputEl.addEventListener("input", function () {
-      var raw = inputEl.value || "";
-      var cleaned;
-      if (allowDecimal) {
-        cleaned = raw.replace(/[^0-9.]/g, "");
-        var firstDot = cleaned.indexOf(".");
-        if (firstDot !== -1) {
-          cleaned =
-            cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+    // capture で先に正規化し、値が変わらない無効入力では後続の計算 listener を止める
+    inputEl.addEventListener(
+      "input",
+      function (e) {
+        var raw = inputEl.value || "";
+        var cleaned = sanitizeNumericInputValue(raw, allowDecimal, maxDecimalPlaces);
+        if (cleaned !== raw) inputEl.value = cleaned;
+        if (cleaned === lastValidValue) {
+          e.stopImmediatePropagation();
+          return;
         }
-      } else {
-        cleaned = raw.replace(/[^0-9]/g, "");
-      }
-      if (cleaned !== raw) inputEl.value = cleaned;
-    });
+        lastValidValue = cleaned;
+      },
+      true
+    );
   }
 
   function bindIntegerOnlyInput(inputEl) {
@@ -901,6 +1143,12 @@
       "qc-mat-pieces-input",
       "qc-mat-gravity",
       "qc-mat-unit-price",
+      "qc-proc-lot",
+      "qc-proc-ct",
+      "qc-proc-daily-2",
+      "qc-proc-charge",
+      "qc-proc-tool-cost",
+      "qc-proc-insp-amt",
     ];
     var decimalIds = [
       "qc-mat-dia",
@@ -914,11 +1162,27 @@
       "qc-br-scrap-base",
       "qc-br-chip-rate",
     ];
+    var procDecimalIds = [
+      "qc-proc-days-2",
+      "qc-proc-cost-2",
+      "qc-proc-tool-per",
+      "qc-proc-insp-per",
+      "qc-proc-profit-rate",
+      "qc-proc-profit",
+      "qc-proc-overhead",
+      "qc-proc-material-cost",
+    ];
     integerIds.forEach(function (id) {
       bindNumericOnlyInput(document.getElementById(id), { allowDecimal: false });
     });
     decimalIds.forEach(function (id) {
       bindNumericOnlyInput(document.getElementById(id), { allowDecimal: true });
+    });
+    procDecimalIds.forEach(function (id) {
+      bindNumericOnlyInput(document.getElementById(id), {
+        allowDecimal: true,
+        maxDecimalPlaces: 2,
+      });
     });
   }
 
@@ -984,7 +1248,8 @@
     if (brassEnabled) {
       payload.qc_br_rm = getRadioValue("qc_br_rm") || "1";
       payload.qc_br_scrap = getRadioValue("qc_br_scrap") || "1";
-      payload.rm = getVal("qc-br-quote-rm").trim();
+      // 見積RMはラジオ選択中のマスタ値（一般/不二工機）を保存。quote-rm 欄は保存後に反映
+      payload.rm = getSelectedRmMasterValue();
       payload.n_company_price = getVal("qc-br-n-price").trim();
       payload.par_value = getVal("qc-br-par").trim();
       payload.premium_value = getVal("qc-br-premium").trim();
@@ -1051,6 +1316,209 @@
     });
   }
 
+  /* ----- 加工費・管理費 連動計算 ----- */
+
+  /** @returns {boolean} 算出できたとき true */
+  function recalcProcDaily1() {
+    setVal("qc-proc-daily-1", "");
+    var ct = parseNum(getVal("qc-proc-ct"));
+    if (ct === null || ct <= 0) return false;
+    var x = 82800 / ct;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-proc-daily-1", formatNumberForDisplay(roundToDecimals(x, 0), 0));
+    return true;
+  }
+
+  /** @returns {boolean} */
+  function recalcProcDays1() {
+    setVal("qc-proc-days-1", "");
+    var lot = parseNum(getVal("qc-proc-lot"));
+    var daily2 = parseNum(getVal("qc-proc-daily-2"));
+    if (lot === null || daily2 === null || daily2 <= 0) return false;
+    var x = lot / daily2;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-proc-days-1", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+    return true;
+  }
+
+  /** @returns {boolean} */
+  function recalcProcCost1() {
+    setVal("qc-proc-cost-1", "");
+    var days2 = parseNum(getVal("qc-proc-days-2"));
+    var charge = parseNum(getVal("qc-proc-charge"));
+    var lot = parseNum(getVal("qc-proc-lot"));
+    if (days2 === null || charge === null || lot === null || lot <= 0) return false;
+    var x = (days2 * charge) / lot;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-proc-cost-1", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+    return true;
+  }
+
+  /** @returns {boolean} */
+  function recalcProcToolPer() {
+    setVal("qc-proc-tool-per", "");
+    var toolCost = parseNum(getVal("qc-proc-tool-cost"));
+    var lot = parseNum(getVal("qc-proc-lot"));
+    if (toolCost === null || lot === null || lot <= 0) return false;
+    var x = toolCost / lot;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-proc-tool-per", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+    return true;
+  }
+
+  function recalcProcTotal() {
+    setVal("qc-proc-total", "");
+    var cost2 = parseNum(getVal("qc-proc-cost-2"));
+    if (cost2 === null) return false;
+    // 工具費/個が空のときは 0 として合計する
+    var toolPer = parseNumOrZero(getVal("qc-proc-tool-per"));
+    var x = cost2 + toolPer;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-proc-total", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+    return true;
+  }
+
+  /** @returns {boolean} */
+  function recalcProcInspPer() {
+    setVal("qc-proc-insp-per", "");
+    var inspAmt = parseNum(getVal("qc-proc-insp-amt"));
+    var daily2 = parseNum(getVal("qc-proc-daily-2"));
+    if (inspAmt === null || daily2 === null || daily2 <= 0) return false;
+    var x = inspAmt / daily2;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-proc-insp-per", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+    return true;
+  }
+
+  function recalcProcOverhead() {
+    setVal("qc-proc-overhead", "");
+    var inspPer = parseNum(getVal("qc-proc-insp-per"));
+    var profit = parseNum(getVal("qc-proc-profit"));
+    if (inspPer === null || profit === null) return false;
+    var x = inspPer + profit;
+    if (!Number.isFinite(x)) return false;
+    setVal("qc-proc-overhead", formatNumberForDisplay(roundToDecimals(x, 2), 2));
+    return true;
+  }
+
+  function syncProcMaterialCostFromMat() {
+    setVal("qc-proc-material-cost", getVal("qc-mat-cost-input"));
+  }
+
+  function runProcChainFromCt() {
+    recalcProcDaily1();
+  }
+
+  function runProcChainFromLot() {
+    syncProcMaterialCostFromMat();
+    recalcProcDays1();
+    recalcProcCost1();
+    recalcProcToolPer();
+    recalcProcTotal();
+    if (!recalcProcInspPer()) {
+      setVal("qc-proc-overhead", "");
+    } else {
+      recalcProcOverhead();
+    }
+  }
+
+  function runProcChainFromDaily2() {
+    recalcProcDays1();
+    if (!recalcProcInspPer()) {
+      setVal("qc-proc-overhead", "");
+      return;
+    }
+    recalcProcOverhead();
+  }
+
+  function runProcChainFromDays2OrCharge() {
+    recalcProcCost1();
+    recalcProcTotal();
+  }
+
+  function runProcChainFromToolCost() {
+    recalcProcToolPer();
+    recalcProcTotal();
+  }
+
+  function runProcChainFromCost2OrToolPer() {
+    recalcProcTotal();
+  }
+
+  function runProcChainFromInspAmt() {
+    if (!recalcProcInspPer()) {
+      setVal("qc-proc-overhead", "");
+      return;
+    }
+    recalcProcOverhead();
+  }
+
+  function runProcChainFromInspPerOrProfit() {
+    recalcProcOverhead();
+  }
+
+  function applyChargeMinFromMachine() {
+    if (!procMachineSelect) return;
+    var selected = procMachineSelect.options[procMachineSelect.selectedIndex];
+    if (!selected || !selected.value) {
+      setVal("qc-proc-charge", "");
+      runProcChainFromDays2OrCharge();
+      return;
+    }
+    var minStr = selected.getAttribute("data-charge-min") || "";
+    setVal("qc-proc-charge", minStr);
+    runProcChainFromDays2OrCharge();
+  }
+
+  function bindProcCalcEvents() {
+    var ct = document.getElementById("qc-proc-ct");
+    if (ct) {
+      ct.addEventListener("input", runProcChainFromCt);
+      ct.addEventListener("change", runProcChainFromCt);
+    }
+    var lot = document.getElementById("qc-proc-lot");
+    if (lot) {
+      lot.addEventListener("input", runProcChainFromLot);
+      lot.addEventListener("change", runProcChainFromLot);
+    }
+    var daily2 = document.getElementById("qc-proc-daily-2");
+    if (daily2) {
+      daily2.addEventListener("input", runProcChainFromDaily2);
+      daily2.addEventListener("change", runProcChainFromDaily2);
+    }
+    ["qc-proc-days-2", "qc-proc-charge"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", runProcChainFromDays2OrCharge);
+      el.addEventListener("change", runProcChainFromDays2OrCharge);
+    });
+    if (procMachineSelect) {
+      procMachineSelect.addEventListener("change", applyChargeMinFromMachine);
+    }
+    var toolCost = document.getElementById("qc-proc-tool-cost");
+    if (toolCost) {
+      toolCost.addEventListener("input", runProcChainFromToolCost);
+      toolCost.addEventListener("change", runProcChainFromToolCost);
+    }
+    ["qc-proc-cost-2", "qc-proc-tool-per"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", runProcChainFromCost2OrToolPer);
+      el.addEventListener("change", runProcChainFromCost2OrToolPer);
+    });
+    var inspAmt = document.getElementById("qc-proc-insp-amt");
+    if (inspAmt) {
+      inspAmt.addEventListener("input", runProcChainFromInspAmt);
+      inspAmt.addEventListener("change", runProcChainFromInspAmt);
+    }
+    ["qc-proc-insp-per", "qc-proc-profit"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", runProcChainFromInspPerOrProfit);
+      el.addEventListener("change", runProcChainFromInspPerOrProfit);
+    });
+  }
+
   function applyPage(data) {
     if (!data) return;
     if (quoteIdInput) {
@@ -1076,6 +1544,7 @@
 
     applyBrassData(data);
     renderProcessingTable(data.processing_columns, data.processing_rows);
+    clearProcForm();
     applyPackagingTabData(data);
     applyRemarksData(data);
   }
@@ -2017,12 +2486,126 @@
         .then(function (data) {
           if (!data) return;
           setMaterialRegStatus(true);
-          if (data.brass_enabled && data.brass_id) {
-            brassId = String(data.brass_id);
-          } else if (!data.brass_enabled) {
+          if (data.brass_enabled) {
+            if (data.brass_id) brassId = String(data.brass_id);
+            // 保存した RM マスタ値を見積RMへ反映（ラジオ切替時は反映しない）
+            setVal("qc-br-quote-rm", getSelectedRmMasterValue());
+          } else {
             brassId = "";
           }
           return openPkgAlert(doneMessage);
+        })
+        .catch(function (err) {
+          console.error(err);
+          window.alert(err && err.message ? err.message : String(err));
+        });
+    });
+  }
+
+  if (procTbody) {
+    procTbody.addEventListener("click", function (e) {
+      var link = e.target.closest("a.qc-proc-id-link");
+      if (!link) return;
+      e.preventDefault();
+      var rowId = link.getAttribute("data-proc-id");
+      if (!rowId) return;
+      var row = null;
+      for (var i = 0; i < processingTableRows.length; i++) {
+        if (String(processingTableRows[i].ID) === String(rowId)) {
+          row = processingTableRows[i];
+          break;
+        }
+      }
+      if (!row) return;
+      applyProcRowToForm(row);
+    });
+  }
+
+  var procRegisterBtn = document.getElementById("qc-proc-btn-register");
+  var procCancelBtn = document.getElementById("qc-proc-btn-cancel");
+  var procDeleteBtn = document.getElementById("qc-proc-btn-delete");
+  if (procRegisterBtn) {
+    procRegisterBtn.addEventListener("click", function () {
+      if (!getQuoteId()) {
+        openPkgAlert("見積りIDがありません");
+        return;
+      }
+      if (getProcRequiredMissing()) {
+        openPkgAlert("加工費の必要項目が入力されていません");
+        return;
+      }
+      var currentId = getProcFormId();
+      var isUpdate = !!currentId;
+      var confirmMessage = isUpdate
+        ? "ID:" + currentId + "のデータを更新しますか？"
+        : "新規登録しますか？";
+      var cancelMessage = isUpdate ? "更新をキャンセルしました" : "登録をキャンセルしました";
+      var doneMessage = isUpdate ? "更新しました" : "登録しました";
+      openPkgConfirm(confirmMessage)
+        .then(function (choice) {
+          if (choice !== "yes") {
+            return openPkgAlert(cancelMessage).then(function () {
+              return null;
+            });
+          }
+          return saveProcessingRow();
+        })
+        .then(function (data) {
+          if (!data) return;
+          refreshProcLotsFromResponse(data);
+          var savedId =
+            data.processing_cost_id != null && String(data.processing_cost_id).trim() !== ""
+              ? data.processing_cost_id
+              : data.id;
+          if ((savedId == null || String(savedId).trim() === "") && data.action === "insert") {
+            var rows = data.processing_rows || [];
+            var maxId = null;
+            for (var ri = 0; ri < rows.length; ri++) {
+              var rid = rows[ri] && rows[ri].ID != null ? Number(rows[ri].ID) : NaN;
+              if (Number.isFinite(rid) && (maxId === null || rid > maxId)) maxId = rid;
+            }
+            if (maxId !== null) savedId = maxId;
+          }
+          if (savedId != null && String(savedId).trim() !== "") {
+            setVal("qc-proc-id", savedId);
+            updateProcFormButtonState(savedId);
+          }
+          return openPkgAlert(doneMessage);
+        })
+        .catch(function (err) {
+          console.error(err);
+          window.alert(err && err.message ? err.message : String(err));
+        });
+    });
+  }
+  if (procCancelBtn) {
+    procCancelBtn.addEventListener("click", function () {
+      if (!getProcFormId()) return;
+      clearProcForm();
+    });
+  }
+  if (procDeleteBtn) {
+    procDeleteBtn.addEventListener("click", function () {
+      var currentId = getProcFormId();
+      if (!currentId) return;
+      if (!getQuoteId()) {
+        openPkgAlert("見積りIDがありません");
+        return;
+      }
+      openPkgConfirm("ID:" + currentId + "のデータを削除しますか？")
+        .then(function (choice) {
+          if (choice !== "yes") {
+            return openPkgAlert("削除をキャンセルしました").then(function () {
+              return null;
+            });
+          }
+          return deleteProcessingRow();
+        })
+        .then(function (data) {
+          if (!data) return;
+          refreshProcLotsFromResponse(data);
+          clearProcForm();
+          return openPkgAlert("削除しました");
         })
         .catch(function (err) {
           console.error(err);
@@ -2097,9 +2680,83 @@
     });
   }
 
+  /**
+   * Enter で Tab と同様に次の入力項目へ移動する。
+   * テキストエリア・ボタン・ダイアログ内は対象外。readonly / disabled は飛ばす。
+   */
+  function bindEnterMovesToNextField() {
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      var el = e.target;
+      if (!el || !el.tagName) return;
+      var tag = el.tagName;
+      if (tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
+      if (tag !== "INPUT" && tag !== "SELECT") return;
+      if (el.type === "button" || el.type === "submit" || el.type === "reset") return;
+      // モーダル上では従来どおり（確定ボタン等を優先）
+      if (el.closest(".search-dialog-overlay, [role='alertdialog'], [role='dialog']")) return;
+
+      e.preventDefault();
+      var next = findNextEnterFocusTarget(el);
+      if (!next) return;
+      next.focus();
+      if (typeof next.select === "function" && next.tagName === "INPUT" && next.type === "text") {
+        try {
+          next.select();
+        } catch (err) {
+          /* ignore */
+        }
+      }
+    });
+  }
+
+  function isEnterFocusTarget(el) {
+    if (!el || el.disabled) return false;
+    if (el.tabIndex < 0) return false;
+    if (el.readOnly) return false;
+    var tag = el.tagName;
+    if (tag !== "INPUT" && tag !== "SELECT") return false;
+    if (el.type === "hidden" || el.type === "button" || el.type === "submit" || el.type === "reset") {
+      return false;
+    }
+    // 非表示は除外
+    if (el.offsetParent === null && el.getClientRects().length === 0) return false;
+    if (el.closest("[hidden]")) return false;
+    return true;
+  }
+
+  function findNextEnterFocusTarget(current) {
+    var candidates = document.querySelectorAll("input, select");
+    var list = [];
+    for (var i = 0; i < candidates.length; i++) {
+      if (isEnterFocusTarget(candidates[i])) list.push(candidates[i]);
+    }
+    var idx = list.indexOf(current);
+    if (idx < 0) {
+      // ラジオ等で current が候補外のとき、DOM 順で後ろから探す
+      for (var j = 0; j < candidates.length; j++) {
+        if (candidates[j] === current) {
+          for (var k = j + 1; k < candidates.length; k++) {
+            if (isEnterFocusTarget(candidates[k])) return candidates[k];
+          }
+          return null;
+        }
+      }
+      return null;
+    }
+    if (idx + 1 < list.length) return list[idx + 1];
+    return null;
+  }
+
   bindMaterialNumericInputs();
   bindMaterialCalcEvents();
   bindBrassCalcEvents();
+  bindProcCalcEvents();
+  updateProcFormButtonState("");
+  bindEnterMovesToNextField();
 
   if (matSteelSelect) {
     // ページ読み込み時は反映しない。ユーザー変更時のみ実行（est_calc と同じ）

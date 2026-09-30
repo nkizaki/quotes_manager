@@ -156,7 +156,17 @@ body.quote-calc-page {
   background-color: #d8d8d8 !important;
 }
 
-.quote-calc-page #qc-mat-cost-input {
+/* 基本情報（品番～担当者）・選択中IDは表示専用だが白背景のまま */
+.quote-calc-fixed-section .quote-calc-kihon-item input[readonly],
+.quote-calc-fixed-section .quote-calc-kihon-item .quote-calc-readonly-field,
+.quote-calc-page #qc-proc-id {
+  background-color: #ffffff !important;
+}
+
+.quote-calc-page #qc-mat-cost-input,
+.quote-calc-page #qc-proc-cost-2,
+.quote-calc-page #qc-proc-overhead,
+.quote-calc-page #qc-proc-material-cost {
   background-color: var(--cell-highlight-bg, #ffffcc) !important;
 }
 
@@ -667,14 +677,16 @@ body.quote-calc-page {
 
 .qc-pack-table-wrap a.qc-pack-spec-link,
 .qc-pack-table-wrap a.qc-init-name-link,
-.qc-pack-table-wrap a.qc-surf-name-link {
+.qc-pack-table-wrap a.qc-surf-name-link,
+.quote-calc-page #qc-proc-table a.qc-proc-id-link {
   color: var(--link-text, var(--color-accent));
   text-decoration: none;
 }
 
 .qc-pack-table-wrap a.qc-pack-spec-link:hover,
 .qc-pack-table-wrap a.qc-init-name-link:hover,
-.qc-pack-table-wrap a.qc-surf-name-link:hover {
+.qc-pack-table-wrap a.qc-surf-name-link:hover,
+.quote-calc-page #qc-proc-table a.qc-proc-id-link:hover {
   text-decoration: underline;
 }
 

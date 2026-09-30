@@ -307,7 +307,7 @@
                   <input type="text" id="qc-proc-insp-per" name="inspection_cost_per_piece" autocomplete="off">
                 </div>
                 <div class="kakou-item kakou-row-2 kakou-col-4">
-                  <label for="qc-proc-profit-rate">利益率</label>
+                  <label for="qc-proc-profit-rate">利益率(%)</label>
                   <input type="text" id="qc-proc-profit-rate" name="profit_rate" autocomplete="off">
                 </div>
                 <div class="kakou-item kakou-row-2 kakou-col-5">
@@ -326,7 +326,7 @@
                 <!-- 3行目 -->
                 <div class="kakou-item kakou-row-3 kakou-col-1">
                   <label for="qc-proc-id">選択中のID</label>
-                  <input type="text" id="qc-proc-id" name="processing_cost_id" autocomplete="off">
+                  <input type="text" id="qc-proc-id" name="processing_cost_id" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
                 </div>
                 <div class="kakou-item kakou-row-3 kakou-col-11">
                   <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
@@ -334,11 +334,11 @@
                 </div>
                 <div class="kakou-item kakou-row-3 kakou-col-12">
                   <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
-                  <button type="button" class="est-delete-muted-btn" id="qc-proc-btn-cancel">中止</button>
+                  <button type="button" class="est-delete-muted-btn" id="qc-proc-btn-cancel" disabled>中止</button>
                 </div>
                 <div class="kakou-item kakou-row-3 kakou-col-13">
                   <span class="qc-grid-btn-spacer" aria-hidden="true"></span>
-                  <button type="button" class="est-delete-btn" id="qc-proc-btn-delete">削除</button>
+                  <button type="button" class="est-delete-btn" id="qc-proc-btn-delete" disabled>削除</button>
                 </div>
               </div>
               <div id="qc-proc-table-wrapper">
