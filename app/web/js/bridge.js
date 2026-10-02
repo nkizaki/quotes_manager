@@ -26,6 +26,8 @@
     "/api/quote_calc/surface_delete": "quote_calc_surface_delete",
     "/api/quote_calc/conditions_save": "quote_calc_conditions_save",
     "/api/quote_calc/remarks_save": "quote_calc_remarks_save",
+    "/api/quote_calc/create_doc_check": "quote_calc_create_doc_check",
+    "/api/quote_calc/export_xlsx": "quote_calc_export_xlsx",
     "/api/est_calc/set_lot": "est_calc_set_lot",
     "/api/est_calc/clear_usage_flag": "est_calc_clear_usage_flag",
     "/api/est_calc/add_estimate_lot": "est_calc_add_estimate_lot",

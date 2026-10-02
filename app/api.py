@@ -132,6 +132,38 @@ class Api:
     def quote_calc_remarks_save(self, payload=None):
         return _call(svc.api_quote_calc_remarks_save, payload)
 
+    def quote_calc_create_doc_check(self, payload=None):
+        return _call(svc.api_quote_calc_create_doc_check, payload)
+
+    def quote_calc_export_xlsx(self, payload=None):
+        """見積書 xlsx を生成し、保存ダイアログで書き出す。"""
+        try:
+            result = svc.api_quote_calc_export_xlsx(payload or {})
+            if not isinstance(result, dict) or result.get("error"):
+                return _json_safe(
+                    result if isinstance(result, dict) else {"error": "見積書作成に失敗しました"}
+                )
+            raw = result.get("_xlsx_bytes")
+            name = result.get("_xlsx_name") or "見積書.xlsx"
+            if not raw:
+                return {"error": "見積書作成に失敗しました"}
+            if not webview.windows:
+                return {"ok": False, "error": "ウィンドウが初期化されていません。"}
+            window = webview.windows[0]
+            dest = window.create_file_dialog(
+                webview.SAVE_DIALOG,
+                save_filename=str(name),
+                file_types=("Excel Files (*.xlsx)",),
+            )
+            if not dest:
+                return {"ok": False, "cancelled": True}
+            path = dest[0] if isinstance(dest, (list, tuple)) else dest
+            with open(path, "wb") as f:
+                f.write(raw)
+            return {"ok": True, "path": str(path)}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
     def est_calc_set_lot(self, payload=None):
         return _call(svc.api_est_calc_set_lot, payload)
 

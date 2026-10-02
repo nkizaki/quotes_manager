@@ -20,9 +20,6 @@
       <h1 class="search-header-title est-calc-header-title">見積り計算</h1>
       <span class="search-header-version" id="app-version"></span>
       <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
-      <div class="quotes-header-actions">
-        <button type="button" id="qc-create-doc-btn" class="est-download-btn search-btn">見積書作成</button>
-      </div>
     </div>
   </header>
 
@@ -37,9 +34,12 @@
             <label for="qc-part-no">品番</label>
             <input type="text" id="qc-part-no" name="part_no" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" spellcheck="false" aria-readonly="true">
           </div>
-          <div class="quote-calc-kihon-item quote-calc-span-3-4">
+          <div class="quote-calc-kihon-item quote-calc-span-3-4 quote-calc-row-1">
             <label for="qc-part-name">品名</label>
             <input type="text" id="qc-part-name" name="part_name" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" spellcheck="false" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-col-5 quote-calc-row-1 quote-calc-kihon-action">
+            <button type="button" id="qc-create-doc-btn" class="est-download-btn search-btn">見積書作成</button>
           </div>
           <div class="quote-calc-kihon-item quote-calc-span-1-2 quote-calc-row-2">
             <label for="qc-customer">客先名</label>
@@ -52,6 +52,18 @@
           <div class="quote-calc-kihon-item quote-calc-col-4 quote-calc-row-2">
             <label for="qc-contact">担当者</label>
             <input type="text" id="qc-contact" name="contact" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-col-5 quote-calc-row-2">
+            <label for="qc-customer-code">客先コード</label>
+            <input type="text" id="qc-customer-code" name="customer_code" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-col-6 quote-calc-row-2">
+            <label for="qc-estimate-id">見積りID</label>
+            <input type="text" id="qc-estimate-id" name="estimate_id" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
+          </div>
+          <div class="quote-calc-kihon-item quote-calc-col-7 quote-calc-row-2">
+            <label for="qc-sales-name">営業担当名</label>
+            <input type="text" id="qc-sales-name" name="sales_name" class="quote-calc-readonly-field" value="" readonly tabindex="-1" autocomplete="off" aria-readonly="true">
           </div>
         </div>
       </section>

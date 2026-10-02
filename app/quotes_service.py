@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+import calendar
 import os
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
@@ -141,6 +142,7 @@ def get_quote_calc_page(payload=None):
     quote_id = str(payload.get("quote_id") or "").strip()
     part_no = part_name = ""
     customer_name = department = contact = ""
+    customer_code = sales_name = ""
     
     material_diameter = steel_grade = shape = ""
     diameter = length = overall_length = cutoff = pieces_per_stock_input = ""
@@ -260,6 +262,8 @@ def get_quote_calc_page(payload=None):
                 customer_name = _rec_str(rec, "客先名")
                 department = _rec_str(rec, "客先部署")
                 contact = _rec_str(rec, "客先担当者")
+                customer_code = _rec_str(rec, "客先コード")
+                sales_name = _rec_str(rec, "営業担当")
 
                 # 材料費（t_真鍮材料にも材料費があるため、t_材料費を別クエリで取る）
                 cur.execute(
@@ -367,6 +371,8 @@ def get_quote_calc_page(payload=None):
         "customer_name": customer_name,
         "department": department,
         "contact": contact,
+        "customer_code": customer_code,
+        "sales_name": sales_name,
         "material_diameter": material_diameter,
         "steel_grade": steel_grade,
         "shape": shape,
@@ -1557,6 +1563,375 @@ def api_quote_calc_remarks_save(payload=None):
                 conn.close()
             except Exception:
                 pass
+
+
+QUOTE_DOC_EXCEL_TEMPLATE_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "exceltemplates",
+    "見積書原本.xlsx",
+)
+
+_QUOTE_DOC_PROC_SQL = (
+    "SELECT ID, ロット数, 材料費, 加工費, 刃工具費個別, 管理費, 機械, サイクルタイム, "
+    "日産数, 刃工具費, チャージ, 日数 FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数 ASC"
+)
+
+
+def _quote_add_months(d, months):
+    """date に月を加算（月末はクランプ）"""
+    month = d.month - 1 + months
+    year = d.year + month // 12
+    month = month % 12 + 1
+    day = min(d.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _quote_doc_excel_num(val):
+    """Excel 数値セル用: 空・解釈不能は None"""
+    if val is None:
+        return None
+    t = str(val).strip().replace(",", "").replace("，", "").replace(" ", "")
+    if not t:
+        return None
+    try:
+        n = float(t)
+        if abs(n - round(n)) < 1e-9:
+            return int(round(n))
+        return n
+    except ValueError:
+        return None
+
+
+def _quote_doc_num_sum(a, b):
+    """2値の数値加算。両方空なら None"""
+    na = _quote_doc_excel_num(a)
+    nb = _quote_doc_excel_num(b)
+    if na is None and nb is None:
+        return None
+    return (0 if na is None else na) + (0 if nb is None else nb)
+
+
+def _quote_surface_cost_total(cur, processing_cost_id):
+    """t_表面処理費合計取得関数: 加工費ID の単価合計。なし→0"""
+    if processing_cost_id is None or str(processing_cost_id).strip() == "":
+        return 0
+    cur.execute(
+        "SELECT 加工費ID, SUM(単価) AS total_value FROM t_表面処理費 "
+        "WHERE 加工費ID = ? GROUP BY 加工費ID",
+        (processing_cost_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return 0
+    cols = [c[0] for c in (cur.description or [])]
+    rec = dict(zip(cols, row))
+    n = _quote_doc_excel_num(rec.get("total_value"))
+    return 0 if n is None else n
+
+
+def _quote_packaging_cost_total(cur, processing_cost_id):
+    """t_梱包輸送費合計取得関数: 加工費ID の単価合計。なし→0"""
+    if processing_cost_id is None or str(processing_cost_id).strip() == "":
+        return 0
+    cur.execute(
+        "SELECT 加工費ID, SUM(単価) AS total_value FROM t_梱包輸送費 "
+        "WHERE 加工費ID = ? GROUP BY 加工費ID",
+        (processing_cost_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return 0
+    cols = [c[0] for c in (cur.description or [])]
+    rec = dict(zip(cols, row))
+    n = _quote_doc_excel_num(rec.get("total_value"))
+    return 0 if n is None else n
+
+
+def _quote_doc_fetch_processing_rows(cur, quote_id):
+    """見積書用 t_加工費 一覧"""
+    cur.execute(_QUOTE_DOC_PROC_SQL, (quote_id,))
+    rows = cur.fetchall()
+    cols = [c[0] for c in (cur.description or [])]
+    out = []
+    for r in rows:
+        out.append({cols[i]: r[i] for i in range(min(len(cols), len(r)))})
+    return out
+
+
+def _quote_doc_validate(payload=None):
+    """
+    見積書作成前チェック（全て必須）
+    - quote_history.quote_id（t_見積り履歴.見積りID）存在
+    - qc-mat-cost-input 相当が空でない
+    - t_加工費 が 1 件以上
+    """
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or data.get("estimate_id") or "").strip()
+    material_cost_input = str(data.get("material_cost_input") or "").strip()
+
+    if not quote_id:
+        return {"ok": False, "error_code": "no_quote", "error": "見積りが選択されていません"}
+
+    if material_cost_input == "":
+        return {"ok": False, "error_code": "no_material", "error": "材料費に入力がありません"}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM t_見積り履歴 WHERE 見積りID = ?", (quote_id,))
+        if not cur.fetchone():
+            return {"ok": False, "error_code": "no_quote", "error": "見積りが選択されていません"}
+
+        proc_rows = _quote_doc_fetch_processing_rows(cur, quote_id)
+        if not proc_rows:
+            return {
+                "ok": False,
+                "error_code": "no_processing",
+                "error": "加工費が入力されていません",
+            }
+        return {"ok": True, "quote_id": quote_id, "processing_rows": proc_rows}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def api_quote_calc_create_doc_check(payload=None):
+    """見積書作成ボタン: 出力前データ確認"""
+    result = _quote_doc_validate(payload)
+    if not result.get("ok"):
+        return result
+    # フロントへは件数確認で足りる（書き込み時に再取得）
+    return {"ok": True, "quote_id": result.get("quote_id"), "processing_count": len(result.get("processing_rows") or [])}
+
+
+def api_quote_calc_export_xlsx(payload=None):
+    """見積書原本.xlsx へ書き込み、xlsx バイトを返却する"""
+    data = payload or {}
+    check = _quote_doc_validate(data)
+    if not check.get("ok"):
+        return check
+
+    quote_id = check["quote_id"]
+
+    def _s(key):
+        return str(data.get(key) or "").strip()
+
+    customer = _s("customer_name")
+    department = _s("department")
+    contact = _s("contact")
+    estimate_id = _s("estimate_id") or quote_id
+    part_no = _s("part_no")
+    part_name = _s("part_name")
+    mat_diameter = _s("mat_diameter")
+    sales_name = _s("sales_name")
+    cond_location = _s("cond_location")
+    cond_date = _s("cond_date")
+    cond_status = _s("cond_status")
+    cond_packaging = _s("cond_packaging")
+    remark_lines = data.get("remark_lines") or []
+
+    today = date.today()
+    today_s = today.strftime("%Y/%m/%d")
+    valid_3m = _quote_add_months(today, 3).strftime("%Y/%m/%d")
+    valid_1m = _quote_add_months(today, 1).strftime("%Y/%m/%d")
+
+    customer_part = _sanitize_filename_part(customer, 8)
+    estimate_part = _sanitize_filename_part(estimate_id)
+    download_name = f"見積書_{customer_part}{estimate_part}.xlsx"
+
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        return {"error": "openpyxl がインストールされていません。pip install openpyxl を実行してください。"}
+
+    if not os.path.exists(QUOTE_DOC_EXCEL_TEMPLATE_PATH):
+        return {"error": f"テンプレートが見つかりません: {QUOTE_DOC_EXCEL_TEMPLATE_PATH}"}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        # 書き込み用に t_加工費 を再取得（チェック時と同じクエリ）
+        proc_rows = _quote_doc_fetch_processing_rows(cur, quote_id)
+
+        cur.execute(
+            "SELECT 品名, 数量, 単位, 単価, 金額 FROM t_初期費用 "
+            "WHERE 見積りID = ? ORDER BY ID ASC",
+            (quote_id,),
+        )
+        ic_raw = cur.fetchall()
+        ic_cols = [c[0] for c in (cur.description or [])]
+        initial_cost_rows = [
+            {ic_cols[i]: r[i] for i in range(min(len(ic_cols), len(r)))}
+            for r in ic_raw
+        ]
+
+        wb = load_workbook(QUOTE_DOC_EXCEL_TEMPLATE_PATH)
+        if "Sheet1" not in wb.sheetnames or "Sheet2" not in wb.sheetnames:
+            return {"error": "テンプレートに Sheet1 / Sheet2 が存在しません。"}
+        ws1 = wb["Sheet1"]
+        ws2 = wb["Sheet2"]
+
+        # ---------------------------------------------------------------------
+        # Sheet1
+        # 表題部
+        # ---------------------------------------------------------------------
+        ws1["A4"] = customer  # qc-customer
+        ws1["A5"] = department  # qc-department
+        ws1["A6"] = f"{contact} 様"  # qc-contact + " 様"
+        ws1["G2"] = today_s  # 今日の日付(yyyy/mm/dd)
+        ws1["G4"] = estimate_id  # qc-estimate-id
+        ws1["B13"] = part_no  # qc-part-no
+        ws1["B14"] = part_name  # qc-part-name
+        ws1["B15"] = mat_diameter  # qc-mat-diameter
+        ws1["G15"] = sales_name  # qc-sales-name
+        ws1["B29"] = valid_3m  # 今日の日付から3か月後(yyyy/mm/dd)
+
+        # ---------------------------------------------------------------------
+        # Sheet1
+        # ロット数毎の見積り詳細
+        # B17:B23 を開始点として右方向へ1列ずつ書き込み（A列は項目名）
+        # 17 ロット数 / 19 材料費 / 20 加工費+刃工具費個別
+        # 21 表面処理費合計 / 22 梱包輸送費合計 / 23 管理費
+        # ---------------------------------------------------------------------
+        for i, prow in enumerate(proc_rows):
+            col = 2 + i  # B=2
+            pid = prow.get("ID")
+            ws1.cell(row=17, column=col, value=_quote_doc_excel_num(prow.get("ロット数")))
+            ws1.cell(row=19, column=col, value=_quote_doc_excel_num(prow.get("材料費")))
+            ws1.cell(
+                row=20,
+                column=col,
+                value=_quote_doc_num_sum(prow.get("加工費"), prow.get("刃工具費個別")),
+            )
+            ws1.cell(row=21, column=col, value=_quote_surface_cost_total(cur, pid))
+            ws1.cell(row=22, column=col, value=_quote_packaging_cost_total(cur, pid))
+            ws1.cell(row=23, column=col, value=_quote_doc_excel_num(prow.get("管理費")))
+
+        # ---------------------------------------------------------------------
+        # Sheet2
+        # 表題部
+        # ---------------------------------------------------------------------
+        ws2["A4"] = customer  # qc-customer
+        ws2["A5"] = department  # qc-department
+        ws2["A6"] = f"{contact} 様"  # qc-contact + " 様"
+        ws2["G2"] = today_s  # 今日の日付(yyyy/mm/dd)
+        ws2["G4"] = estimate_id  # qc-estimate-id
+        ws2["B13"] = part_no  # qc-part-no
+        ws2["B14"] = part_name  # qc-part-name
+        ws2["B15"] = mat_diameter  # qc-mat-diameter
+        ws2["G15"] = sales_name  # qc-sales-name
+        ws2["B30"] = valid_1m  # 今日の日付から1か月後(yyyy/mm/dd) # 見積り有効期限
+
+        # D8~D11: 機械～刃工具費は先頭ロットの値を使用
+        first = proc_rows[0] if proc_rows else {}
+        ws2["D8"] = first.get("機械") if first.get("機械") is not None else ""  # 機械
+        ws2["D9"] = _quote_doc_excel_num(first.get("サイクルタイム"))  # サイクルタイム
+        ws2["D10"] = _quote_doc_excel_num(first.get("日産数"))  # 日産数
+        ws2["D11"] = _quote_doc_excel_num(first.get("刃工具費"))  # 刃工具費
+
+        # ---------------------------------------------------------------------
+        # Sheet2
+        # ロット数毎の見積り詳細（Sheet1 と同様 + 24 チャージ / 25 日数）
+        # ---------------------------------------------------------------------
+        for i, prow in enumerate(proc_rows):
+            col = 2 + i  # B=2
+            pid = prow.get("ID")
+            ws2.cell(row=17, column=col, value=_quote_doc_excel_num(prow.get("ロット数")))
+            ws2.cell(row=19, column=col, value=_quote_doc_excel_num(prow.get("材料費")))
+            ws2.cell(
+                row=20,
+                column=col,
+                value=_quote_doc_num_sum(prow.get("加工費"), prow.get("刃工具費個別")),
+            )
+            ws2.cell(row=21, column=col, value=_quote_surface_cost_total(cur, pid))
+            ws2.cell(row=22, column=col, value=_quote_packaging_cost_total(cur, pid))
+            ws2.cell(row=23, column=col, value=_quote_doc_excel_num(prow.get("管理費")))
+            ws2.cell(row=24, column=col, value=_quote_doc_excel_num(prow.get("チャージ")))
+            ws2.cell(row=25, column=col, value=_quote_doc_excel_num(prow.get("日数")))
+
+        # ---------------------------------------------------------------------
+        # 初期費用書込み
+        # 0件 → Sheet1.E29 / Sheet2.E30 に「無し」
+        # 1件以上 → Sheet1 は E29:G29 から下方向、Sheet2 は E30:G30 から下方向
+        # E 品名 / F 数量&単位 / G 金額
+        # ---------------------------------------------------------------------
+        if not initial_cost_rows:
+            ws1["E29"] = "無し"
+            ws2["E30"] = "無し"
+        else:
+            for i, ic in enumerate(initial_cost_rows):
+                hinmei = "" if ic.get("品名") is None else str(ic.get("品名"))
+                suryo = "" if ic.get("数量") is None else str(ic.get("数量")).strip()
+                tani = "" if ic.get("単位") is None else str(ic.get("単位")).strip()
+                qty_unit = f"{suryo}{tani}"
+                kingaku = _quote_doc_excel_num(ic.get("金額"))
+                r1 = 29 + i
+                r2 = 30 + i
+                ws1.cell(row=r1, column=5, value=hinmei)  # E
+                ws1.cell(row=r1, column=6, value=qty_unit)  # F
+                ws1.cell(row=r1, column=7, value=kingaku)  # G
+                ws2.cell(row=r2, column=5, value=hinmei)
+                ws2.cell(row=r2, column=6, value=qty_unit)
+                ws2.cell(row=r2, column=7, value=kingaku)
+
+        # ---------------------------------------------------------------------
+        # 諸条件書込み
+        # Sheet1: B31/B33/B35/B37
+        # Sheet2: B32/B34/B36/B38
+        # ---------------------------------------------------------------------
+        ws1["B31"] = cond_location  # qc-cond-location
+        ws1["B33"] = cond_date  # qc-cond-date
+        ws1["B35"] = cond_status  # qc-cond-status
+        ws1["B37"] = cond_packaging  # qc-cond-packaging
+        ws2["B32"] = cond_location  # qc-cond-location
+        ws2["B34"] = cond_date  # qc-cond-date
+        ws2["B36"] = cond_status  # qc-cond-status
+        ws2["B38"] = cond_packaging  # qc-cond-packaging
+
+        # ---------------------------------------------------------------------
+        # 備考書込み
+        # Sheet1, Sheet2 共に開始点 A40。qc-remark-line-1～10 を下方向へ
+        # ---------------------------------------------------------------------
+        for i in range(10):
+            text = ""
+            if i < len(remark_lines):
+                text = str(remark_lines[i] or "")
+            ws1.cell(row=40 + i, column=1, value=text)
+            ws2.cell(row=40 + i, column=1, value=text)
+
+        # Sheet1 の A1 を選択（カーソル初期位置）
+        wb.active = ws1
+        try:
+            sel = ws1.sheet_view.selection[0]
+            sel.activeCell = "A1"
+            sel.sqref = "A1"
+        except Exception:
+            pass
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return {
+            "ok": True,
+            "_xlsx_bytes": output.getvalue(),
+            "_xlsx_name": download_name,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 
 _QUOTE_SEARCH_UI_KEYS = [
     "見積りID",

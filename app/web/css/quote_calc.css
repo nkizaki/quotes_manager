@@ -112,7 +112,7 @@ body.quote-calc-page {
 /* ----- 基本情報 ----- */
 .quote-calc-fixed-section .quote-calc-kihon-grid {
   display: grid;
-  grid-template-columns: repeat(4, var(--qc-grid-kihon-col-width));
+  grid-template-columns: repeat(7, var(--qc-grid-kihon-col-width));
   gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: 100%;
@@ -132,6 +132,15 @@ body.quote-calc-page {
   display: block;
   width: 100%;
   box-sizing: border-box;
+}
+
+.quote-calc-fixed-section .quote-calc-kihon-action {
+  justify-content: flex-end;
+}
+
+.quote-calc-fixed-section .quote-calc-kihon-action #qc-create-doc-btn {
+  white-space: nowrap;
+  width: 100%;
 }
 
 .quote-calc-page .quote-calc-readonly-field {
@@ -180,6 +189,10 @@ body.quote-calc-page {
 .quote-calc-span-3-4 { grid-column: 3 / 5; }
 .quote-calc-col-3 { grid-column: 3 / 4; }
 .quote-calc-col-4 { grid-column: 4 / 5; }
+.quote-calc-col-5 { grid-column: 5 / 6; }
+.quote-calc-col-6 { grid-column: 6 / 7; }
+.quote-calc-col-7 { grid-column: 7 / 8; }
+.quote-calc-row-1 { grid-row: 1; }
 .quote-calc-row-2 { grid-row: 2; }
 
 /* ----- タブ ----- */

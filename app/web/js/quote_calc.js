@@ -1529,6 +1529,9 @@
     setVal("qc-customer", data.customer_name);
     setVal("qc-department", data.department);
     setVal("qc-contact", data.contact);
+    setVal("qc-customer-code", data.customer_code);
+    setVal("qc-estimate-id", data.quote_id);
+    setVal("qc-sales-name", data.sales_name);
 
     populateSteelOptions(data.zairyo_2_options);
     populateMachineOptions(data.machine_options);
@@ -2799,6 +2802,79 @@
 
   // 初期状態: 有効化OFF・操作不能（API反映前）
   setBrassEnabled(false, { reset: true });
+
+  function buildCreateDocPayload() {
+    var remarkLines = [];
+    for (var i = 1; i <= 10; i++) {
+      remarkLines.push(getVal("qc-remark-line-" + i));
+    }
+    return {
+      quote_id: getQuoteId(),
+      estimate_id: getVal("qc-estimate-id").trim() || getQuoteId(),
+      material_cost_input: getVal("qc-mat-cost-input").trim(),
+      customer_name: getVal("qc-customer").trim(),
+      department: getVal("qc-department").trim(),
+      contact: getVal("qc-contact").trim(),
+      part_no: getVal("qc-part-no").trim(),
+      part_name: getVal("qc-part-name").trim(),
+      mat_diameter: getVal("qc-mat-diameter").trim(),
+      sales_name: getVal("qc-sales-name").trim(),
+      cond_location: getVal("qc-cond-location").trim(),
+      cond_date: getVal("qc-cond-date").trim(),
+      cond_status: getVal("qc-cond-status").trim(),
+      cond_packaging: getVal("qc-cond-packaging").trim(),
+      remark_lines: remarkLines,
+    };
+  }
+
+  function createDocErrorMessage(data) {
+    var code = data && data.error_code;
+    if (code === "no_quote") return "見積りが選択されていません";
+    if (code === "no_material") return "材料費に入力がありません";
+    if (code === "no_processing") return "加工費が入力されていません";
+    return (data && data.error) || "見積書作成に失敗しました";
+  }
+
+  async function runCreateQuoteDocument() {
+    if (typeof window.quotesApi !== "function") {
+      await openPkgAlert("API が利用できません");
+      return;
+    }
+    var payload = buildCreateDocPayload();
+    var check = await window.quotesApi("/api/quote_calc/create_doc_check", {
+      quote_id: payload.quote_id,
+      estimate_id: payload.estimate_id,
+      material_cost_input: payload.material_cost_input,
+    });
+    if (!check || check.ok !== true) {
+      await openPkgAlert(createDocErrorMessage(check));
+      return;
+    }
+
+    var choice = await openPkgConfirm("見積書を作成しますか？");
+    if (choice !== "yes") {
+      await openPkgAlert("見積書作成をキャンセルしました");
+      return;
+    }
+
+    var result = await window.quotesApi("/api/quote_calc/export_xlsx", payload);
+    if (result && result.cancelled) {
+      return;
+    }
+    if (!result || result.ok !== true) {
+      await openPkgAlert(createDocErrorMessage(result));
+    }
+  }
+
+  var createDocBtn = document.getElementById("qc-create-doc-btn");
+  if (createDocBtn) {
+    createDocBtn.addEventListener("click", function () {
+      runCreateQuoteDocument().catch(function (err) {
+        console.error(err);
+        openPkgAlert(err && err.message ? err.message : String(err));
+      });
+    });
+  }
 
   (async function boot() {
     var quoteId = (
