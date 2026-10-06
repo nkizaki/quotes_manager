@@ -8,36 +8,36 @@
   color: var(--ui-text);
   font-family: var(--ui-font-stack, sans-serif);
 
-  --dbx-table-col-id: 72px;
-  --dbx-table-col-spec: 320px;
-  --dbx-table-col-price: 120px;
+  --dbx-table-col-id: calc(72px * var(--ui-scale, 1));
+  --dbx-table-col-spec: calc(320px * var(--ui-scale, 1));
+  --dbx-table-col-price: calc(120px * var(--ui-scale, 1));
 
-  --dbx-form-max-id: 120px;
-  --dbx-form-max-spec: 360px;
-  --dbx-form-max-price: 120px;
+  --dbx-form-max-id: calc(120px * var(--ui-scale, 1));
+  --dbx-form-max-spec: calc(360px * var(--ui-scale, 1));
+  --dbx-form-max-price: calc(120px * var(--ui-scale, 1));
 }
 
 .dbox-master-header {
-  min-width: 720px;
+  min-width: calc(720px * var(--ui-scale, 1));
   position: sticky;
   top: 0;
   z-index: 200;
   background: var(--ui-surface-card);
-  border-bottom: 1px solid var(--ui-border-default);
+  border-bottom: calc(1px * var(--ui-scale, 1)) solid var(--ui-border-default);
 }
 
 .dbox-master-header-inner {
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: calc(12px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: calc(16px * var(--ui-scale, 1));
 }
 
 .dbox-master-title {
-  margin: 0 0 0 100px;
-  font-size: 1.5rem;
+  margin: 0; /* ロゴ ::before 幅で左余白を確保 */
+  font-size: var(--scaled-font-xl);
   font-weight: 700;
 }
 
@@ -45,7 +45,7 @@
   color: var(--link-text, #00c);
   text-decoration: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--scaled-font-md);
 }
 
 .dbox-master-back-link:hover {
@@ -54,17 +54,17 @@
 }
 
 .dbox-master-main {
-  max-width: 720px;
-  min-width: 720px;
+  max-width: calc(720px * var(--ui-scale, 1));
+  min-width: calc(720px * var(--ui-scale, 1));
   margin: 0 auto;
-  padding: 16px;
+  padding: calc(16px * var(--ui-scale, 1));
   box-sizing: border-box;
 }
 
 .dbox-master-message {
   min-height: 1.25em;
-  margin: 0 0 12px;
-  font-size: 14px;
+  margin: 0 0 calc(12px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   color: var(--ui-text-muted);
 }
 
@@ -80,19 +80,19 @@
 
 .dbox-master-table-wrap {
   overflow: auto;
-  max-height: 35rem;
+  max-height: calc(35rem * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-default);
-  border-radius: 6px;
+  border-radius: calc(6px * var(--ui-scale, 1));
   background: var(--ui-surface-card);
-  margin-bottom: 20px;
+  margin-bottom: calc(20px * var(--ui-scale, 1));
 }
 
 .dbox-master-table {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  min-width: 520px;
-  font-size: 13px;
+  min-width: calc(520px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-sm);
 }
 
 .dbox-master-table col.dbx-col--id { width: var(--dbx-table-col-id); }
@@ -102,7 +102,7 @@
 .dbox-master-table th,
 .dbox-master-table td {
   border: 1px solid var(--ui-divider-soft, #e0e0e0);
-  padding: 6px 8px;
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   vertical-align: middle;
 }
 
@@ -124,16 +124,16 @@
 
 .dbox-master-id-btn {
   margin: 0;
-  padding: 1px 8px;
+  padding: calc(1px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 4px;
+  border-radius: calc(4px * var(--ui-scale, 1));
   background: var(--ui-primary-soft, #d9e5fb);
   color: var(--link-text, #00c);
-  font-size: 13px;
+  font-size: var(--scaled-font-sm);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  min-width: 48px;
+  min-width: calc(48px * var(--ui-scale, 1));
 }
 
 .dbox-master-id-btn:hover {
@@ -144,13 +144,13 @@
 .dbox-master-form-section {
   background: var(--ui-surface-card);
   border: 1px solid var(--ui-border-default);
-  border-radius: 6px;
-  padding: 16px;
+  border-radius: calc(6px * var(--ui-scale, 1));
+  padding: calc(16px * var(--ui-scale, 1));
 }
 
 .dbox-master-form-heading {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
+  margin: 0 0 calc(12px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-lg);
   font-weight: 700;
 }
 
@@ -159,17 +159,17 @@
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: flex-end;
-  gap: 10px 12px;
+  gap: calc(10px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 16px;
+  padding-bottom: calc(6px * var(--ui-scale, 1));
+  margin-bottom: calc(16px * var(--ui-scale, 1));
   min-width: 0;
 }
 
 .dbox-master-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4px * var(--ui-scale, 1));
   min-width: 0;
   box-sizing: border-box;
   flex: 0 0 auto;
@@ -180,17 +180,17 @@
 .dbox-master-field--price { width: var(--dbx-form-max-price); }
 
 .dbox-master-field label {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
   font-weight: 600;
   color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
 .dbox-master-field input[type="text"] {
-  padding: 6px 8px;
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 3px;
-  font-size: 14px;
+  border-radius: calc(3px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -204,15 +204,15 @@
 .dbox-master-form-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: calc(12px * var(--ui-scale, 1));
 }
 
 .dbox-master-action-btn {
-  min-width: 120px;
-  padding: 10px 18px;
-  font-size: 14px;
+  min-width: calc(120px * var(--ui-scale, 1));
+  padding: calc(10px * var(--ui-scale, 1)) calc(18px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: calc(4px * var(--ui-scale, 1));
   cursor: pointer;
   border: 1px solid var(--ui-border-strong, #767676);
 }

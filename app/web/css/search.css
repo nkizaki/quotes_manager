@@ -11,7 +11,7 @@
 }
 
 .search-header {
-  min-width: 1280px;
+  min-width: calc(1280px * var(--ui-scale, 1));
   position: sticky;
   top: 0;
   z-index: 200;
@@ -19,15 +19,15 @@
 
 .search-header-inner {
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: calc(12px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: calc(12px * var(--ui-scale, 1));
 }
 
 .search-header-title {
-  margin: 0 0 0 100px;
-  font-size: 1.5rem;
+  margin: 0; /* ロゴ ::before 幅で左余白を確保 */
+  font-size: var(--scaled-font-xl);
   font-weight: 700;
 }
 
@@ -37,7 +37,7 @@
   border: var(--btn-ghost-border);
   border-radius: calc(4px * var(--ui-scale, 1));
   padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
   cursor: pointer;
 }
@@ -51,18 +51,18 @@
 }
 
 .search-main {
-  min-width: 1280px;
-  margin: 10px auto;
-  padding: 0 16px 16px;
+  min-width: calc(1280px * var(--ui-scale, 1));
+  margin: calc(10px * var(--ui-scale, 1)) auto;
+  padding: 0 calc(16px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
   box-sizing: border-box;
 }
 
 .search-section {
   background: var(--ui-surface-card);
   border: 1px solid var(--ui-border-default);
-  border-radius: 6px;
-  padding: 14px;
-  margin-bottom: 12px;
+  border-radius: calc(6px * var(--ui-scale, 1));
+  padding: calc(14px * var(--ui-scale, 1));
+  margin-bottom: calc(12px * var(--ui-scale, 1));
 }
 
 /* メイン検索フォームのみ（2列×3行: 営業/客先 → 品番/品名 → ID） */
@@ -80,7 +80,7 @@
 }
 
 .search-main .search-form-item label {
-  font-size: calc(13px * var(--font-scale, 1));
+  font-size: var(--scaled-font-sm);
   font-weight: 600;
 }
 
@@ -92,13 +92,13 @@
   padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   box-sizing: border-box;
   background: var(--ui-surface-card);
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-family: inherit;
 }
 
 .search-main .search-form-item #quote-id,
 .search-main .search-form-item #genka-id {
-  width: 8rem;
+  width: calc(8rem * var(--ui-scale, 1));
   max-width: 100%;
 }
 
@@ -123,7 +123,7 @@
   display: inline-flex;
   align-items: center;
   gap: calc(4px * var(--ui-scale, 1));
-  font-size: calc(13px * var(--font-scale, 1));
+  font-size: var(--scaled-font-sm);
   font-weight: 400;
   white-space: nowrap;
 }
@@ -146,7 +146,7 @@
 }
 
 .search-subwindow-form .search-form-item label {
-  font-size: calc(13px * var(--font-scale, 1));
+  font-size: var(--scaled-font-sm);
   font-weight: 600;
 }
 
@@ -158,12 +158,12 @@
   padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   box-sizing: border-box;
   background: var(--ui-surface-card);
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-family: inherit;
 }
 
 .search-actions {
-  margin-top: 14px;
+  margin-top: calc(14px * var(--ui-scale, 1));
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -177,7 +177,7 @@
   border: 1px solid var(--btn-cyan-border);
   border-radius: calc(4px * var(--ui-scale, 1));
   padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
   cursor: pointer;
 }
@@ -194,8 +194,8 @@
   display: flex;
   align-items: center;
   gap: calc(8px * var(--ui-scale, 1));
-  margin: 0 0 8px;
-  min-height: calc(1.5em * var(--font-scale, 1));
+  margin: 0 0 calc(8px * var(--ui-scale, 1));
+  min-height: 1.5em;
 }
 
 .search-result-message {
@@ -210,7 +210,7 @@
 #result-table-wrapper {
   width: 100%;
   max-width: 100%;
-  height: 600px;
+  height: calc(600px * var(--ui-scale, 1));
   overflow: auto;
   border: 1px solid var(--ui-border-default);
   background: var(--ui-surface-card);
@@ -245,17 +245,18 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 2px;
+  height: calc(2px * var(--ui-scale, 1));
   background: var(--ui-border-default);
 }
 
 #result-table th,
 #result-table td {
   border: 1px solid var(--ui-border-default);
-  padding: 4px 8px;
+  padding: var(--scaled-table-cell-padding-y) var(--scaled-table-cell-padding-x);
   text-align: left;
   box-sizing: border-box;
   background: var(--ui-surface-card);
+  font-size: var(--scaled-font-base);
 }
 
 #result-table th {
@@ -270,12 +271,12 @@
   vertical-align: middle;
 }
 
-.result-table-col-1 { width: 120px; }
-.result-table-col-2 { width: 120px; }
-.result-table-col-3 { width: 100px; }
-.result-table-col-4 { width: 200px; }
-.result-table-col-5 { width: 220px; }
-.result-table-col-6 { width: 300px; }
+.result-table-col-1 { width: calc(120px * var(--ui-scale, 1)); }
+.result-table-col-2 { width: calc(120px * var(--ui-scale, 1)); }
+.result-table-col-3 { width: calc(100px * var(--ui-scale, 1)); }
+.result-table-col-4 { width: calc(200px * var(--ui-scale, 1)); }
+.result-table-col-5 { width: calc(220px * var(--ui-scale, 1)); }
+.result-table-col-6 { width: calc(300px * var(--ui-scale, 1)); }
 .result-table-col-7 { width: auto; }
 
 /* 新規ボタン用テストサブウィンドウ（600×400） */
@@ -294,13 +295,13 @@
 }
 
 .search-subwindow-panel {
-  width: 1000px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 32px);
+  width: calc(1000px * var(--ui-scale, 1));
+  max-width: calc(100vw - calc(32px * var(--ui-scale, 1)));
+  max-height: calc(100vh - calc(32px * var(--ui-scale, 1)));
   box-sizing: border-box;
   background: var(--color-surface, var(--ui-surface-card));
   border: 1px solid var(--color-border, var(--ui-border-default));
-  border-radius: var(--radius-xl, var(--radius-panel));
+  border-radius: var(--scaled-radius-xl, var(--radius-panel));
   box-shadow: 0 16px 40px rgba(23, 37, 54, 0.18);
   display: flex;
   flex-direction: column;
@@ -314,7 +315,7 @@
   gap: calc(12px * var(--ui-scale, 1));
   padding: calc(10px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
   background: var(--color-surface-secondary, var(--modal-head-bg));
-  border-bottom: 1px solid var(--color-border, var(--ui-border-default));
+  border-bottom: calc(1px * var(--ui-scale, 1)) solid var(--color-border, var(--ui-border-default));
   font-weight: 600;
 }
 
@@ -322,7 +323,7 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--scaled-font-md);
   font-weight: 600;
   color: var(--color-text, var(--ui-text));
   font-family: var(--font-sans, inherit);
@@ -330,9 +331,9 @@
 
 .search-subwindow-close {
   border: 1px solid var(--color-border, var(--ui-border-input));
-  border-radius: var(--radius-lg, 4px);
+  border-radius: var(--scaled-radius);
   background: var(--color-surface, var(--ui-surface-card));
-  font-size: calc(18px * var(--font-scale, 1));
+  font-size: var(--scaled-font-lg);
   line-height: 1;
   cursor: pointer;
   padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
@@ -349,7 +350,7 @@
 .search-subwindow-body {
   flex: 1;
   min-height: 0;
-  padding: 16px;
+  padding: calc(16px * var(--ui-scale, 1));
   overflow: auto;
 }
 
@@ -362,15 +363,15 @@
   display: grid;
   width: 100%;
   box-sizing: border-box;
-  grid-template-columns: 350px minmax(150px, 1fr);
-  gap: 100px;
+  grid-template-columns: calc(350px * var(--ui-scale, 1)) minmax(calc(150px * var(--ui-scale, 1)), 1fr);
+  gap: calc(100px * var(--ui-scale, 1));
   align-items: start;
 }
 
 .search-subwindow-form-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
+  gap: calc(8px * var(--ui-scale, 1));
 }
 
 .search-subwindow-bikou textarea {
@@ -378,13 +379,13 @@
   box-sizing: border-box;
   min-height: 6.5em;
   /* 15 行分 + 上下 padding + 枠線（border-box 内の縦リサイズ上限） */
-  max-height: calc(15 * 1.35em + 12px + 2px);
+  max-height: calc(15 * 1.35em + calc(12px * var(--ui-scale, 1)) + calc(2px * var(--ui-scale, 1)));
   line-height: 1.35;
   border: 1px solid var(--ui-border-input);
   border-radius: calc(4px * var(--ui-scale, 1));
   padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   font-family: inherit;
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   background: var(--ui-surface-card);
   resize: vertical;
 }
@@ -397,13 +398,13 @@
 .required-mark {
   color: var(--color-required);
   font-weight: 700;
-  margin-left: 2px;
+  margin-left: calc(2px * var(--ui-scale, 1));
 }
 
 .search-subwindow-actions {
   flex-shrink: 0;
-  padding: 12px 16px;
-  border-top: 1px solid var(--ui-divider-soft);
+  padding: calc(12px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
+  border-top: calc(1px * var(--ui-scale, 1)) solid var(--ui-divider-soft);
   background: var(--ui-footer-surface);
   display: flex;
   align-items: center;
@@ -428,7 +429,7 @@
   border: 1px solid var(--btn-danger-border);
   border-radius: calc(4px * var(--ui-scale, 1));
   padding: calc(8px * var(--ui-scale, 1)) calc(20px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
   cursor: pointer;
 }
@@ -464,7 +465,7 @@
   border: 1px solid var(--btn-green-border);
   border-radius: calc(4px * var(--ui-scale, 1));
   padding: calc(8px * var(--ui-scale, 1)) calc(20px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
   cursor: pointer;
 }
@@ -494,25 +495,25 @@
 
 .search-dialog-panel {
   width: min(calc(420px * var(--ui-scale, 1)), 92vw);
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - calc(32px * var(--ui-scale, 1)));
   overflow: hidden;
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #c7d1dc);
-  border-radius: var(--radius-xl, calc(6px * var(--ui-scale, 1)));
+  border-radius: var(--scaled-radius-xl);
   box-shadow: 0 16px 40px rgba(23, 37, 54, 0.18);
 }
 
 .search-dialog-head {
   padding: calc(10px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
   background: var(--color-surface-secondary, #f2f4f4);
-  border-bottom: 1px solid var(--color-border, #c7d1dc);
-  border-radius: var(--radius-xl, calc(6px * var(--ui-scale, 1))) var(--radius-xl, calc(6px * var(--ui-scale, 1))) 0 0;
+  border-bottom: calc(1px * var(--ui-scale, 1)) solid var(--color-border, #c7d1dc);
+  border-radius: var(--scaled-radius-xl) var(--scaled-radius-xl) 0 0;
 }
 
 .search-dialog-title {
   margin: 0;
   display: block;
-  font-size: 1.05rem;
+  font-size: var(--scaled-font-md);
   font-weight: 600;
   color: var(--color-text, #2d3335);
   font-family: var(--font-sans, inherit);
@@ -526,7 +527,7 @@
 .search-dialog-message {
   margin: 0 0 calc(16px * var(--ui-scale, 1));
   color: var(--color-text, #2d3335);
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   line-height: 1.6;
   white-space: pre-wrap;
   font-family: var(--font-sans, inherit);
@@ -547,11 +548,11 @@
   min-width: calc(92px * var(--ui-scale, 1));
   min-height: calc(34px * var(--ui-scale, 1));
   padding: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
-  border-radius: var(--radius-lg, calc(4px * var(--ui-scale, 1)));
+  border-radius: var(--scaled-radius);
   border: 1px solid var(--color-border, #c7d1dc);
   background: var(--color-surface, #fff);
   color: var(--color-text, #2d3335);
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 500;
   font-family: var(--font-sans, inherit);
   letter-spacing: 0;

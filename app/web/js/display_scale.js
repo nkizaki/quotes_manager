@@ -5,7 +5,8 @@
  */
 (function () {
   var STORAGE_KEY = "shipInspFontSizePercent";
-  var SCALE_HEIGHT_850 = 850;
+  /* label_print と同じ閾値・倍率 */
+  var SCALE_HEIGHT_900 = 900;
   var SCALE_HEIGHT_700 = 700;
   var startupWindowHeight = null;
   var fontSizePercent =
@@ -15,13 +16,13 @@
 
   function uiScaleFromWindowHeight(height) {
     if (height <= SCALE_HEIGHT_700) return 0.67;
-    if (height <= SCALE_HEIGHT_850) return 0.8;
+    if (height <= SCALE_HEIGHT_900) return 0.8;
     return 1;
   }
 
   function fontScaleFromWindowHeight(height) {
     if (height <= SCALE_HEIGHT_700) return 0.67;
-    if (height <= SCALE_HEIGHT_850) return 0.8;
+    if (height <= SCALE_HEIGHT_900) return 0.8;
     return 1;
   }
 
@@ -54,7 +55,7 @@
     root.dataset.fontSizePercent = String(fontSizePercent);
     persistFontSizePercent(fontSizePercent);
     var el = document.getElementById("app-ui-scale");
-    if (el) {
+    if (el && !el.hidden) {
       el.textContent = "scale: " + uiScale.toFixed(2) + " / font: " + fontScale.toFixed(2) + " (" + fontSizePercent + "%)";
     }
   }

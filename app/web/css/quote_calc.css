@@ -7,11 +7,11 @@
  * 見た目は quotes.css を参照。
  */
 :root {
-  --qc-main-max-width: 1600px;
-  --qc-grid-kihon-col-width: 120px;
-  --qc-grid-zairyo-col-width: 110px;
-  --qc-grid-shinchuu-col-width: 110px;
-  --qc-grid-kakou-col-width: 100px;
+  --qc-main-max-width: calc(1600px * var(--ui-scale, 1));
+  --qc-grid-kihon-col-width: calc(120px * var(--ui-scale, 1));
+  --qc-grid-zairyo-col-width: calc(110px * var(--ui-scale, 1));
+  --qc-grid-shinchuu-col-width: calc(110px * var(--ui-scale, 1));
+  --qc-grid-kakou-col-width: calc(100px * var(--ui-scale, 1));
   /* 列数を変える場合は各 grid-template-columns の repeat(N, …) も合わせて変更 */
 
   /* --- 梱包輸送費: フォーム入力幅（.qc-pkg-field--* と連動） --- */
@@ -206,7 +206,7 @@ body.quote-calc-page {
   flex-wrap: wrap;
   gap: calc(4px * var(--ui-scale, 1));
   margin-bottom: calc(12px * var(--ui-scale, 1));
-  border-bottom: 1px solid var(--ui-border-default, var(--color-border));
+  border-bottom: calc(1px * var(--ui-scale, 1)) solid var(--ui-border-default, var(--color-border));
   padding-bottom: calc(4px * var(--ui-scale, 1));
 }
 
@@ -215,13 +215,13 @@ body.quote-calc-page {
   padding: calc(8px * var(--ui-scale, 1)) calc(14px * var(--ui-scale, 1));
   border: 1px solid transparent;
   border-bottom: none;
-  font-size: calc(13px * var(--font-scale, 1));
+  font-size: var(--scaled-font-sm);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .quote-calc-tab.is-active {
-  margin-bottom: -1px;
+  margin-bottom: calc(-1px * var(--ui-scale, 1));
   padding-bottom: calc(9px * var(--ui-scale, 1));
 }
 
@@ -244,7 +244,7 @@ body.quote-calc-page {
 
 .quote-calc-tab-placeholder {
   margin: 0;
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   line-height: 1.6;
 }
 
@@ -294,7 +294,7 @@ body.quote-calc-page {
 }
 
 .quote-calc-page .qc-mat-reg-status-label {
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
   color: var(--ui-text, #333);
   white-space: nowrap;
 }
@@ -306,7 +306,7 @@ body.quote-calc-page {
   min-width: calc(1.6em * var(--font-scale, 1));
   padding: 0 calc(4px * var(--ui-scale, 1));
   border: 1px solid #666;
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
   line-height: 1.4;
   box-sizing: border-box;
 }
@@ -344,7 +344,7 @@ body.quote-calc-page {
 .quote-calc-page .shinchuu-item label {
   display: block;
   margin-bottom: calc(2px * var(--ui-scale, 1));
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 
 .quote-calc-page .shinchuu-item input[type="text"] {
@@ -403,7 +403,7 @@ body.quote-calc-page {
 .quote-calc-page .kakou-item label {
   display: block;
   margin-bottom: calc(2px * var(--ui-scale, 1));
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 
 .quote-calc-page .kakou-item input[type="text"],
@@ -441,7 +441,7 @@ body.quote-calc-page {
 /* ----- 加工費一覧テーブル ----- */
 .quote-calc-page #qc-proc-table-wrapper {
   width: 100%;
-  height: 240px;
+  height: calc(240px * var(--ui-scale, 1));
   overflow: auto;
   margin-top: calc(12px * var(--ui-scale, 1));
 }
@@ -488,7 +488,7 @@ body.quote-calc-page {
 .qc-packaging-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(320px, auto));
+  grid-template-rows: repeat(2, minmax(calc(320px * var(--ui-scale, 1)), auto));
   gap: calc(12px * var(--ui-scale, 1));
   width: 100%;
   box-sizing: border-box;
@@ -506,7 +506,7 @@ body.quote-calc-page {
 
 .qc-pack-panel legend {
   padding: 0 calc(6px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
 }
 
@@ -596,7 +596,7 @@ body.quote-calc-page {
 .qc-pack-field label {
   display: block;
   margin-bottom: calc(2px * var(--ui-scale, 1));
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 
 .qc-pack-field input[type="text"],
@@ -659,7 +659,7 @@ body.quote-calc-page {
 .qc-pack-table-wrap td {
   border: 1px solid var(--ui-border-default, var(--color-border));
   padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
   white-space: nowrap;
 }
 
@@ -712,7 +712,7 @@ body.quote-calc-page {
 }
 
 .qc-surf-total-row label {
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
   font-weight: 600;
 }
 
@@ -824,7 +824,7 @@ body.quote-calc-page {
 
 .qc-remarks-section-label {
   margin: 0 0 calc(8px * var(--ui-scale, 1));
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
   font-weight: 600;
 }
 
@@ -843,7 +843,7 @@ body.quote-calc-page {
 
 .qc-remarks-line label {
   margin: 0;
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
   text-align: right;
 }
 
@@ -868,7 +868,7 @@ body.quote-calc-page {
 .qc-remarks-internal > label {
   display: block;
   margin-bottom: calc(6px * var(--ui-scale, 1));
-  font-size: calc(12px * var(--font-scale, 1));
+  font-size: var(--scaled-font-xs);
   font-weight: 600;
 }
 

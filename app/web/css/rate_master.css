@@ -14,28 +14,28 @@
   font-family: var(--ui-font-stack, sans-serif);
 
   /* --- テーブル列幅（HTML の col.rm-col--* と対応） --- */
-  --rm-table-col-id: 72px;
-  --rm-table-col-koubun: 112px;
-  --rm-table-col-setsubi: 160px;
-  --rm-table-col-roumu: 88px;
-  --rm-table-col-yu: 88px;
-  --rm-table-col-denki: 88px;
-  --rm-table-col-setsubihi: 92px;
-  --rm-table-col-tateya: 80px;
-  --rm-table-col-tochi: 80px;
-  --rm-table-col-goukei: 96px;
+  --rm-table-col-id: calc(72px * var(--ui-scale, 1));
+  --rm-table-col-koubun: calc(112px * var(--ui-scale, 1));
+  --rm-table-col-setsubi: calc(160px * var(--ui-scale, 1));
+  --rm-table-col-roumu: calc(88px * var(--ui-scale, 1));
+  --rm-table-col-yu: calc(88px * var(--ui-scale, 1));
+  --rm-table-col-denki: calc(88px * var(--ui-scale, 1));
+  --rm-table-col-setsubihi: calc(92px * var(--ui-scale, 1));
+  --rm-table-col-tateya: calc(80px * var(--ui-scale, 1));
+  --rm-table-col-tochi: calc(80px * var(--ui-scale, 1));
+  --rm-table-col-goukei: calc(96px * var(--ui-scale, 1));
 
   /* --- フォーム各ブロックの最大幅（.rate-master-field--*） --- */
-  --rm-form-max-id: 120px;
-  --rm-form-max-koubun: 160px;
-  --rm-form-max-setsubi: 200px;
-  --rm-form-max-roumu: 90px;
-  --rm-form-max-yu: 90px;
-  --rm-form-max-denki: 90px;
-  --rm-form-max-setsubihi: 90px;
-  --rm-form-max-tateya: 90px;
-  --rm-form-max-tochi: 90px;
-  --rm-form-max-goukei: 90px;
+  --rm-form-max-id: calc(120px * var(--ui-scale, 1));
+  --rm-form-max-koubun: calc(160px * var(--ui-scale, 1));
+  --rm-form-max-setsubi: calc(200px * var(--ui-scale, 1));
+  --rm-form-max-roumu: calc(90px * var(--ui-scale, 1));
+  --rm-form-max-yu: calc(90px * var(--ui-scale, 1));
+  --rm-form-max-denki: calc(90px * var(--ui-scale, 1));
+  --rm-form-max-setsubihi: calc(90px * var(--ui-scale, 1));
+  --rm-form-max-tateya: calc(90px * var(--ui-scale, 1));
+  --rm-form-max-tochi: calc(90px * var(--ui-scale, 1));
+  --rm-form-max-goukei: calc(90px * var(--ui-scale, 1));
 
   /* input だけ狭めたい場合に上書き（例: var(--rm-form-max-roumu) より小さく） */
   --rm-form-input-max-id: 100%;
@@ -47,30 +47,30 @@
   --rm-form-input-max-setsubihi: 100%;
   --rm-form-input-max-tateya: 100%;
   --rm-form-input-max-tochi: 100%;
-  --rm-form-input-max-goukei: 240px;
+  --rm-form-input-max-goukei: calc(240px * var(--ui-scale, 1));
 }
 
 .rate-master-header {
-  min-width: 1300px;
+  min-width: calc(1300px * var(--ui-scale, 1));
   position: sticky;
   top: 0;
   z-index: 200;
   background: var(--ui-surface-card);
-  border-bottom: 1px solid var(--ui-border-default);
+  border-bottom: calc(1px * var(--ui-scale, 1)) solid var(--ui-border-default);
 }
 
 .rate-master-header-inner {
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: calc(12px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: calc(16px * var(--ui-scale, 1));
 }
 
 .rate-master-title {
-  margin: 0 0 0 100px;
-  font-size: 1.5rem;
+  margin: 0; /* ロゴ ::before 幅で左余白を確保 */
+  font-size: var(--scaled-font-xl);
   font-weight: 700;
 }
 
@@ -78,7 +78,7 @@
   color: var(--link-text, #00c);
   text-decoration: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--scaled-font-md);
 }
 
 .rate-master-back-link:hover {
@@ -87,17 +87,17 @@
 }
 
 .rate-master-main {
-  max-width: 1300px;
-  min-width: 1300px;
+  max-width: calc(1300px * var(--ui-scale, 1));
+  min-width: calc(1300px * var(--ui-scale, 1));
   margin: 0 auto;
-  padding: 16px;
+  padding: calc(16px * var(--ui-scale, 1));
   box-sizing: border-box;
 }
 
 .rate-master-message {
   min-height: 1.25em;
-  margin: 0 0 12px;
-  font-size: 14px;
+  margin: 0 0 calc(12px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   color: var(--ui-text-muted);
 }
 
@@ -113,19 +113,19 @@
 
 .rate-master-table-wrap {
   overflow: auto;
-  max-height: 35rem;
+  max-height: calc(35rem * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-default);
-  border-radius: 6px;
+  border-radius: calc(6px * var(--ui-scale, 1));
   background: var(--ui-surface-card);
-  margin-bottom: 20px;
+  margin-bottom: calc(20px * var(--ui-scale, 1));
 }
 
 .rate-master-table {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  min-width: 1000px;
-  font-size: 13px;
+  min-width: calc(1000px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-sm);
 }
 
 /* colgroup 列幅（変数は .rate-master-page 先頭で定義） */
@@ -143,7 +143,7 @@
 .rate-master-table th,
 .rate-master-table td {
   border: 1px solid var(--ui-divider-soft, #e0e0e0);
-  padding: 6px 8px;
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   vertical-align: middle;
 }
 
@@ -165,16 +165,16 @@
 
 .rate-master-id-btn {
   margin: 0;
-  padding: 1px 8px;
+  padding: calc(1px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 4px;
+  border-radius: calc(4px * var(--ui-scale, 1));
   background: var(--ui-primary-soft, #d9e5fb);
   color: var(--link-text, #00c);
-  font-size: 13px;
+  font-size: var(--scaled-font-sm);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  min-width: 48px;
+  min-width: calc(48px * var(--ui-scale, 1));
 }
 
 .rate-master-id-btn:hover {
@@ -186,13 +186,13 @@
 .rate-master-form-section {
   background: var(--ui-surface-card);
   border: 1px solid var(--ui-border-default);
-  border-radius: 6px;
-  padding: 16px;
+  border-radius: calc(6px * var(--ui-scale, 1));
+  padding: calc(16px * var(--ui-scale, 1));
 }
 
 .rate-master-form-heading {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
+  margin: 0 0 calc(12px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-lg);
   font-weight: 700;
 }
 
@@ -202,17 +202,17 @@
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: flex-end;
-  gap: 10px 12px;
+  gap: calc(10px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 16px;
+  padding-bottom: calc(6px * var(--ui-scale, 1));
+  margin-bottom: calc(16px * var(--ui-scale, 1));
   min-width: 0;
 }
 
 .rate-master-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4px * var(--ui-scale, 1));
   min-width: 0;
   box-sizing: border-box;
   flex: 0 0 auto;
@@ -230,17 +230,17 @@
 .rate-master-field--goukei { width: var(--rm-form-max-goukei); }
 
 .rate-master-field label {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
   font-weight: 600;
   color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
 .rate-master-field input[type="text"] {
-  padding: 6px 8px;
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 3px;
-  font-size: 14px;
+  border-radius: calc(3px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -272,15 +272,15 @@
 .rate-master-form-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: calc(12px * var(--ui-scale, 1));
 }
 
 .rate-master-action-btn {
-  min-width: 120px;
-  padding: 10px 18px;
-  font-size: 14px;
+  min-width: calc(120px * var(--ui-scale, 1));
+  padding: calc(10px * var(--ui-scale, 1)) calc(18px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: calc(4px * var(--ui-scale, 1));
   cursor: pointer;
   border: 1px solid var(--ui-border-strong, #767676);
 }

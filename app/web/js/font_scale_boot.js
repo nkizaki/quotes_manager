@@ -4,7 +4,8 @@
  */
 (function () {
   var STORAGE_KEY = "shipInspFontSizePercent";
-  var SCALE_HEIGHT_850 = 850;
+  /* label_print と同じ閾値・倍率 */
+  var SCALE_HEIGHT_900 = 900;
   var SCALE_HEIGHT_700 = 700;
 
   function normalize(value) {
@@ -42,13 +43,13 @@
 
   function uiScaleFromHeight(height) {
     if (height <= SCALE_HEIGHT_700) return 0.67;
-    if (height <= SCALE_HEIGHT_850) return 0.8;
+    if (height <= SCALE_HEIGHT_900) return 0.8;
     return 1;
   }
 
   function fontScaleFromHeight(height) {
     if (height <= SCALE_HEIGHT_700) return 0.67;
-    if (height <= SCALE_HEIGHT_850) return 0.8;
+    if (height <= SCALE_HEIGHT_900) return 0.8;
     return 1;
   }
 

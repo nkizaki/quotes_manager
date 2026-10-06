@@ -8,7 +8,7 @@ body.results-summary-page {
 
 /* design.css の .search-main { max-width: none !important } よりセクションで幅を制限 */
 .results-summary-page .results-summary-section {
-  max-width: 50rem;
+  max-width: calc(50rem * var(--ui-scale, 1));
   width: 100%;
   margin-left: auto;
   margin-right: auto;
@@ -23,7 +23,7 @@ body.results-summary-page {
 }
 
 .results-summary-filter label {
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   white-space: nowrap;
 }
 
@@ -35,12 +35,12 @@ body.results-summary-page {
 
 .results-summary-date-range input[type="date"] {
   width: calc(10.5rem * var(--ui-scale, 1));
-  min-width: 8rem;
-  font-size: calc(14px * var(--font-scale, 1));
+  min-width: calc(8rem * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
 }
 
 .results-summary-date-sep {
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   color: var(--color-text);
 }
 
@@ -63,7 +63,7 @@ body.results-summary-page {
 
 .results-summary-table-label {
   margin: 0 0 calc(8px * var(--ui-scale, 1));
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
 }
 
@@ -77,7 +77,7 @@ body.results-summary-page {
 .results-summary-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: calc(14px * var(--font-scale, 1));
+  font-size: var(--scaled-font-md);
 }
 
 .results-summary-table th,

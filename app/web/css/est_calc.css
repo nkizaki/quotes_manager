@@ -5,26 +5,26 @@
  * 見た目は quotes.css を参照。
  */
 :root {
-  --est-left-margin-min: 10px;
-  --est-left-margin-max: 200px;
-  --est-left-margin-dynamic: clamp(var(--est-left-margin-min), calc(100vw - 1600px), var(--est-left-margin-max));
-  --est-main-width: 1060px;
-  --est-main-sidebar-gap: 5px;
-  --est-sidebar-width: 500px;
-  --est-right-margin: 10px;
-  --est-grid-kihon-col-width: 120px;
-  --est-grid-zairyo-col-width: 120px;
-  --est-grid-shinchuu-col-width: 120px;
-  --est-grid-kakou-col-width: 120px;
-  --est-grid-kensa-col-width: 120px;
-  --est-grid-soryo-card-col-width: 120px;
-  --est-grid-soryo-nittou-col-width: 120px;
-  --est-grid-soryo-plastic-col-width: 120px;
-  --est-grid-shoki-hiyou-col-width: 120px;
+  --est-left-margin-min: calc(10px * var(--ui-scale, 1));
+  --est-left-margin-max: calc(200px * var(--ui-scale, 1));
+  --est-left-margin-dynamic: clamp(var(--est-left-margin-min), calc(100vw - 1600px * var(--ui-scale, 1)), var(--est-left-margin-max));
+  --est-main-width: calc(1060px * var(--ui-scale, 1));
+  --est-main-sidebar-gap: calc(5px * var(--ui-scale, 1));
+  --est-sidebar-width: calc(500px * var(--ui-scale, 1));
+  --est-right-margin: calc(10px * var(--ui-scale, 1));
+  --est-grid-kihon-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-zairyo-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-shinchuu-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-kakou-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-kensa-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-soryo-card-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-soryo-nittou-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-soryo-plastic-col-width: calc(120px * var(--ui-scale, 1));
+  --est-grid-shoki-hiyou-col-width: calc(120px * var(--ui-scale, 1));
 }
 
 body.est-calc-page {
-  padding-bottom: 10px;
+  padding-bottom: calc(10px * var(--ui-scale, 1));
   min-width: calc(var(--est-left-margin-dynamic) + var(--est-main-width) + var(--est-main-sidebar-gap) + var(--est-sidebar-width) + var(--est-right-margin));
 }
 
@@ -36,53 +36,45 @@ body.est-calc-page {
   position: sticky;
   top: 0;
   z-index: 200;
-  padding: 12px 0 12px 100px;
   box-sizing: border-box;
   width: 100%;
-  min-width: calc(var(--est-left-margin-dynamic) + var(--est-main-width) + var(--est-main-sidebar-gap) + var(--est-sidebar-width) + var(--est-right-margin));
-}
-.est-calc-header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-  padding-right: 16px;
+  /* padding / min-height / 背景は quotes.css のヘッダー最終定義を使用 */
 }
 .est-page-layout {
   display: flex;
   align-items: stretch;
   gap: var(--est-main-sidebar-gap);
-  margin-top: 10px;
+  margin-top: calc(10px * var(--ui-scale, 1));
   padding-right: var(--est-right-margin);
   box-sizing: border-box;
 }
 .est-layout {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  margin-top: 8px;
+  gap: calc(16px * var(--ui-scale, 1));
+  margin-top: calc(8px * var(--ui-scale, 1));
 }
 #lot-table-wrapper {
-  width: 380px;
-  height: 240px;
+  width: calc(380px * var(--ui-scale, 1));
+  height: calc(240px * var(--ui-scale, 1));
   overflow: auto;
   border: 1px solid var(--ui-border-default);
   background-color: var(--ui-surface-card);
 }
 #shoki-hiyou-table-wrapper {
-  width: min(100%, 720px);
-  height: 240px;
+  width: min(100%, calc(720px * var(--ui-scale, 1)));
+  height: calc(240px * var(--ui-scale, 1));
   overflow: auto;
   border: 1px solid var(--ui-border-default);
   background-color: var(--ui-surface-card);
 }
 #lot-table {
-  width: 360px;
+  width: calc(360px * var(--ui-scale, 1));
   table-layout: fixed;
   border-collapse: collapse;
 }
 #shoki-hiyou-table {
-  width: 700px;
+  width: calc(700px * var(--ui-scale, 1));
   table-layout: fixed;
   border-collapse: collapse;
 }
@@ -113,7 +105,7 @@ body.est-calc-page {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 2px;
+  height: calc(2px * var(--ui-scale, 1));
   background: var(--ui-border-default);
 }
 
@@ -122,7 +114,7 @@ body.est-calc-page {
 #shoki-hiyou-table th,
 #shoki-hiyou-table td {
   border: 1px solid var(--ui-border-default);
-  padding: 4px 8px;
+  padding: calc(4px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   text-align: left;
   box-sizing: border-box;
 }
@@ -134,15 +126,15 @@ body.est-calc-page {
 #shoki-hiyou-table th {
   background: var(--table-header-bg);
 }
-.lot-table-col-1 { width: 100px; }
-.lot-table-col-2 { width: 110px; }
+.lot-table-col-1 { width: calc(100px * var(--ui-scale, 1)); }
+.lot-table-col-2 { width: calc(110px * var(--ui-scale, 1)); }
 .lot-table-col-3 { width: auto; }
-.shoki-table-col-1 { width: 100px; }
-.shoki-table-col-2 { width: 200px; }
-.shoki-table-col-3 { width: 100px; }
-.shoki-table-col-4 { width: 100px; }
-.shoki-table-col-5 { width: 100px; }
-.shoki-table-col-6 { width: 100px; }
+.shoki-table-col-1 { width: calc(100px * var(--ui-scale, 1)); }
+.shoki-table-col-2 { width: calc(200px * var(--ui-scale, 1)); }
+.shoki-table-col-3 { width: calc(100px * var(--ui-scale, 1)); }
+.shoki-table-col-4 { width: calc(100px * var(--ui-scale, 1)); }
+.shoki-table-col-5 { width: calc(100px * var(--ui-scale, 1)); }
+.shoki-table-col-6 { width: calc(100px * var(--ui-scale, 1)); }
 #lot-table a.lot-id-link { color: var(--link-text); text-decoration: none; }
 #lot-table a.lot-id-link:hover { color: var(--link-text-hover); text-decoration: underline; }
 #shoki-hiyou-table a.shoki-hiyou-hinmei-link { color: var(--link-text); text-decoration: none; }
@@ -151,8 +143,8 @@ body.est-calc-page {
 .est-form-block .est-form-row {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: calc(12px * var(--ui-scale, 1));
+  margin-bottom: calc(10px * var(--ui-scale, 1));
 }
 .est-form-block .est-form-row p {
   margin: 0;
@@ -166,19 +158,19 @@ body.est-calc-page {
 .est-form-block .est-form-row p.est-radio-item {
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: calc(8px * var(--ui-scale, 1));
 }
 .est-form-block .est-form-row p.est-checkbox-item label {
   margin-bottom: 0;
-  margin-left: 4px;
+  margin-left: calc(4px * var(--ui-scale, 1));
 }
 .est-form-block .est-form-row p.est-radio-item label {
   margin-bottom: 0;
-  margin-left: 4px;
+  margin-left: calc(4px * var(--ui-scale, 1));
 }
 .est-form-block p label {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
 }
 .est-form-block p input {
   display: block;
@@ -193,20 +185,20 @@ body.est-calc-page {
 .main-section {
   width: var(--est-main-width);
   min-width: var(--est-main-width);
-  margin-bottom: 16px;
+  margin-bottom: calc(16px * var(--ui-scale, 1));
 }
 .main-section h2 {
-  margin: 0 0 8px 0;
+  margin: 0 0 calc(8px * var(--ui-scale, 1)) 0;
 }
 
 /* 初期費用（原価見積り計算）— 入力行のみ 8 列グリッド。ボタン・一覧はグリッド外 */
 .shoki-hiyou-block {
-  margin-top: 8px;
+  margin-top: calc(8px * var(--ui-scale, 1));
 }
 .shoki-hiyou-grid {
   display: grid;
   grid-template-columns: repeat(8, var(--est-grid-shoki-hiyou-col-width));
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -215,8 +207,8 @@ body.est-calc-page {
   flex-direction: column;
 }
 .shoki-hiyou-item label {
-  font-size: 12px;
-  margin-bottom: 2px;
+  font-size: var(--scaled-font-xs);
+  margin-bottom: calc(2px * var(--ui-scale, 1));
 }
 .shoki-hiyou-item input[type="text"],
 .shoki-hiyou-item select {
@@ -234,9 +226,9 @@ body.est-calc-page {
 .shoki-hiyou-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: calc(8px * var(--ui-scale, 1));
   align-items: center;
-  margin-top: 10px;
+  margin-top: calc(10px * var(--ui-scale, 1));
 }
 .shoki-hiyou-actions #shoki-hiyou-btn-delete.est-delete-btn:disabled {
   opacity: 0.65;
@@ -249,8 +241,8 @@ body.est-calc-page {
   background: var(--ui-surface-card);
 }
 .shoki-hiyou-block #shoki-hiyou-table-wrapper {
-  height: 150px;
-  margin-top: 12px;
+  height: calc(150px * var(--ui-scale, 1));
+  margin-top: calc(12px * var(--ui-scale, 1));
 }
 
 .est-sidebar {
@@ -265,7 +257,7 @@ body.est-calc-page {
   display: grid;
   grid-template-columns: repeat(4, var(--est-grid-kihon-col-width));
   grid-template-rows: repeat(6, auto);
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
 }
 .kihon-grid .kihon-item,
@@ -275,8 +267,8 @@ body.est-calc-page {
 }
 .kihon-grid .kihon-item label {
   display: block;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 .kihon-grid .kihon-item input {
   display: block;
@@ -286,8 +278,8 @@ body.est-calc-page {
   display: block;
   width: 100%;
   text-align: right;
-  font-size: 12px;
-  margin-bottom: 2px;
+  font-size: var(--scaled-font-xs);
+  margin-bottom: calc(2px * var(--ui-scale, 1));
   line-height: 1.2;
 }
 .kihon-grid .kihon-hint-cell {
@@ -326,7 +318,7 @@ body.est-calc-page {
   display: grid;
   grid-template-columns: repeat(8, var(--est-grid-zairyo-col-width));
   grid-template-rows: repeat(3, auto);
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -335,8 +327,8 @@ body.est-calc-page {
   flex-direction: column;
 }
 .zairyo-item label {
-  font-size: 12px;
-  margin-bottom: 2px;
+  font-size: var(--scaled-font-xs);
+  margin-bottom: calc(2px * var(--ui-scale, 1));
 }
 .zairyo-item input[type="text"] {
   display: block;
@@ -362,7 +354,7 @@ body.est-calc-page {
   display: grid;
   grid-template-columns: repeat(8, var(--est-grid-shinchuu-col-width));
   grid-template-rows: repeat(3, auto);
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -372,8 +364,8 @@ body.est-calc-page {
 }
 .shinchuu-item label {
   display: block;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 .shinchuu-item input[type="text"] {
   display: block;
@@ -387,7 +379,7 @@ body.est-calc-page {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: calc(8px * var(--ui-scale, 1));
 }
 #br-1,
 #br-9 {
@@ -451,7 +443,7 @@ select.dynamic-disabled,
   display: grid;
   grid-template-columns: repeat(8, var(--est-grid-kakou-col-width));
   grid-template-rows: repeat(12, auto);
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -461,8 +453,8 @@ select.dynamic-disabled,
 }
 .kakou-item label {
   display: block;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 .kakou-item input[type="text"] {
   display: block;
@@ -475,8 +467,8 @@ select.dynamic-disabled,
 }
 #proc-32,
 #proc-34 {
-  width: 220px;
-  max-width: 220px;
+  width: calc(220px * var(--ui-scale, 1));
+  max-width: calc(220px * var(--ui-scale, 1));
 }
 .kakou-item .est-checkbox-item {
   margin: 0;
@@ -517,7 +509,7 @@ select.dynamic-disabled,
 .kakou-row-12 { grid-row: 12; }
 
 .kakou-grid .kakou-hint-text {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
   text-align: left;
 }
 
@@ -525,7 +517,7 @@ select.dynamic-disabled,
   display: grid;
   grid-template-columns: repeat(5, var(--est-grid-kensa-col-width));
   grid-template-rows: repeat(11, auto);
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -535,8 +527,8 @@ select.dynamic-disabled,
 }
 .kensa-item label {
   display: block;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 .kensa-item input[type="text"] {
   display: block;
@@ -568,14 +560,14 @@ select.dynamic-disabled,
 
 .kakou-grid .kakou-row-1 span,
 .kensa-grid .kensa-row-1 span {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
   font-weight: 600;
   text-align: center;
 }
 
 /* 送料・梱包 */
 .soryo-nittou-spacer {
-  height: 16px;
+  height: calc(16px * var(--ui-scale, 1));
 }
 
 /* 段ボール */
@@ -583,7 +575,7 @@ select.dynamic-disabled,
   display: grid;
   grid-template-columns: repeat(7, var(--est-grid-soryo-card-col-width));
   grid-template-rows: repeat(4, auto);
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -593,8 +585,8 @@ select.dynamic-disabled,
 }
 .soryo-card-item label {
   display: block;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 .soryo-card-item input[type="text"] {
   display: block;
@@ -618,7 +610,7 @@ select.dynamic-disabled,
   display: grid;
   grid-template-columns: repeat(4, var(--est-grid-soryo-nittou-col-width));
   grid-template-rows: auto;
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -628,8 +620,8 @@ select.dynamic-disabled,
 }
 .soryo-nittou-item label {
   display: block;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 .soryo-nittou-item input[type="text"] {
   display: block;
@@ -645,7 +637,7 @@ select.dynamic-disabled,
   display: grid;
   grid-template-columns: repeat(5, var(--est-grid-soryo-plastic-col-width));
   grid-template-rows: repeat(4, auto);
-  gap: 8px 12px;
+  gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
   max-width: var(--est-main-width);
 }
@@ -655,8 +647,8 @@ select.dynamic-disabled,
 }
 .soryo-plastic-item label {
   display: block;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: calc(2px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-xs);
 }
 .soryo-plastic-item input[type="text"],
 .soryo-plastic-item select {
@@ -678,55 +670,55 @@ select.dynamic-disabled,
 
 .floating-window {
   position: sticky;
-  top: 80px;
+  top: calc(80px * var(--ui-scale, 1));
   width: 100%;
   min-width: var(--est-sidebar-width);
   max-width: var(--est-sidebar-width);
-  height: 800px;
+  height: calc(800px * var(--ui-scale, 1));
 }
 .floating-window-content {
   width: 100%;
   min-width: var(--est-sidebar-width);
   max-width: var(--est-sidebar-width);
-  height: 800px;
+  height: calc(800px * var(--ui-scale, 1));
   background-color: var(--ui-surface);
   border: 1px solid var(--ui-border-default);
-  border-radius: 5px;
-  padding: 10px;
+  border-radius: calc(5px * var(--ui-scale, 1));
+  padding: calc(10px * var(--ui-scale, 1));
   box-sizing: border-box;
   box-shadow: var(--shadow-floating-heavy);
 }
 .floating-window-title {
-  font-size: 16px;
+  font-size: var(--scaled-font-base);
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: calc(8px * var(--ui-scale, 1));
 }
 .floating-grid-wrap {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 8px;
+  column-gap: calc(8px * var(--ui-scale, 1));
   align-items: flex-start;
 }
 .floating-grid-wrap-bottom {
-  margin-top: 8px;
+  margin-top: calc(8px * var(--ui-scale, 1));
 }
 .floating-grid-panel {
   width: auto;
   min-width: 0;
 }
 .floating-grid-heading {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: calc(4px * var(--ui-scale, 1));
 }
 .floating-input-grid {
   width: 100%;
-  height: 300px;
+  height: calc(300px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-default);
-  padding: 6px;
+  padding: calc(6px * var(--ui-scale, 1));
   box-sizing: border-box;
   display: grid;
-  gap: 6px;
+  gap: calc(6px * var(--ui-scale, 1));
   align-content: start;
 }
 .floating-input-grid-left {
@@ -734,7 +726,7 @@ select.dynamic-disabled,
   grid-template-rows: repeat(4, auto);
 }
 .floating-input-row-spacer {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
   min-height: 1.2em;
 }
 .floating-input-grid-right {
@@ -744,27 +736,27 @@ select.dynamic-disabled,
 .floating-input-grid-bottom-left {
   grid-template-columns: 1fr;
   grid-template-rows: repeat(8, auto);
-  height: 300px;
+  height: calc(300px * var(--ui-scale, 1));
   border: 1px solid transparent;
-  padding: 6px;
+  padding: calc(6px * var(--ui-scale, 1));
 }
 .floating-input-grid-bottom-right {
   grid-template-columns: 1fr;
   grid-template-rows: repeat(12, auto);
-  height: 400px;
+  height: calc(400px * var(--ui-scale, 1));
 }
 .floating-input-row {
   display: grid;
-  grid-template-columns: 100px 1fr;
+  grid-template-columns: calc(100px * var(--ui-scale, 1)) 1fr;
   align-items: center;
-  column-gap: 6px;
+  column-gap: calc(6px * var(--ui-scale, 1));
 }
 .floating-input-row label {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
 }
 .floating-row-text {
   grid-column: 1 / -1;
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
 }
 .floating-input-row input[type="text"] {
   width: 100%;

@@ -102,5 +102,5 @@ def run() -> None:
         _on_gui_ready,
         (window, icon_path),
         icon=icon,
-        debug=loadenv.devflg,
+        debug=False,
     )

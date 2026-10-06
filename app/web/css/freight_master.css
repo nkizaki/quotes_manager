@@ -10,13 +10,13 @@
   color: var(--ui-text);
   font-family: var(--ui-font-stack, sans-serif);
 
-  --fm-table-col-chiho-id: 72px;
-  --fm-table-col-chiho-name: 120px;
-  --fm-table-col-s: 88px;
+  --fm-table-col-chiho-id: calc(72px * var(--ui-scale, 1));
+  --fm-table-col-chiho-name: calc(120px * var(--ui-scale, 1));
+  --fm-table-col-s: calc(88px * var(--ui-scale, 1));
 
-  --fm-form-max-chiho-id: 120px;
-  --fm-form-max-chiho-name: 160px;
-  --fm-form-max-s: 96px;
+  --fm-form-max-chiho-id: calc(120px * var(--ui-scale, 1));
+  --fm-form-max-chiho-name: calc(160px * var(--ui-scale, 1));
+  --fm-form-max-s: calc(96px * var(--ui-scale, 1));
 
   --fm-form-input-max-chiho-id: 100%;
   --fm-form-input-max-chiho-name: 100%;
@@ -24,26 +24,26 @@
 }
 
 .freight-master-header {
-  min-width: 1500px;
+  min-width: calc(1500px * var(--ui-scale, 1));
   position: sticky;
   top: 0;
   z-index: 200;
   background: var(--ui-surface-card);
-  border-bottom: 1px solid var(--ui-border-default);
+  border-bottom: calc(1px * var(--ui-scale, 1)) solid var(--ui-border-default);
 }
 
 .freight-master-header-inner {
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: calc(12px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: calc(16px * var(--ui-scale, 1));
 }
 
 .freight-master-title {
-  margin: 0 0 0 100px;
-  font-size: 1.5rem;
+  margin: 0; /* ロゴ ::before 幅で左余白を確保 */
+  font-size: var(--scaled-font-xl);
   font-weight: 700;
 }
 
@@ -51,7 +51,7 @@
   color: var(--link-text, #00c);
   text-decoration: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--scaled-font-md);
 }
 
 .freight-master-back-link:hover {
@@ -60,17 +60,17 @@
 }
 
 .freight-master-main {
-  max-width: 1500px;
-  min-width: 1500px;
+  max-width: calc(1500px * var(--ui-scale, 1));
+  min-width: calc(1500px * var(--ui-scale, 1));
   margin: 0 auto;
-  padding: 16px;
+  padding: calc(16px * var(--ui-scale, 1));
   box-sizing: border-box;
 }
 
 .freight-master-message {
   min-height: 1.25em;
-  margin: 0 0 12px;
-  font-size: 14px;
+  margin: 0 0 calc(12px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   color: var(--ui-text-muted);
 }
 
@@ -86,19 +86,19 @@
 
 .freight-master-table-wrap {
   overflow: auto;
-  max-height: 35rem;
+  max-height: calc(35rem * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-default);
-  border-radius: 6px;
+  border-radius: calc(6px * var(--ui-scale, 1));
   background: var(--ui-surface-card);
-  margin-bottom: 20px;
+  margin-bottom: calc(20px * var(--ui-scale, 1));
 }
 
 .freight-master-table {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  min-width: 1200px;
-  font-size: 13px;
+  min-width: calc(1200px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-sm);
 }
 
 .freight-master-table col.fm-col--chiho-id { width: var(--fm-table-col-chiho-id); }
@@ -115,7 +115,7 @@
 .freight-master-table th,
 .freight-master-table td {
   border: 1px solid var(--ui-divider-soft, #e0e0e0);
-  padding: 6px 8px;
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   vertical-align: middle;
 }
 
@@ -137,16 +137,16 @@
 
 .freight-master-id-btn {
   margin: 0;
-  padding: 1px 8px;
+  padding: calc(1px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 4px;
+  border-radius: calc(4px * var(--ui-scale, 1));
   background: var(--ui-primary-soft, #d9e5fb);
   color: var(--link-text, #00c);
-  font-size: 13px;
+  font-size: var(--scaled-font-sm);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  min-width: 48px;
+  min-width: calc(48px * var(--ui-scale, 1));
 }
 
 .freight-master-id-btn:hover {
@@ -157,13 +157,13 @@
 .freight-master-form-section {
   background: var(--ui-surface-card);
   border: 1px solid var(--ui-border-default);
-  border-radius: 6px;
-  padding: 16px;
+  border-radius: calc(6px * var(--ui-scale, 1));
+  padding: calc(16px * var(--ui-scale, 1));
 }
 
 .freight-master-form-heading {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
+  margin: 0 0 calc(12px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-lg);
   font-weight: 700;
 }
 
@@ -172,17 +172,17 @@
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: flex-end;
-  gap: 10px 12px;
+  gap: calc(10px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 16px;
+  padding-bottom: calc(6px * var(--ui-scale, 1));
+  margin-bottom: calc(16px * var(--ui-scale, 1));
   min-width: 0;
 }
 
 .freight-master-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4px * var(--ui-scale, 1));
   min-width: 0;
   box-sizing: border-box;
   flex: 0 0 auto;
@@ -200,17 +200,17 @@
 .freight-master-field--s200 { width: var(--fm-form-max-s); }
 
 .freight-master-field label {
-  font-size: 12px;
+  font-size: var(--scaled-font-xs);
   font-weight: 600;
   color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
 .freight-master-field input[type="text"] {
-  padding: 6px 8px;
+  padding: calc(6px * var(--ui-scale, 1)) calc(8px * var(--ui-scale, 1));
   border: 1px solid var(--ui-border-input);
-  border-radius: 3px;
-  font-size: 14px;
+  border-radius: calc(3px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -235,15 +235,15 @@
 .freight-master-form-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: calc(12px * var(--ui-scale, 1));
 }
 
 .freight-master-action-btn {
-  min-width: 120px;
-  padding: 10px 18px;
-  font-size: 14px;
+  min-width: calc(120px * var(--ui-scale, 1));
+  padding: calc(10px * var(--ui-scale, 1)) calc(18px * var(--ui-scale, 1));
+  font-size: var(--scaled-font-md);
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: calc(4px * var(--ui-scale, 1));
   cursor: pointer;
   border: 1px solid var(--ui-border-strong, #767676);
 }

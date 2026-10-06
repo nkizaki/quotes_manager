@@ -13,6 +13,9 @@
  */
 
 :root {
+  /* 起動時ウィンドウ高さに応じたスケール（JS が設定） */
+  --ui-scale: 1;
+  --font-scale: 1;
   /* ----- Surfaces & typography ----- */
   --ui-surface: #f9f9f9;
   --ui-surface-low: #f2f4f4;
@@ -78,16 +81,16 @@
 
   /* ----- Sticky page headers（検索・原価見積り計算） ----- */
   --app-header-bg: #ffe4d5;
-  --app-header-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --app-header-shadow: 0 calc(1px * var(--ui-scale, 1)) calc(4px * var(--ui-scale, 1)) rgba(0, 0, 0, 0.08);
 
   /* ----- Form controls（下線スタイル） ----- */
   --input-bg: var(--ui-surface-low);
   --input-text: var(--ui-text);
   --input-border-bottom-color: rgba(51, 94, 161, 0.3);
-  --input-border-bottom: 1px solid var(--input-border-bottom-color);
+  --input-border-bottom: calc(1px * var(--ui-scale, 1)) solid var(--input-border-bottom-color);
   --input-focus-color: var(--ui-primary);
   /* 原価見積り: フォーカス時の太さは border ではなく inset で表現（レイアウトずれ防止） */
-  --input-focus-inset-shadow: inset 0 -1px 0 var(--input-focus-color);
+  --input-focus-inset-shadow: inset 0 calc(-1px * var(--ui-scale, 1)) 0 var(--input-focus-color);
 
   /* しきい値ヒント（est_calc.js の applyConditionalTextboxBackgrounds が参照。通常レンジは背景をクリアして --input-bg を使う） */
   /* proc-3 交換サイクル vs est-11 日数 */
@@ -98,11 +101,11 @@
   --input-hint-weight-caution: #ffcc99;
   --input-hint-weight-bad: #ff9999;
 
-  /* ----- Buttons（寸法・角丸） ----- */
-  --btn-radius: 6px;
+  /* ----- Buttons（寸法・角丸）— design.css の --scaled-* を利用 ----- */
+  --btn-radius: var(--scaled-radius);
   --btn-font-weight: 600;
-  --btn-padding-y: 8px;
-  --btn-padding-x: 14px;
+  --btn-padding-y: var(--scaled-btn-padding-y);
+  --btn-padding-x: var(--scaled-btn-padding-x);
 
   /* Primary（検索・登録・ダイアログ確定など） */
   --btn-primary-bg: var(--ui-primary);
@@ -145,22 +148,17 @@
 
   /* ----- Tables ----- */
   --table-header-bg: #ecf2fc;
-  --table-cell-padding-y: 4px;
-  --table-cell-padding-x: 12px;
+  --table-cell-padding-y: var(--scaled-table-cell-padding-y);
+  --table-cell-padding-x: calc(0.75rem * var(--ui-scale, 1));
 
   /* モーダル見出し（検索サブウィンドウ・ダイアログ） */
   --modal-head-bg: var(--table-header-bg);
 
   /* ----- Panels / glass ----- */
-  --radius-panel: 8px;
+  --radius-panel: calc(8px * var(--ui-scale, 1));
   --shadow-ambient: 0 12px 40px rgba(45, 51, 53, 0.06);
   --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(45, 51, 53, 0.15);
 }
 
-/* 検索・原価見積り計算で共通の上部バー */
-.search-header,
-.est-calc-header {
-  background-color: var(--app-header-bg);
-  box-shadow: var(--app-header-shadow);
-}
+/* ヘッダー背景・寸法の最終定義は quotes.css を正とする */
