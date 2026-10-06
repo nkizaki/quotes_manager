@@ -6,6 +6,7 @@
   var hinbanInput = document.getElementById("hinban");
   var hinmeiInput = document.getElementById("hinmei");
   var quoteIdInput = document.getElementById("quote-id");
+  var orderColSelect = document.getElementById("search-order-col");
   var searchBtn = document.getElementById("search-btn");
   var searchNewBtn = document.getElementById("search-new-btn");
   var searchLoading = document.getElementById("search-loading");
@@ -41,6 +42,18 @@
   var registerDoneOk = document.getElementById("register-done-ok");
   var registerDonePanel = registerDoneOverlay
     ? registerDoneOverlay.querySelector(".search-dialog-panel")
+    : null;
+
+  var deleteConfirmOverlay = document.getElementById("delete-confirm-overlay");
+  var deleteConfirmYes = document.getElementById("delete-confirm-yes");
+  var deleteConfirmNo = document.getElementById("delete-confirm-no");
+  var deleteConfirmPanel = deleteConfirmOverlay
+    ? deleteConfirmOverlay.querySelector(".search-dialog-panel")
+    : null;
+  var deleteDoneOverlay = document.getElementById("delete-done-overlay");
+  var deleteDoneOk = document.getElementById("delete-done-ok");
+  var deleteDonePanel = deleteDoneOverlay
+    ? deleteDoneOverlay.querySelector(".search-dialog-panel")
     : null;
 
   var updateConfirmOverlay = document.getElementById("update-confirm-overlay");
@@ -316,6 +329,30 @@
     registerDoneOverlay.setAttribute("aria-hidden", "true");
   }
 
+  function openDeleteConfirm() {
+    if (!deleteConfirmOverlay) return;
+    deleteConfirmOverlay.hidden = false;
+    deleteConfirmOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDeleteConfirm() {
+    if (!deleteConfirmOverlay) return;
+    deleteConfirmOverlay.hidden = true;
+    deleteConfirmOverlay.setAttribute("aria-hidden", "true");
+  }
+
+  function openDeleteDone() {
+    if (!deleteDoneOverlay) return;
+    deleteDoneOverlay.hidden = false;
+    deleteDoneOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDeleteDone() {
+    if (!deleteDoneOverlay) return;
+    deleteDoneOverlay.hidden = true;
+    deleteDoneOverlay.setAttribute("aria-hidden", "true");
+  }
+
   function openUpdateConfirm() {
     if (!updateConfirmOverlay) return;
     updateConfirmOverlay.hidden = false;
@@ -432,12 +469,68 @@
       .join("");
   }
 
+  function getOrderDir() {
+    var checked = document.querySelector('input[name="search-order-dir"]:checked');
+    return checked && checked.value === "desc" ? "desc" : "asc";
+  }
+
+  function setOrderDir(dir) {
+    var value = dir === "desc" ? "desc" : "asc";
+    var radios = document.querySelectorAll('input[name="search-order-dir"]');
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].checked = radios[i].value === value;
+    }
+  }
+
+  function collectSearchPrefs() {
+    return {
+      sales_id: salesSelect ? salesSelect.value.trim() : "",
+      customer_code: customerSelect ? customerSelect.value.trim() : "",
+      part_no: hinbanInput ? hinbanInput.value.trim() : "",
+      part_name: hinmeiInput ? hinmeiInput.value.trim() : "",
+      quote_id: quoteIdInput ? quoteIdInput.value.trim() : "",
+      order_by: orderColSelect ? orderColSelect.value.trim() || "見積りID" : "見積りID",
+      order_dir: getOrderDir(),
+    };
+  }
+
+  function applySearchPrefs(prefs) {
+    if (!prefs || typeof prefs !== "object") return;
+    if (salesSelect && prefs.sales_id != null) salesSelect.value = String(prefs.sales_id);
+    if (customerSelect && prefs.customer_code != null) {
+      customerSelect.value = String(prefs.customer_code);
+    }
+    if (hinbanInput && prefs.part_no != null) hinbanInput.value = String(prefs.part_no);
+    if (hinmeiInput && prefs.part_name != null) hinmeiInput.value = String(prefs.part_name);
+    if (quoteIdInput && prefs.quote_id != null) quoteIdInput.value = String(prefs.quote_id);
+    if (orderColSelect && prefs.order_by) {
+      orderColSelect.value = String(prefs.order_by);
+      if (orderColSelect.value !== String(prefs.order_by)) {
+        orderColSelect.value = "見積りID";
+      }
+    }
+    setOrderDir(prefs.order_dir);
+  }
+
+  function saveSearchPrefs() {
+    if (typeof window.quotesApi !== "function") return Promise.resolve();
+    return window
+      .quotesApi("/api/config/search-prefs-set", {
+        kind: "quote",
+        prefs: collectSearchPrefs(),
+      })
+      .catch(function (err) {
+        console.error(err);
+      });
+  }
+
   function refreshSearchResults() {
-    var salesId = salesSelect ? salesSelect.value.trim() : "";
-    var customerCode = customerSelect ? customerSelect.value.trim() : "";
-    var partNo = hinbanInput ? hinbanInput.value.trim() : "";
-    var partName = hinmeiInput ? hinmeiInput.value.trim() : "";
-    var quoteId = quoteIdInput ? quoteIdInput.value.trim() : "";
+    var prefs = collectSearchPrefs();
+    var salesId = prefs.sales_id;
+    var customerCode = prefs.customer_code;
+    var partNo = prefs.part_no;
+    var partName = prefs.part_name;
+    var quoteId = prefs.quote_id;
 
     if (!salesId && !customerCode && !partNo && !partName && !quoteId) {
       cachedSearchRows = [];
@@ -453,6 +546,8 @@
     if (partNo) params.append("part_no", partNo);
     if (partName) params.append("part_name", partName);
     if (quoteId) params.append("quote_id", quoteId);
+    params.append("order_by", prefs.order_by);
+    params.append("order_dir", prefs.order_dir);
 
     setResultMessage("検索結果：検索中...");
     setSearchLoading(true);
@@ -471,6 +566,7 @@
         cachedSearchRows = data.rows ? data.rows.slice() : [];
         setResultMessage("検索結果：" + cachedSearchRows.length + " 件");
         renderTable(cachedSearchRows);
+        void saveSearchPrefs();
       })
       .catch(function (err) {
         void showAlertModal("通信エラー: " + err.message);
@@ -533,6 +629,26 @@
       e.stopPropagation();
     });
   }
+  if (deleteConfirmOverlay) {
+    deleteConfirmOverlay.addEventListener("click", function (e) {
+      if (e.target === deleteConfirmOverlay) closeDeleteConfirm();
+    });
+  }
+  if (deleteConfirmPanel) {
+    deleteConfirmPanel.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
+  }
+  if (deleteDoneOverlay) {
+    deleteDoneOverlay.addEventListener("click", function (e) {
+      if (e.target === deleteDoneOverlay) finishDeleteDoneOk();
+    });
+  }
+  if (deleteDonePanel) {
+    deleteDonePanel.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
+  }
   if (updateConfirmOverlay) {
     updateConfirmOverlay.addEventListener("click", function (e) {
       if (e.target === updateConfirmOverlay) closeUpdateConfirm();
@@ -582,6 +698,16 @@
     if (updateConfirmOverlay && !updateConfirmOverlay.hidden) {
       e.preventDefault();
       closeUpdateConfirm();
+      return;
+    }
+    if (deleteDoneOverlay && !deleteDoneOverlay.hidden) {
+      e.preventDefault();
+      finishDeleteDoneOk();
+      return;
+    }
+    if (deleteConfirmOverlay && !deleteConfirmOverlay.hidden) {
+      e.preventDefault();
+      closeDeleteConfirm();
       return;
     }
     if (registerDoneOverlay && !registerDoneOverlay.hidden) {
@@ -660,8 +786,51 @@
 
   if (editDeleteBtn) {
     editDeleteBtn.addEventListener("click", function () {
-      void showAlertModal("削除は今後実装します。");
+      if (subwindowMode !== "edit") return;
+      if (!editingQuoteId) {
+        void showAlertModal("見積りIDがありません");
+        return;
+      }
+      openDeleteConfirm();
     });
+  }
+
+  if (deleteConfirmNo) {
+    deleteConfirmNo.addEventListener("click", closeDeleteConfirm);
+  }
+  if (deleteConfirmYes) {
+    deleteConfirmYes.addEventListener("click", function () {
+      var qid = editingQuoteId;
+      closeDeleteConfirm();
+      if (!qid) {
+        void showAlertModal("見積りIDがありません");
+        return;
+      }
+      fetch("/api/search_delete_quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quote_id: qid }),
+      })
+        .then(parseJsonResponse)
+        .then(function (out) {
+          if (!out.ok || out.data.error) {
+            void showAlertModal(out.data.error || "削除に失敗しました");
+            return;
+          }
+          openDeleteDone();
+        })
+        .catch(function (err) {
+          void showAlertModal("通信エラー: " + err.message);
+        });
+    });
+  }
+  function finishDeleteDoneOk() {
+    closeDeleteDone();
+    closeSearchSubwindow();
+    refreshSearchResults();
+  }
+  if (deleteDoneOk) {
+    deleteDoneOk.addEventListener("click", finishDeleteDoneOk);
   }
 
   if (updateConfirmNo) {
@@ -739,6 +908,14 @@
       fillSelect(customerSelect, data && data.customer_list);
       fillSelect(newSalesSelect, data && data.sales_list);
       fillSelect(newCustomerSelect, data && data.customer_list);
+
+      var prefsRes = await window.quotesApi("/api/config/search-prefs-get", {
+        kind: "quote",
+      });
+      if (prefsRes && prefsRes.has_prefs && prefsRes.prefs) {
+        applySearchPrefs(prefsRes.prefs);
+        refreshSearchResults();
+      }
     } catch (err) {
       console.error(err);
     }

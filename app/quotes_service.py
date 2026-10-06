@@ -1,13 +1,13 @@
 """見積り管理・原価見積り管理の業務ロジック（Access Flask 版を PostgreSQL 向けに移植）。"""
 from __future__ import annotations
 
-from io import BytesIO
 import calendar
 import os
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 from app.database import get_connection
+from app import excel_xlwings_util as xwu
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +259,7 @@ def get_quote_calc_page(payload=None):
                 # 基本情報
                 part_no = _rec_str(rec, "品番")
                 part_name = _rec_str(rec, "品名")
-                customer_name = _rec_str(rec, "客先名")
+                customer_name = _rec_str(rec, "正式名称")  # qc-customer: t_客先マスタ.正式名称
                 department = _rec_str(rec, "客先部署")
                 contact = _rec_str(rec, "客先担当者")
                 customer_code = _rec_str(rec, "客先コード")
@@ -485,7 +485,7 @@ def delete_quote_calc_material(payload=None):
 _QUOTE_PROC_LIST_SQL = (
     "SELECT ID, ロット数, サイクルタイム AS \"C/T\", 日産数, 日数, 機械, チャージ, 加工費, "
     "刃工具費, 刃工具費個別 AS 刃個別, 検査費, 検査費個別 AS 検個別, 利益率, 利益, 管理費, 材料費 "
-    "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数"
+    "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数 ASC, ID DESC"
 )
 
 
@@ -1573,7 +1573,7 @@ QUOTE_DOC_EXCEL_TEMPLATE_PATH = os.path.join(
 
 _QUOTE_DOC_PROC_SQL = (
     "SELECT ID, ロット数, 材料費, 加工費, 刃工具費個別, 管理費, 機械, サイクルタイム, "
-    "日産数, 刃工具費, チャージ, 日数 FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数 ASC"
+    "日産数, 刃工具費, チャージ, 日数 FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数 ASC, ID DESC"
 )
 
 
@@ -1745,11 +1745,6 @@ def api_quote_calc_export_xlsx(payload=None):
     estimate_part = _sanitize_filename_part(estimate_id)
     download_name = f"見積書_{customer_part}{estimate_part}.xlsx"
 
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        return {"error": "openpyxl がインストールされていません。pip install openpyxl を実行してください。"}
-
     if not os.path.exists(QUOTE_DOC_EXCEL_TEMPLATE_PATH):
         return {"error": f"テンプレートが見つかりません: {QUOTE_DOC_EXCEL_TEMPLATE_PATH}"}
 
@@ -1772,155 +1767,163 @@ def api_quote_calc_export_xlsx(payload=None):
             for r in ic_raw
         ]
 
-        wb = load_workbook(QUOTE_DOC_EXCEL_TEMPLATE_PATH)
-        if "Sheet1" not in wb.sheetnames or "Sheet2" not in wb.sheetnames:
-            return {"error": "テンプレートに Sheet1 / Sheet2 が存在しません。"}
-        ws1 = wb["Sheet1"]
-        ws2 = wb["Sheet2"]
-
-        # ---------------------------------------------------------------------
-        # Sheet1
-        # 表題部
-        # ---------------------------------------------------------------------
-        ws1["A4"] = customer  # qc-customer
-        ws1["A5"] = department  # qc-department
-        ws1["A6"] = f"{contact} 様"  # qc-contact + " 様"
-        ws1["G2"] = today_s  # 今日の日付(yyyy/mm/dd)
-        ws1["G4"] = estimate_id  # qc-estimate-id
-        ws1["B13"] = part_no  # qc-part-no
-        ws1["B14"] = part_name  # qc-part-name
-        ws1["B15"] = mat_diameter  # qc-mat-diameter
-        ws1["G15"] = sales_name  # qc-sales-name
-        ws1["B29"] = valid_3m  # 今日の日付から3か月後(yyyy/mm/dd)
-
-        # ---------------------------------------------------------------------
-        # Sheet1
-        # ロット数毎の見積り詳細
-        # B17:B23 を開始点として右方向へ1列ずつ書き込み（A列は項目名）
-        # 17 ロット数 / 19 材料費 / 20 加工費+刃工具費個別
-        # 21 表面処理費合計 / 22 梱包輸送費合計 / 23 管理費
-        # ---------------------------------------------------------------------
-        for i, prow in enumerate(proc_rows):
-            col = 2 + i  # B=2
+        # 表面処理・梱包合計は Excel 書き込み中も同じ cur を使うため、先にロット分を計算
+        lot_extras = []
+        for prow in proc_rows:
             pid = prow.get("ID")
-            ws1.cell(row=17, column=col, value=_quote_doc_excel_num(prow.get("ロット数")))
-            ws1.cell(row=19, column=col, value=_quote_doc_excel_num(prow.get("材料費")))
-            ws1.cell(
-                row=20,
-                column=col,
-                value=_quote_doc_num_sum(prow.get("加工費"), prow.get("刃工具費個別")),
+            lot_extras.append(
+                {
+                    "surface": _quote_surface_cost_total(cur, pid),
+                    "packaging": _quote_packaging_cost_total(cur, pid),
+                }
             )
-            ws1.cell(row=21, column=col, value=_quote_surface_cost_total(cur, pid))
-            ws1.cell(row=22, column=col, value=_quote_packaging_cost_total(cur, pid))
-            ws1.cell(row=23, column=col, value=_quote_doc_excel_num(prow.get("管理費")))
 
-        # ---------------------------------------------------------------------
-        # Sheet2
-        # 表題部
-        # ---------------------------------------------------------------------
-        ws2["A4"] = customer  # qc-customer
-        ws2["A5"] = department  # qc-department
-        ws2["A6"] = f"{contact} 様"  # qc-contact + " 様"
-        ws2["G2"] = today_s  # 今日の日付(yyyy/mm/dd)
-        ws2["G4"] = estimate_id  # qc-estimate-id
-        ws2["B13"] = part_no  # qc-part-no
-        ws2["B14"] = part_name  # qc-part-name
-        ws2["B15"] = mat_diameter  # qc-mat-diameter
-        ws2["G15"] = sales_name  # qc-sales-name
-        ws2["B30"] = valid_1m  # 今日の日付から1か月後(yyyy/mm/dd) # 見積り有効期限
+        def _fill_quote_doc(wb):
+            names = xwu.sheet_names(wb)
+            if "Sheet1" not in names or "Sheet2" not in names:
+                raise ValueError("テンプレートに Sheet1 / Sheet2 が存在しません。")
+            ws1 = wb.sheets["Sheet1"]
+            ws2 = wb.sheets["Sheet2"]
 
-        # D8~D11: 機械～刃工具費は先頭ロットの値を使用
-        first = proc_rows[0] if proc_rows else {}
-        ws2["D8"] = first.get("機械") if first.get("機械") is not None else ""  # 機械
-        ws2["D9"] = _quote_doc_excel_num(first.get("サイクルタイム"))  # サイクルタイム
-        ws2["D10"] = _quote_doc_excel_num(first.get("日産数"))  # 日産数
-        ws2["D11"] = _quote_doc_excel_num(first.get("刃工具費"))  # 刃工具費
+            # -----------------------------------------------------------------
+            # Sheet1
+            # 表題部
+            # -----------------------------------------------------------------
+            xwu.set_value(ws1, "A4", customer)  # qc-customer
+            xwu.set_value(ws1, "A5", department)  # qc-department
+            xwu.set_value(ws1, "A6", f"{contact} 様")  # qc-contact + " 様"
+            xwu.set_value(ws1, "G2", today_s)  # 今日の日付(yyyy/mm/dd)
+            xwu.set_value(ws1, "G4", estimate_id)  # qc-estimate-id
+            xwu.set_value(ws1, "B13", part_no)  # qc-part-no
+            xwu.set_value(ws1, "B14", part_name)  # qc-part-name
+            xwu.set_value(ws1, "B15", mat_diameter)  # qc-mat-diameter
+            xwu.set_value(ws1, "G15", sales_name)  # qc-sales-name
+            xwu.set_value(ws1, "B29", valid_3m)  # 今日の日付から3か月後(yyyy/mm/dd)
 
-        # ---------------------------------------------------------------------
-        # Sheet2
-        # ロット数毎の見積り詳細（Sheet1 と同様 + 24 チャージ / 25 日数）
-        # ---------------------------------------------------------------------
-        for i, prow in enumerate(proc_rows):
-            col = 2 + i  # B=2
-            pid = prow.get("ID")
-            ws2.cell(row=17, column=col, value=_quote_doc_excel_num(prow.get("ロット数")))
-            ws2.cell(row=19, column=col, value=_quote_doc_excel_num(prow.get("材料費")))
-            ws2.cell(
-                row=20,
-                column=col,
-                value=_quote_doc_num_sum(prow.get("加工費"), prow.get("刃工具費個別")),
-            )
-            ws2.cell(row=21, column=col, value=_quote_surface_cost_total(cur, pid))
-            ws2.cell(row=22, column=col, value=_quote_packaging_cost_total(cur, pid))
-            ws2.cell(row=23, column=col, value=_quote_doc_excel_num(prow.get("管理費")))
-            ws2.cell(row=24, column=col, value=_quote_doc_excel_num(prow.get("チャージ")))
-            ws2.cell(row=25, column=col, value=_quote_doc_excel_num(prow.get("日数")))
+            # -----------------------------------------------------------------
+            # Sheet1
+            # ロット数毎の見積り詳細
+            # B17:B23 を開始点として右方向へ1列ずつ書き込み（A列は項目名）
+            # 17 ロット数 / 19 材料費 / 20 加工費+刃工具費個別
+            # 21 表面処理費合計 / 22 梱包輸送費合計 / 23 管理費
+            # -----------------------------------------------------------------
+            for i, prow in enumerate(proc_rows):
+                col = 2 + i  # B=2
+                extra = lot_extras[i]
+                xwu.set_value(ws1, (17, col), _quote_doc_excel_num(prow.get("ロット数")))
+                xwu.set_value(ws1, (19, col), _quote_doc_excel_num(prow.get("材料費")))
+                xwu.set_value(
+                    ws1,
+                    (20, col),
+                    _quote_doc_num_sum(prow.get("加工費"), prow.get("刃工具費個別")),
+                )
+                xwu.set_value(ws1, (21, col), extra["surface"])
+                xwu.set_value(ws1, (22, col), extra["packaging"])
+                xwu.set_value(ws1, (23, col), _quote_doc_excel_num(prow.get("管理費")))
 
-        # ---------------------------------------------------------------------
-        # 初期費用書込み
-        # 0件 → Sheet1.E29 / Sheet2.E30 に「無し」
-        # 1件以上 → Sheet1 は E29:G29 から下方向、Sheet2 は E30:G30 から下方向
-        # E 品名 / F 数量&単位 / G 金額
-        # ---------------------------------------------------------------------
-        if not initial_cost_rows:
-            ws1["E29"] = "無し"
-            ws2["E30"] = "無し"
-        else:
-            for i, ic in enumerate(initial_cost_rows):
-                hinmei = "" if ic.get("品名") is None else str(ic.get("品名"))
-                suryo = "" if ic.get("数量") is None else str(ic.get("数量")).strip()
-                tani = "" if ic.get("単位") is None else str(ic.get("単位")).strip()
-                qty_unit = f"{suryo}{tani}"
-                kingaku = _quote_doc_excel_num(ic.get("金額"))
-                r1 = 29 + i
-                r2 = 30 + i
-                ws1.cell(row=r1, column=5, value=hinmei)  # E
-                ws1.cell(row=r1, column=6, value=qty_unit)  # F
-                ws1.cell(row=r1, column=7, value=kingaku)  # G
-                ws2.cell(row=r2, column=5, value=hinmei)
-                ws2.cell(row=r2, column=6, value=qty_unit)
-                ws2.cell(row=r2, column=7, value=kingaku)
+            # -----------------------------------------------------------------
+            # Sheet2
+            # 表題部
+            # -----------------------------------------------------------------
+            xwu.set_value(ws2, "A4", customer)  # qc-customer
+            xwu.set_value(ws2, "A5", department)  # qc-department
+            xwu.set_value(ws2, "A6", f"{contact} 様")  # qc-contact + " 様"
+            xwu.set_value(ws2, "G2", today_s)  # 今日の日付(yyyy/mm/dd)
+            xwu.set_value(ws2, "G4", estimate_id)  # qc-estimate-id
+            xwu.set_value(ws2, "B13", part_no)  # qc-part-no
+            xwu.set_value(ws2, "B14", part_name)  # qc-part-name
+            xwu.set_value(ws2, "B15", mat_diameter)  # qc-mat-diameter
+            xwu.set_value(ws2, "G15", sales_name)  # qc-sales-name
+            xwu.set_value(ws2, "B30", valid_1m)  # 今日から1か月後 # 見積り有効期限
 
-        # ---------------------------------------------------------------------
-        # 諸条件書込み
-        # Sheet1: B31/B33/B35/B37
-        # Sheet2: B32/B34/B36/B38
-        # ---------------------------------------------------------------------
-        ws1["B31"] = cond_location  # qc-cond-location
-        ws1["B33"] = cond_date  # qc-cond-date
-        ws1["B35"] = cond_status  # qc-cond-status
-        ws1["B37"] = cond_packaging  # qc-cond-packaging
-        ws2["B32"] = cond_location  # qc-cond-location
-        ws2["B34"] = cond_date  # qc-cond-date
-        ws2["B36"] = cond_status  # qc-cond-status
-        ws2["B38"] = cond_packaging  # qc-cond-packaging
+            # D8~D11: 機械～刃工具費は先頭ロットの値を使用
+            first = proc_rows[0] if proc_rows else {}
+            xwu.set_value(
+                ws2, "D8", first.get("機械") if first.get("機械") is not None else ""
+            )  # 機械
+            xwu.set_value(ws2, "D9", _quote_doc_excel_num(first.get("サイクルタイム")))  # サイクルタイム
+            xwu.set_value(ws2, "D10", _quote_doc_excel_num(first.get("日産数")))  # 日産数
+            xwu.set_value(ws2, "D11", _quote_doc_excel_num(first.get("刃工具費")))  # 刃工具費
 
-        # ---------------------------------------------------------------------
-        # 備考書込み
-        # Sheet1, Sheet2 共に開始点 A40。qc-remark-line-1～10 を下方向へ
-        # ---------------------------------------------------------------------
-        for i in range(10):
-            text = ""
-            if i < len(remark_lines):
-                text = str(remark_lines[i] or "")
-            ws1.cell(row=40 + i, column=1, value=text)
-            ws2.cell(row=40 + i, column=1, value=text)
+            # -----------------------------------------------------------------
+            # Sheet2
+            # ロット数毎の見積り詳細（Sheet1 と同様 + 24 チャージ / 25 日数）
+            # -----------------------------------------------------------------
+            for i, prow in enumerate(proc_rows):
+                col = 2 + i  # B=2
+                extra = lot_extras[i]
+                xwu.set_value(ws2, (17, col), _quote_doc_excel_num(prow.get("ロット数")))
+                xwu.set_value(ws2, (19, col), _quote_doc_excel_num(prow.get("材料費")))
+                xwu.set_value(
+                    ws2,
+                    (20, col),
+                    _quote_doc_num_sum(prow.get("加工費"), prow.get("刃工具費個別")),
+                )
+                xwu.set_value(ws2, (21, col), extra["surface"])
+                xwu.set_value(ws2, (22, col), extra["packaging"])
+                xwu.set_value(ws2, (23, col), _quote_doc_excel_num(prow.get("管理費")))
+                xwu.set_value(ws2, (24, col), _quote_doc_excel_num(prow.get("チャージ")))
+                xwu.set_value(ws2, (25, col), _quote_doc_excel_num(prow.get("日数")))
 
-        # Sheet1 の A1 を選択（カーソル初期位置）
-        wb.active = ws1
-        try:
-            sel = ws1.sheet_view.selection[0]
-            sel.activeCell = "A1"
-            sel.sqref = "A1"
-        except Exception:
-            pass
+            # -----------------------------------------------------------------
+            # 初期費用書込み
+            # 0件 → Sheet1.E29 / Sheet2.E30 に「無し」
+            # 1件以上 → Sheet1 は E29:G29 から下方向、Sheet2 は E30:G30 から下方向
+            # E 品名 / F 数量&単位 / G 金額
+            # -----------------------------------------------------------------
+            if not initial_cost_rows:
+                xwu.set_value(ws1, "E29", "無し")
+                xwu.set_value(ws2, "E30", "無し")
+            else:
+                for i, ic in enumerate(initial_cost_rows):
+                    hinmei = "" if ic.get("品名") is None else str(ic.get("品名"))
+                    suryo = "" if ic.get("数量") is None else str(ic.get("数量")).strip()
+                    tani = "" if ic.get("単位") is None else str(ic.get("単位")).strip()
+                    qty_unit = f"{suryo}{tani}"
+                    kingaku = _quote_doc_excel_num(ic.get("金額"))
+                    r1 = 29 + i
+                    r2 = 30 + i
+                    xwu.set_value(ws1, (r1, 5), hinmei)  # E
+                    xwu.set_value(ws1, (r1, 6), qty_unit)  # F
+                    xwu.set_value(ws1, (r1, 7), kingaku)  # G
+                    xwu.set_value(ws2, (r2, 5), hinmei)
+                    xwu.set_value(ws2, (r2, 6), qty_unit)
+                    xwu.set_value(ws2, (r2, 7), kingaku)
 
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
+            # -----------------------------------------------------------------
+            # 諸条件書込み
+            # Sheet1: B31/B33/B35/B37
+            # Sheet2: B32/B34/B36/B38
+            # -----------------------------------------------------------------
+            xwu.set_value(ws1, "B31", cond_location)  # qc-cond-location
+            xwu.set_value(ws1, "B33", cond_date)  # qc-cond-date
+            xwu.set_value(ws1, "B35", cond_status)  # qc-cond-status
+            xwu.set_value(ws1, "B37", cond_packaging)  # qc-cond-packaging
+            xwu.set_value(ws2, "B32", cond_location)  # qc-cond-location
+            xwu.set_value(ws2, "B34", cond_date)  # qc-cond-date
+            xwu.set_value(ws2, "B36", cond_status)  # qc-cond-status
+            xwu.set_value(ws2, "B38", cond_packaging)  # qc-cond-packaging
+
+            # -----------------------------------------------------------------
+            # 備考書込み
+            # Sheet1, Sheet2 共に開始点 A41。qc-remark-line-1～10 を下方向へ
+            # -----------------------------------------------------------------
+            for i in range(10):
+                text = ""
+                if i < len(remark_lines):
+                    text = str(remark_lines[i] or "")
+                xwu.set_value(ws1, (41 + i, 1), text)
+                xwu.set_value(ws2, (41 + i, 1), text)
+
+        raw = xwu.export_bytes_from_template(
+            QUOTE_DOC_EXCEL_TEMPLATE_PATH,
+            _fill_quote_doc,
+            activate_sheet="Sheet1",
+            activate_cell="A1",
+        )
         return {
             "ok": True,
-            "_xlsx_bytes": output.getvalue(),
+            "_xlsx_bytes": raw,
             "_xlsx_name": download_name,
         }
     except Exception as e:
@@ -1971,6 +1974,37 @@ def _quote_row_for_search_ui(col_names, r):
         return out
     return out
 
+_QUOTE_SEARCH_ORDER_MAP = {
+    "見積りID": "t_見積り履歴.見積りID",
+    "管理NO": "t_見積り履歴.管理NO",
+    "営業担当": "t_営業マスタ.営業担当",
+    "客先名": "t_客先マスタ.客先名",
+    "客先部署": "t_見積り履歴.客先部署",
+    "客先担当者": "t_見積り履歴.客先担当者",
+    "品番": "t_見積り履歴.品番",
+    "品名": "t_見積り履歴.品名",
+    "依頼日": "t_見積り履歴.依頼日",
+    "提出日": "t_見積り履歴.提出日",
+    "備考": "t_見積り履歴.備考",
+}
+
+_COST_QUOTE_SEARCH_ORDER_MAP = {
+    "原価見積りID": "t_原価見積履歴.原価見積りID",
+    "管理NO": "t_原価見積履歴.管理NO",
+    "営業担当": "t_営業マスタ.営業担当",
+    "客先名": "t_客先マスタ.客先名",
+    "品番": "t_原価見積履歴.品番",
+    "品名": "t_原価見積履歴.品名",
+    "備考": "t_原価見積履歴.備考",
+}
+
+
+def _search_order_clause(order_map, order_by, order_dir, default_col_sql):
+    col_sql = order_map.get((order_by or "").strip()) or default_col_sql
+    direction = "DESC" if str(order_dir or "").strip().lower() in ("desc", "descending", "降順") else "ASC"
+    return f" ORDER BY {col_sql} {direction}"
+
+
 def api_quote_search_conditions(payload=None):
     """quotes.html からの見積り履歴条件検索"""
     sales_id = ((payload or {}).get("sales_id") or "").strip()
@@ -1978,6 +2012,8 @@ def api_quote_search_conditions(payload=None):
     part_no = ((payload or {}).get("part_no") or "").strip()
     part_name = ((payload or {}).get("part_name") or "").strip()
     quote_id = ((payload or {}).get("quote_id") or "").strip()
+    order_by = ((payload or {}).get("order_by") or "").strip()
+    order_dir = ((payload or {}).get("order_dir") or "").strip()
 
     if not any([sales_id, customer_code, part_no, part_name, quote_id]):
         return {"error": "条件を最低1つ指定してください"}
@@ -2022,7 +2058,9 @@ def api_quote_search_conditions(payload=None):
     sql = base_sql
     if conditions:
         sql += " WHERE " + " AND ".join(conditions)
-    sql += " ORDER BY t_見積り履歴.見積りID"
+    sql += _search_order_clause(
+        _QUOTE_SEARCH_ORDER_MAP, order_by, order_dir, "t_見積り履歴.見積りID"
+    )
 
     try:
         conn = get_connection()
@@ -4124,7 +4162,7 @@ def api_est_calc_initial_cost_delete(payload=None):
                 pass
 
 def api_est_calc_export_xlsx(payload=None):
-    """テンプレートExcelへ値を反映し、xlsx を返却する"""
+    """テンプレートExcelへ値を反映し、xlsx を返却する（xlwings）"""
     data = payload or {}
 
     def _s(key):
@@ -4159,8 +4197,7 @@ def api_est_calc_export_xlsx(payload=None):
             return None
 
     def _set_efg(ws, col, row, val):
-        n = _excel_num(val)
-        ws[f"{col}{row}"] = n
+        xwu.set_value(ws, f"{col}{row}", _excel_num(val))
 
     est_1 = _s("est_1")
     est_2 = _s("est_2")
@@ -4189,332 +4226,379 @@ def api_est_calc_export_xlsx(payload=None):
     lot_part = _sanitize_filename_part(est_6)
     download_name = f"原価見積書_{customer_part}_{estimate_part}_{lot_part}.xlsx"
 
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        return {"error": "openpyxl がインストールされていません。pip install openpyxl を実行してください。"}
-
     if not os.path.exists(EXCEL_TEMPLATE_PATH):
         return {"error": f"テンプレートが見つかりません: {EXCEL_TEMPLATE_PATH}"}
 
+    # 比較表用の履歴・初期費用は Excel 起動前に取得
+    _lot_rows = []
+    _lot_cols = []
+    ic_rows = []
+    if est_5:
+        conn_h = None
+        try:
+            conn_h = get_connection()
+            cur_h = conn_h.cursor()
+            sql_h = (
+                "SELECT * FROM (((((((t_原価見積履歴 "
+                "LEFT JOIN t_原価見積情報 ON t_原価見積履歴.原価見積りID = t_原価見積情報.原価見積りID) "
+                "LEFT JOIN t_原価見積材料 ON t_原価見積情報.ロットID = t_原価見積材料.ロットID) "
+                "LEFT JOIN t_原価見積真鍮 ON t_原価見積情報.ロットID = t_原価見積真鍮.ロットID) "
+                "LEFT JOIN t_原価見積加工管理 ON t_原価見積情報.ロットID = t_原価見積加工管理.ロットID) "
+                "LEFT JOIN t_原価見積送料 ON t_原価見積情報.ロットID = t_原価見積送料.ロットID) "
+                "LEFT JOIN t_原価見積計算チャージ ON t_原価見積情報.ロットID = t_原価見積計算チャージ.ロットID) "
+                "LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード) "
+                "LEFT JOIN t_客先マスタ ON t_原価見積履歴.客先コード = t_客先マスタ.コード "
+                "WHERE t_原価見積履歴.原価見積りID = ? "
+                "AND t_原価見積情報.使用フラグ <> 'Y' "
+                "ORDER BY t_原価見積情報.ロットID ASC;"
+            )
+            cur_h.execute(sql_h, [est_5])
+            _lot_rows = cur_h.fetchall()
+            _lot_cols = [d[0] for d in cur_h.description]
+            cur_h.execute(
+                "SELECT 品名, 数量, 単位, 金額 FROM t_原価見積初期費用 WHERE 原価見積りID = ?",
+                [est_5],
+            )
+            ic_rows = cur_h.fetchall()
+        except Exception as e:
+            return {"error": str(e)}
+        finally:
+            if conn_h is not None:
+                try:
+                    conn_h.close()
+                except Exception:
+                    pass
+
     try:
-        wb = load_workbook(EXCEL_TEMPLATE_PATH)
-        if "原価見積りシート" not in wb.sheetnames:
-            return {"error": "テンプレートに「原価見積りシート」が存在しません。"}
-        ws = wb["原価見積りシート"]
+        def _fill_est_book(wb):
+            names = xwu.sheet_names(wb)
+            if "原価見積りシート" not in names:
+                raise ValueError("テンプレートに「原価見積りシート」が存在しません。")
+            ws = wb.sheets["原価見積りシート"]
 
-        ws["B2"] = est_4
-        ws["C5"] = est_5
-        ws["C6"] = est_3
-        ws["C7"] = est_1
-        ws["C8"] = est_2
-        ws["C9"] = mat_2_name
-        ws["C10"] = mat_1
-        ws["C11"] = est_7
-        ws["C12"] = mat_3
-        _set_efg(ws, "G", 10, f_ch_8)
-        _set_efg(ws, "G", 11, f_ch_9)
-        _set_efg(ws, "G", 12, est_11)
-        ws["D15"] = f"{mat_2_name}     {mat_1}"
-        _set_efg(ws, "G", 15, mat_19)
-        _f15 = ws["F15"]
-        _n15 = _excel_num(mat_15)
-        if _n15 is None:
-            _f15.value = None
-            _f15.number_format = "General"
-        else:
-            _f15.value = int(round(_n15)) if isinstance(_n15, float) else int(_n15)
-            _f15.number_format = "#,##0"
-
-        # D16:G23 可変ブロック
-        # D:項目名 / E:サイクル / F:賃率 / G:原価（E〜G は数値、空は None）
-        for r in range(16, 24):
-            ws[f"D{r}"] = ""
-            ws[f"E{r}"] = None
-            ws[f"F{r}"] = None
-            ws[f"G{r}"] = None
-
-        guide_on = _is_checked(data.get("proc_cb_1"))
-        rows = []
-
-        # 切削
-        rows.append({
-            "label": f"切削({proc_5_name}",
-            "cycle": _s("proc_6"),
-            "rate": _s("proc_7"),
-            "cost": _s("proc_8"),
-            "cost_col": "切削機械原価",
-        })
-        # 刃工具費（賃率列Fに刃工具価格 proc-1、原価列Gに刃工具原価 proc-4）
-        rows.append({
-            "label": "刃工具費",
-            "cycle": "",
-            "rate": _s("proc_1"),
-            "cost": _s("proc_4"),
-            "cost_col": "刃工具原価",
-        })
-        # セット費（常に表示）
-        rows.append({
-            "label": f"セット費(ガイド{'有' if guide_on else '無'}, {_s('proc_10')}H, 数量:{est_7}, 費用:{_s('proc_12')})",
-            "cycle": "",
-            "rate": "",
-            "cost": _s("proc_13"),
-            "cost_col": "セット原価",
-        })
-        # バレル（チェックON時）
-        if _is_checked(data.get("proc_cb_2")):
-            rows.append({
-                "label": f"バレル({proc_14_name})",
-                "cycle": _s("proc_15"),
-                "rate": _s("proc_16"),
-                "cost": _s("proc_17"),
-                "cost_col": "バレル原価",
-            })
-        # ブラスト（チェックON時）
-        if _is_checked(data.get("proc_cb_3")):
-            rows.append({
-                "label": "ブラスト",
-                "cycle": _s("proc_18"),
-                "rate": _s("proc_19"),
-                "cost": _s("proc_20"),
-                "cost_col": "ブラスト原価",
-            })
-        # 圧入（チェックON時）
-        if _is_checked(data.get("proc_cb_4")):
-            rows.append({
-                "label": "圧入",
-                "cycle": _s("proc_21"),
-                "rate": _s("proc_22"),
-                "cost": _s("proc_23"),
-                "cost_col": "圧入原価",
-            })
-        # 洗浄
-        rows.append({
-            "label": f"洗浄({proc_24_name})",
-            "cycle": _s("proc_25"),
-            "rate": _s("proc_26"),
-            "cost": _s("proc_27"),
-            "cost_col": "洗浄原価",
-        })
-        # 計量・梱包
-        rows.append({
-            "label": f"計量・梱包({proc_36_name})",
-            "cycle": _s("proc_37"),
-            "rate": _s("proc_38"),
-            "cost": _s("proc_39"),
-            "cost_col": "計量梱包原価",
-        })
-
-        for i, row in enumerate(rows[:8]):
-            r = 16 + i
-            ws[f"D{r}"] = row["label"]
-            _set_efg(ws, "E", r, row["cycle"])
-            _set_efg(ws, "F", r, row["rate"])
-            _set_efg(ws, "G", r, row["cost"])
-
-        # D24:G33 検査ブロック（最大10行。D34は合計行のため使用しない）
-        # D:項目名（その他は入力検査名）/ E:サイクル / F:賃率（その他共通は kensa_18）/ G:原価
-        ins_rows = []
-        if _is_checked(data.get("proc_cb_5")):
-            ins_rows.append({
-                "label": "処理前検査",
-                "cycle": _s("proc_28"),
-                "rate": _s("proc_29"),
-                "cost": _s("proc_30"),
-                "cost_col": "処理前検査原価",
-            })
-        if _is_checked(data.get("kensa_cb_1")):
-            ins_rows.append({
-                "label": "自動外観検査",
-                "cycle": _s("kensa_1"),
-                "rate": _s("kensa_2"),
-                "cost": _s("kensa_3"),
-                "cost_col": "自動外観検査原価",
-            })
-        if _is_checked(data.get("kensa_cb_2")):
-            ins_rows.append({
-                "label": "数値",
-                "cycle": _s("kensa_4"),
-                "rate": _s("kensa_5"),
-                "cost": _s("kensa_6"),
-                "cost_col": "数値原価",
-            })
-        if _is_checked(data.get("kensa_cb_3")):
-            ins_rows.append({
-                "label": "目視",
-                "cycle": _s("kensa_7"),
-                "rate": _s("kensa_8"),
-                "cost": _s("kensa_9"),
-                "cost_col": "目視原価",
-            })
-        if _is_checked(data.get("kensa_cb_4")):
-            ins_rows.append({
-                "label": "顕微鏡",
-                "cycle": _s("kensa_10"),
-                "rate": _s("kensa_11"),
-                "cost": _s("kensa_12"),
-                "cost_col": "顕微鏡原価",
-            })
-        if _is_checked(data.get("kensa_cb_5")):
-            ins_rows.append({
-                "label": "マイクロゲージ",
-                "cycle": _s("kensa_13"),
-                "rate": _s("kensa_14"),
-                "cost": _s("kensa_15"),
-                "cost_col": "マイクロゲージ原価",
-            })
-        kensa_18_shared = _s("kensa_18")
-        if _is_checked(data.get("kensa_cb_6")):
-            for name_key, cyc_key, cost_key in (
-                ("kensa_16", "kensa_17", "kensa_19"),
-                ("kensa_20", "kensa_21", "kensa_22"),
-                ("kensa_23", "kensa_24", "kensa_25"),
-                ("kensa_26", "kensa_27", "kensa_28"),
-                ("kensa_29", "kensa_30", "kensa_31"),
-            ):
-                nm = _s(name_key)
-                cy = _s(cyc_key)
-                co = _s(cost_key)
-                if nm or cy or co:
-                    _other_cost_col_map = {
-                        "kensa_19": "その他原価",
-                        "kensa_22": "その他原価2",
-                        "kensa_25": "その他原価3",
-                        "kensa_28": "その他原価4",
-                        "kensa_31": "その他原価5",
-                    }
-                    ins_rows.append({
-                        "label": nm,
-                        "cycle": cy,
-                        "rate": kensa_18_shared,
-                        "cost": co,
-                        "cost_col": _other_cost_col_map.get(cost_key, ""),
-                    })
-
-        # D24:G33 のみクリア。D34/G34 はテンプレの「加工管理合計(社内)」と =SUM(G16:G33) のため変更しない
-        for r in range(24, 34):
-            ws[f"D{r}"] = ""
-            ws[f"E{r}"] = None
-            ws[f"F{r}"] = None
-            ws[f"G{r}"] = None
-        ins_cap = 10
-        for i, row in enumerate(ins_rows[:ins_cap]):
-            r = 24 + i
-            ws[f"D{r}"] = row["label"]
-            _set_efg(ws, "E", r, row["cycle"])
-            _set_efg(ws, "F", r, row["rate"])
-            _set_efg(ws, "G", r, row["cost"])
-
-        # D35:G35 社内管理費（G34＝加工管理合計を参照）
-        for r in range(35, 40):
-            ws[f"D{r}"] = ""
-            ws[f"E{r}"] = None
-            ws[f"F{r}"] = None
-            ws[f"G{r}"] = None
-        f_in_2_disp = _s("f_in_2")
-        ws["D35"] = f"管理費(社内,{f_in_2_disp}%)"
-        r_in = _rate_float_for_formula("f_in_2")
-        ws["G35"] = f"=ROUNDUP(G34*{r_in}/100,2)"
-
-        # D36:G39 社外（表面処理＋管理費）※表面処理名未選択は出力しない、1未選択で2のみのときは上詰め
-        surf_blocks = []
-        if _s("proc_32"):
-            surf_blocks.append(
-                {
-                    "name": proc_32_name or _s("proc_32"),
-                    "cost": _s("proc_33"),
-                    "rate_key": "f_out_2",
-                }
-            )
-        if _s("proc_34"):
-            surf_blocks.append(
-                {
-                    "name": proc_34_name or _s("proc_34"),
-                    "cost": _s("proc_35"),
-                    "rate_key": "f_out_5",
-                }
-            )
-        row_ext = 36
-        for idx, blk in enumerate(surf_blocks, start=1):
-            rate_disp = _s(blk["rate_key"])
-            r_out = _rate_float_for_formula(blk["rate_key"])
-            ws[f"D{row_ext}"] = f"表面処理({blk['name']})"
-            _set_efg(ws, "G", row_ext, blk["cost"])
-            ws[f"D{row_ext + 1}"] = f"管理費({rate_disp}%)"
-            # 式を置くセルのみ文字列の数式のまま（他の E/F/G は数値）
-            ws[f"G{row_ext + 1}"] = f"=ROUNDUP(G{row_ext}*{r_out}/100,2)"
-            row_ext += 2
-
-        # G41 粗利率: 画面上の f-in-b2(%) を 100 で割った値（セル書式が%ならそのまま表示）
-        if _s("f_in_b2"):
-            ws["G41"] = _rate_float_for_formula("f_in_b2") / 100
-        else:
-            ws["G41"] = None
-
-        # A44:G46 / J29:M29 送料・梱包（est_soryo_box: 1=段ボール 2=樹脂箱）
-        for r in (44, 45, 46):
-            for col in "ABCDEFG":
-                ws[f"{col}{r}"] = None
-        for col in "JKLM":
-            ws[f"{col}29"] = None
-        s8n = _s("soryo_8_name")
-        s13n = _s("soryo_13_name")
-        s29n = _s("soryo_29_name")
-        box_mode = str(data.get("est_soryo_box") or "").strip()
-        if box_mode == "1":
-            ws["D44"] = f"運賃単価(入数：{_s('soryo_10')})"
-            _set_efg(ws, "G", 44, _s("soryo_7"))
-            ws["A45"] = "梱包種類：段ボール"
-            ws["D45"] = f"箱単価({s8n or _s('soryo_8')})"
-            _set_efg(ws, "G", 45, _s("soryo_12"))
-            ws["D46"] = f"トレー単価({s13n or _s('soryo_13')})"
-            _set_efg(ws, "G", 46, _s("soryo_19"))
-        elif box_mode == "2":
-            ws["D44"] = f"運賃単価(入数：{_s('soryo_27')})"
-            _set_efg(ws, "G", 44, _s("soryo_23"))
-            ws["A45"] = "梱包種類：パレット"
-            if _s("soryo_24") == "自達":
-                ws["D45"] = f"箱単価({_s('soryo_25')})"
+            xwu.set_value(ws, "B2", est_4)
+            xwu.set_value(ws, "C5", est_5)
+            xwu.set_value(ws, "C6", est_3)
+            xwu.set_value(ws, "C7", est_1)
+            xwu.set_value(ws, "C8", est_2)
+            xwu.set_value(ws, "C9", mat_2_name)
+            xwu.set_value(ws, "C10", mat_1)
+            xwu.set_value(ws, "C11", est_7)
+            xwu.set_value(ws, "C12", mat_3)
+            _set_efg(ws, "G", 10, f_ch_8)
+            _set_efg(ws, "G", 11, f_ch_9)
+            _set_efg(ws, "G", 12, est_11)
+            xwu.set_value(ws, "D15", f"{mat_2_name}     {mat_1}")
+            _set_efg(ws, "G", 15, mat_19)
+            _n15 = _excel_num(mat_15)
+            if _n15 is None:
+                xwu.set_number(ws, "F15", None, "General")
             else:
-                ws["D45"] = "箱単価(箱支給)"
-            _set_efg(ws, "G", 45, _s("soryo_28"))
-            ws["J29"] = f"トレー単価({s29n or _s('soryo_29')})"
-            _set_efg(ws, "M", 29, _s("soryo_35"))
+                v15 = int(round(_n15)) if isinstance(_n15, float) else int(_n15)
+                xwu.set_number(ws, "F15", v15, "#,##0")
 
-        def _txt(v):
-            if v is None:
-                return ""
-            return str(v).strip()
+            # D16:G23 可変ブロック
+            for r in range(16, 24):
+                xwu.set_value(ws, f"D{r}", "")
+                xwu.set_value(ws, f"E{r}", None)
+                xwu.set_value(ws, f"F{r}", None)
+                xwu.set_value(ws, f"G{r}", None)
 
-        def _parse_float_loose(v):
-            if v is None:
+            guide_on = _is_checked(data.get("proc_cb_1"))
+            rows = []
+
+            rows.append({
+                "label": f"切削({proc_5_name}",
+                "cycle": _s("proc_6"),
+                "rate": _s("proc_7"),
+                "cost": _s("proc_8"),
+                "cost_col": "切削機械原価",
+            })
+            rows.append({
+                "label": "刃工具費",
+                "cycle": "",
+                "rate": _s("proc_1"),
+                "cost": _s("proc_4"),
+                "cost_col": "刃工具原価",
+            })
+            rows.append({
+                "label": f"セット費(ガイド{'有' if guide_on else '無'}, {_s('proc_10')}H, 数量:{est_7}, 費用:{_s('proc_12')})",
+                "cycle": "",
+                "rate": "",
+                "cost": _s("proc_13"),
+                "cost_col": "セット原価",
+            })
+            if _is_checked(data.get("proc_cb_2")):
+                rows.append({
+                    "label": f"バレル({proc_14_name})",
+                    "cycle": _s("proc_15"),
+                    "rate": _s("proc_16"),
+                    "cost": _s("proc_17"),
+                    "cost_col": "バレル原価",
+                })
+            if _is_checked(data.get("proc_cb_3")):
+                rows.append({
+                    "label": "ブラスト",
+                    "cycle": _s("proc_18"),
+                    "rate": _s("proc_19"),
+                    "cost": _s("proc_20"),
+                    "cost_col": "ブラスト原価",
+                })
+            if _is_checked(data.get("proc_cb_4")):
+                rows.append({
+                    "label": "圧入",
+                    "cycle": _s("proc_21"),
+                    "rate": _s("proc_22"),
+                    "cost": _s("proc_23"),
+                    "cost_col": "圧入原価",
+                })
+            rows.append({
+                "label": f"洗浄({proc_24_name})",
+                "cycle": _s("proc_25"),
+                "rate": _s("proc_26"),
+                "cost": _s("proc_27"),
+                "cost_col": "洗浄原価",
+            })
+            rows.append({
+                "label": f"計量・梱包({proc_36_name})",
+                "cycle": _s("proc_37"),
+                "rate": _s("proc_38"),
+                "cost": _s("proc_39"),
+                "cost_col": "計量梱包原価",
+            })
+
+            for i, row in enumerate(rows[:8]):
+                r = 16 + i
+                xwu.set_value(ws, f"D{r}", row["label"])
+                _set_efg(ws, "E", r, row["cycle"])
+                _set_efg(ws, "F", r, row["rate"])
+                _set_efg(ws, "G", r, row["cost"])
+
+            ins_rows = []
+            if _is_checked(data.get("proc_cb_5")):
+                ins_rows.append({
+                    "label": "処理前検査",
+                    "cycle": _s("proc_28"),
+                    "rate": _s("proc_29"),
+                    "cost": _s("proc_30"),
+                    "cost_col": "処理前検査原価",
+                })
+            if _is_checked(data.get("kensa_cb_1")):
+                ins_rows.append({
+                    "label": "自動外観検査",
+                    "cycle": _s("kensa_1"),
+                    "rate": _s("kensa_2"),
+                    "cost": _s("kensa_3"),
+                    "cost_col": "自動外観検査原価",
+                })
+            if _is_checked(data.get("kensa_cb_2")):
+                ins_rows.append({
+                    "label": "数値",
+                    "cycle": _s("kensa_4"),
+                    "rate": _s("kensa_5"),
+                    "cost": _s("kensa_6"),
+                    "cost_col": "数値原価",
+                })
+            if _is_checked(data.get("kensa_cb_3")):
+                ins_rows.append({
+                    "label": "目視",
+                    "cycle": _s("kensa_7"),
+                    "rate": _s("kensa_8"),
+                    "cost": _s("kensa_9"),
+                    "cost_col": "目視原価",
+                })
+            if _is_checked(data.get("kensa_cb_4")):
+                ins_rows.append({
+                    "label": "顕微鏡",
+                    "cycle": _s("kensa_10"),
+                    "rate": _s("kensa_11"),
+                    "cost": _s("kensa_12"),
+                    "cost_col": "顕微鏡原価",
+                })
+            if _is_checked(data.get("kensa_cb_5")):
+                ins_rows.append({
+                    "label": "マイクロゲージ",
+                    "cycle": _s("kensa_13"),
+                    "rate": _s("kensa_14"),
+                    "cost": _s("kensa_15"),
+                    "cost_col": "マイクロゲージ原価",
+                })
+            kensa_18_shared = _s("kensa_18")
+            if _is_checked(data.get("kensa_cb_6")):
+                for name_key, cyc_key, cost_key in (
+                    ("kensa_16", "kensa_17", "kensa_19"),
+                    ("kensa_20", "kensa_21", "kensa_22"),
+                    ("kensa_23", "kensa_24", "kensa_25"),
+                    ("kensa_26", "kensa_27", "kensa_28"),
+                    ("kensa_29", "kensa_30", "kensa_31"),
+                ):
+                    nm = _s(name_key)
+                    cy = _s(cyc_key)
+                    co = _s(cost_key)
+                    if nm or cy or co:
+                        _other_cost_col_map = {
+                            "kensa_19": "その他原価",
+                            "kensa_22": "その他原価2",
+                            "kensa_25": "その他原価3",
+                            "kensa_28": "その他原価4",
+                            "kensa_31": "その他原価5",
+                        }
+                        ins_rows.append({
+                            "label": nm,
+                            "cycle": cy,
+                            "rate": kensa_18_shared,
+                            "cost": co,
+                            "cost_col": _other_cost_col_map.get(cost_key, ""),
+                        })
+
+            # D24:G33 のみクリア。D34/G34 はテンプレ合計のため変更しない
+            for r in range(24, 34):
+                xwu.set_value(ws, f"D{r}", "")
+                xwu.set_value(ws, f"E{r}", None)
+                xwu.set_value(ws, f"F{r}", None)
+                xwu.set_value(ws, f"G{r}", None)
+            ins_cap = 10
+            for i, row in enumerate(ins_rows[:ins_cap]):
+                r = 24 + i
+                xwu.set_value(ws, f"D{r}", row["label"])
+                _set_efg(ws, "E", r, row["cycle"])
+                _set_efg(ws, "F", r, row["rate"])
+                _set_efg(ws, "G", r, row["cost"])
+
+            for r in range(35, 40):
+                xwu.set_value(ws, f"D{r}", "")
+                xwu.set_value(ws, f"E{r}", None)
+                xwu.set_value(ws, f"F{r}", None)
+                xwu.set_value(ws, f"G{r}", None)
+            f_in_2_disp = _s("f_in_2")
+            xwu.set_value(ws, "D35", f"管理費(社内,{f_in_2_disp}%)")
+            r_in = _rate_float_for_formula("f_in_2")
+            xwu.set_value(ws, "G35", f"=ROUNDUP(G34*{r_in}/100,2)")
+
+            surf_blocks = []
+            if _s("proc_32"):
+                surf_blocks.append(
+                    {
+                        "name": proc_32_name or _s("proc_32"),
+                        "cost": _s("proc_33"),
+                        "rate_key": "f_out_2",
+                    }
+                )
+            if _s("proc_34"):
+                surf_blocks.append(
+                    {
+                        "name": proc_34_name or _s("proc_34"),
+                        "cost": _s("proc_35"),
+                        "rate_key": "f_out_5",
+                    }
+                )
+            row_ext = 36
+            for idx, blk in enumerate(surf_blocks, start=1):
+                rate_disp = _s(blk["rate_key"])
+                r_out = _rate_float_for_formula(blk["rate_key"])
+                xwu.set_value(ws, f"D{row_ext}", f"表面処理({blk['name']})")
+                _set_efg(ws, "G", row_ext, blk["cost"])
+                xwu.set_value(ws, f"D{row_ext + 1}", f"管理費({rate_disp}%)")
+                xwu.set_value(ws, f"G{row_ext + 1}", f"=ROUNDUP(G{row_ext}*{r_out}/100,2)")
+                row_ext += 2
+
+            if _s("f_in_b2"):
+                xwu.set_value(ws, "G41", _rate_float_for_formula("f_in_b2") / 100)
+            else:
+                xwu.set_value(ws, "G41", None)
+
+            for r in (44, 45, 46):
+                xwu.clear_contents(ws, f"A{r}:G{r}")
+            xwu.clear_contents(ws, "J29:M29")
+            s8n = _s("soryo_8_name")
+            s13n = _s("soryo_13_name")
+            s29n = _s("soryo_29_name")
+            box_mode = str(data.get("est_soryo_box") or "").strip()
+            if box_mode == "1":
+                xwu.set_value(ws, "D44", f"運賃単価(入数：{_s('soryo_10')})")
+                _set_efg(ws, "G", 44, _s("soryo_7"))
+                xwu.set_value(ws, "A45", "梱包種類：段ボール")
+                xwu.set_value(ws, "D45", f"箱単価({s8n or _s('soryo_8')})")
+                _set_efg(ws, "G", 45, _s("soryo_12"))
+                xwu.set_value(ws, "D46", f"トレー単価({s13n or _s('soryo_13')})")
+                _set_efg(ws, "G", 46, _s("soryo_19"))
+            elif box_mode == "2":
+                xwu.set_value(ws, "D44", f"運賃単価(入数：{_s('soryo_27')})")
+                _set_efg(ws, "G", 44, _s("soryo_23"))
+                xwu.set_value(ws, "A45", "梱包種類：パレット")
+                if _s("soryo_24") == "自達":
+                    xwu.set_value(ws, "D45", f"箱単価({_s('soryo_25')})")
+                else:
+                    xwu.set_value(ws, "D45", "箱単価(箱支給)")
+                _set_efg(ws, "G", 45, _s("soryo_28"))
+                xwu.set_value(ws, "J29", f"トレー単価({s29n or _s('soryo_29')})")
+                _set_efg(ws, "M", 29, _s("soryo_35"))
+
+            def _txt(v):
+                if v is None:
+                    return ""
+                return str(v).strip()
+
+            def _parse_float_loose(v):
+                if v is None:
+                    return None
+                t = str(v).strip().replace(",", "").replace("，", "").replace(" ", "")
+                if not t:
+                    return None
+                try:
+                    return float(t)
+                except ValueError:
+                    return None
+
+            def _shipping_sum_from_row_dict(row_dict):
+                box = str(row_dict.get("使用箱切替") or "").strip()
+
+                def _z(key):
+                    x = _parse_float_loose(row_dict.get(key))
+                    return 0.0 if x is None else x
+
+                if box == "1":
+                    return _z("D運賃単価") + _z("D箱単価") + _z("Dトレー単価")
+                if box == "2":
+                    return _z("J運賃単価パレット") + _z("J箱単価") + _z("Jトレー単価")
                 return None
-            t = str(v).strip().replace(",", "").replace("，", "").replace(" ", "")
-            if not t:
-                return None
-            try:
-                return float(t)
-            except ValueError:
-                return None
 
-        def _shipping_sum_from_row_dict(row_dict):
-            """履歴1行: 送料単価 = 運賃単価 + 箱単価 + トレー単価（欠損は0扱い）。使用箱切替で列を切替。"""
-            box = str(row_dict.get("使用箱切替") or "").strip()
+            def _db_text(row_dict, col_name):
+                if not col_name:
+                    return ""
+                if col_name == "__CHARGE_TOTAL__":
+                    def _to_float(_v):
+                        t = str(_v or "").strip().replace(",", "")
+                        if not t:
+                            return None
+                        try:
+                            return float(t)
+                        except ValueError:
+                            return None
+                    _m = _to_float(row_dict.get("機械チャージ"))
+                    _k = _to_float(row_dict.get("検査チャージ"))
+                    _p = _to_float(row_dict.get("梱包チャージ"))
+                    if _m is not None and _k is not None and _p is not None:
+                        _sum = _m + _k + _p
+                        if abs(_sum - round(_sum)) < 1e-9:
+                            return str(int(round(_sum)))
+                        return f"{_sum:.2f}".rstrip("0").rstrip(".")
+                    return _txt(row_dict.get("チャージ金額"))
+                if col_name == "__SHIPPING_UNIT__":
+                    _ship = _shipping_sum_from_row_dict(row_dict)
+                    if _ship is None:
+                        return ""
+                    return str(_ship)
+                if col_name == "__TOTAL_UNIT__":
+                    _unit = _parse_float_loose(row_dict.get("見積単価"))
+                    _ship = _shipping_sum_from_row_dict(row_dict)
+                    if _unit is None or _ship is None:
+                        return ""
+                    _sum = _unit + _ship
+                    return str(_sum)
+                return _txt(row_dict.get(col_name))
 
-            def _z(key):
-                x = _parse_float_loose(row_dict.get(key))
-                return 0.0 if x is None else x
-
-            if box == "1":
-                return _z("D運賃単価") + _z("D箱単価") + _z("Dトレー単価")
-            if box == "2":
-                return _z("J運賃単価パレット") + _z("J箱単価") + _z("Jトレー単価")
-            return None
-
-        def _db_text(row_dict, col_name):
-            if not col_name:
-                return ""
-            if col_name == "__CHARGE_TOTAL__":
+            def _sum3_text(a, b, c, fallback=""):
                 def _to_float(_v):
                     t = str(_v or "").strip().replace(",", "")
                     if not t:
@@ -4523,219 +4607,137 @@ def api_est_calc_export_xlsx(payload=None):
                         return float(t)
                     except ValueError:
                         return None
-                _m = _to_float(row_dict.get("機械チャージ"))
-                _k = _to_float(row_dict.get("検査チャージ"))
-                _p = _to_float(row_dict.get("梱包チャージ"))
-                if _m is not None and _k is not None and _p is not None:
-                    _sum = _m + _k + _p
-                    if abs(_sum - round(_sum)) < 1e-9:
-                        return str(int(round(_sum)))
-                    return f"{_sum:.2f}".rstrip("0").rstrip(".")
-                return _txt(row_dict.get("チャージ金額"))
-            if col_name == "__SHIPPING_UNIT__":
-                _ship = _shipping_sum_from_row_dict(row_dict)
-                if _ship is None:
-                    return ""
-                return str(_ship)
-            if col_name == "__TOTAL_UNIT__":
-                _unit = _parse_float_loose(row_dict.get("見積単価"))
-                _ship = _shipping_sum_from_row_dict(row_dict)
-                if _unit is None or _ship is None:
-                    return ""
-                _sum = _unit + _ship
-                return str(_sum)
-            return _txt(row_dict.get(col_name))
+                _a = _to_float(a)
+                _b = _to_float(b)
+                _c = _to_float(c)
+                if _a is None or _b is None or _c is None:
+                    return _txt(fallback)
+                _sum = _a + _b + _c
+                if abs(_sum - round(_sum)) < 1e-9:
+                    return str(int(round(_sum)))
+                return f"{_sum:.2f}".rstrip("0").rstrip(".")
 
-        def _sum3_text(a, b, c, fallback=""):
-            def _to_float(_v):
-                t = str(_v or "").strip().replace(",", "")
-                if not t:
-                    return None
-                try:
-                    return float(t)
-                except ValueError:
-                    return None
-            _a = _to_float(a)
-            _b = _to_float(b)
-            _c = _to_float(c)
-            if _a is None or _b is None or _c is None:
-                return _txt(fallback)
-            _sum = _a + _b + _c
-            if abs(_sum - round(_sum)) < 1e-9:
-                return str(int(round(_sum)))
-            return f"{_sum:.2f}".rstrip("0").rstrip(".")
+            def _set_cmp_cell(rng, raw_val, number_format):
+                if number_format == "@":
+                    _v = _txt(raw_val)
+                    rng.value = None if _v == "" else _v
+                    rng.number_format = "@"
+                    return
+                _n = _excel_num(raw_val)
+                rng.value = _n
+                rng.number_format = number_format
 
-        def _set_cmp_cell(cell, raw_val, number_format):
-            if number_format == "@":
-                _v = _txt(raw_val)
-                cell.value = None if _v == "" else _v
-                cell.number_format = "@"
-                return
-            _n = _excel_num(raw_val)
-            cell.value = _n
-            cell.number_format = number_format
+            cmp_top_rows = [
+                {"row": 1, "d_value": est_6, "db_col": "ロットID", "fmt": "@"},
+                {"row": 3, "d_value": est_7, "db_col": "ロット数", "fmt": "#,##0"},
+                {"row": 4, "d_value": _s("f_ch_1"), "db_col": "チャージ材料費", "fmt": "#,##0.00"},
+                {"row": 5, "d_value": _s("f_ch_2"), "db_col": "チャージ刃工具費", "fmt": "#,##0.00"},
+                {"row": 6, "d_value": _s("f_ch_4"), "db_col": "チャージ表面処理費", "fmt": "#,##0.00"},
+                {"row": 7, "d_value": _s("f_ch_3"), "db_col": "チャージ社外管理費", "fmt": "#,##0.00"},
+                {"row": 8, "d_value": _s("f_ch_5"), "db_col": "チャージ検査費", "fmt": "#,##0.00"},
+                {"row": 9, "d_value": _s("f_ch_6"), "db_col": "チャージ梱包費", "fmt": "#,##0.00"},
+                {"row": 11, "d_value": _s("f_ch_7"), "db_col": "機械チャージ", "fmt": "#,##0.00"},
+                {"row": 12, "d_value": _s("f_ch_8"), "db_col": "検査チャージ", "fmt": "#,##0.00"},
+                {"row": 13, "d_value": _s("f_ch_9"), "db_col": "梱包チャージ", "fmt": "#,##0.00"},
+                {"row": 14, "d_value": est_11, "db_col": "日数", "fmt": "#,##0.00"},
+                {"row": 15, "d_value": _sum3_text(_s("f_ch_7"), _s("f_ch_8"), _s("f_ch_9"), _s("f_ch_10")), "db_col": "__CHARGE_TOTAL__", "fmt": "#,##0.00"},
+            ]
 
-        cmp_top_rows = [
-            {"row": 1, "d_value": est_6, "db_col": "ロットID", "fmt": "@"},
-            {"row": 3, "d_value": est_7, "db_col": "ロット数", "fmt": "#,##0"},
-            {"row": 4, "d_value": _s("f_ch_1"), "db_col": "チャージ材料費", "fmt": "#,##0.00"},
-            {"row": 5, "d_value": _s("f_ch_2"), "db_col": "チャージ刃工具費", "fmt": "#,##0.00"},
-            {"row": 6, "d_value": _s("f_ch_4"), "db_col": "チャージ表面処理費", "fmt": "#,##0.00"},
-            {"row": 7, "d_value": _s("f_ch_3"), "db_col": "チャージ社外管理費", "fmt": "#,##0.00"},
-            {"row": 8, "d_value": _s("f_ch_5"), "db_col": "チャージ検査費", "fmt": "#,##0.00"},
-            {"row": 9, "d_value": _s("f_ch_6"), "db_col": "チャージ梱包費", "fmt": "#,##0.00"},
-            {"row": 11, "d_value": _s("f_ch_7"), "db_col": "機械チャージ", "fmt": "#,##0.00"},
-            {"row": 12, "d_value": _s("f_ch_8"), "db_col": "検査チャージ", "fmt": "#,##0.00"},
-            {"row": 13, "d_value": _s("f_ch_9"), "db_col": "梱包チャージ", "fmt": "#,##0.00"},
-            {"row": 14, "d_value": est_11, "db_col": "日数", "fmt": "#,##0.00"},
-            {"row": 15, "d_value": _sum3_text(_s("f_ch_7"), _s("f_ch_8"), _s("f_ch_9"), _s("f_ch_10")), "db_col": "__CHARGE_TOTAL__", "fmt": "#,##0.00"},
-        ]
-
-        # 比較表シート C17〜: 項目列 + D列(画面値) + E列以降(履歴クエリ値)
-        cmp_rows = []
-        cmp_rows.append({"label": f"{mat_2_name}     {mat_1}", "d_value": _s("mat_19"), "db_col": "材料費入力"})
-        cmp_rows.append({"label": "材料単価", "d_value": mat_15, "db_col": "材料単価", "fmt": "#,##0"})
-        for row in rows[:8]:
-            cmp_rows.append({"label": row["label"], "d_value": row["cost"], "db_col": row.get("cost_col", "")})
-        if ins_rows:
+            cmp_rows = []
+            cmp_rows.append({"label": f"{mat_2_name}     {mat_1}", "d_value": _s("mat_19"), "db_col": "材料費入力"})
+            cmp_rows.append({"label": "材料単価", "d_value": mat_15, "db_col": "材料単価", "fmt": "#,##0"})
+            for row in rows[:8]:
+                cmp_rows.append({"label": row["label"], "d_value": row["cost"], "db_col": row.get("cost_col", "")})
+            if ins_rows:
+                cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
+            for row in ins_rows[:ins_cap]:
+                cmp_rows.append({"label": row["label"], "d_value": row["cost"], "db_col": row.get("cost_col", "")})
             cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
-        for row in ins_rows[:ins_cap]:
-            cmp_rows.append({"label": row["label"], "d_value": row["cost"], "db_col": row.get("cost_col", "")})
-        cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
-        cmp_rows.append({"label": "加工管理合計(社内)", "d_value": _s("f_in_1"), "db_col": "加工管理合計社内"})
-        cmp_rows.append({"label": "管理費率(社内)", "d_value": _s("f_in_2"), "db_col": "管理費率社内"})
-        cmp_rows.append({"label": "管理費(社内)", "d_value": _s("f_in_3"), "db_col": "管理費社内"})
-        if surf_blocks:
+            cmp_rows.append({"label": "加工管理合計(社内)", "d_value": _s("f_in_1"), "db_col": "加工管理合計社内"})
+            cmp_rows.append({"label": "管理費率(社内)", "d_value": _s("f_in_2"), "db_col": "管理費率社内"})
+            cmp_rows.append({"label": "管理費(社内)", "d_value": _s("f_in_3"), "db_col": "管理費社内"})
+            if surf_blocks:
+                cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
+                for idx, blk in enumerate(surf_blocks, start=1):
+                    if idx == 1:
+                        cmp_rows.append({"label": f"表面処理({blk['name']})", "d_value": _s("proc_33"), "db_col": "表面処理原価"})
+                        cmp_rows.append({"label": f"管理費率(社外{idx})", "d_value": _s("f_out_2"), "db_col": "管理費率社外"})
+                        cmp_rows.append({"label": f"管理費(社外{idx})", "d_value": _s("f_out_3"), "db_col": "管理費社外"})
+                    elif idx == 2:
+                        cmp_rows.append({"label": f"表面処理({blk['name']})", "d_value": _s("proc_35"), "db_col": "表面処理原価2"})
+                        cmp_rows.append({"label": f"管理費率(社外{idx})", "d_value": _s("f_out_5"), "db_col": "管理費率社外2"})
+                        cmp_rows.append({"label": f"管理費(社外{idx})", "d_value": _s("f_out_6"), "db_col": "管理費社外2"})
             cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
-            for idx, blk in enumerate(surf_blocks, start=1):
-                if idx == 1:
-                    cmp_rows.append({"label": f"表面処理({blk['name']})", "d_value": _s("proc_33"), "db_col": "表面処理原価"})
-                    cmp_rows.append({"label": f"管理費率(社外{idx})", "d_value": _s("f_out_2"), "db_col": "管理費率社外"})
-                    cmp_rows.append({"label": f"管理費(社外{idx})", "d_value": _s("f_out_3"), "db_col": "管理費社外"})
-                elif idx == 2:
-                    cmp_rows.append({"label": f"表面処理({blk['name']})", "d_value": _s("proc_35"), "db_col": "表面処理原価2"})
-                    cmp_rows.append({"label": f"管理費率(社外{idx})", "d_value": _s("f_out_5"), "db_col": "管理費率社外2"})
-                    cmp_rows.append({"label": f"管理費(社外{idx})", "d_value": _s("f_out_6"), "db_col": "管理費社外2"})
-        cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
-        cmp_rows.append({"label": "原価合計", "d_value": _s("f_in_b1"), "db_col": "原価合計"})
-        cmp_rows.append({"label": "粗利率", "d_value": _s("f_in_b2"), "db_col": "粗利率"})
-        cmp_rows.append({"label": "粗利", "d_value": _s("f_in_b3"), "db_col": "粗利"})
-        cmp_rows.append({"label": "見積単価", "d_value": _s("f_in_b4"), "db_col": "見積単価"})
-        cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
-        if box_mode == "1":
-            cmp_rows.append({"label": "運賃単価", "d_value": _s("soryo_7"), "db_col": "D運賃単価"})
-            cmp_rows.append({"label": "箱単価", "d_value": _s("soryo_12"), "db_col": "D箱単価"})
-            _tray_use = bool((s13n or "").strip() or (_s("soryo_13") or "").strip())
-            if _tray_use:
-                cmp_rows.append({"label": "トレー単価", "d_value": _s("soryo_19"), "db_col": "Dトレー単価"})
-            cmp_rows.append({"label": "送料単価", "d_value": _s("f_in_b5"), "db_col": "__SHIPPING_UNIT__"})
-        elif box_mode == "2":
-            cmp_rows.append({"label": "運賃単価", "d_value": _s("soryo_23"), "db_col": "J運賃単価パレット"})
-            cmp_rows.append({"label": "箱単価", "d_value": _s("soryo_28"), "db_col": "J箱単価"})
-            _tray_use2 = bool((s29n or "").strip() or (_s("soryo_29") or "").strip())
-            if _tray_use2:
-                cmp_rows.append({"label": "トレー単価", "d_value": _s("soryo_35"), "db_col": "Jトレー単価"})
-            cmp_rows.append({"label": "送料単価", "d_value": _s("f_in_b5"), "db_col": "__SHIPPING_UNIT__"})
-        cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
-        cmp_rows.append({"label": "合計単価", "d_value": _s("f_in_b6"), "db_col": "__TOTAL_UNIT__"})
+            cmp_rows.append({"label": "原価合計", "d_value": _s("f_in_b1"), "db_col": "原価合計"})
+            cmp_rows.append({"label": "粗利率", "d_value": _s("f_in_b2"), "db_col": "粗利率"})
+            cmp_rows.append({"label": "粗利", "d_value": _s("f_in_b3"), "db_col": "粗利"})
+            cmp_rows.append({"label": "見積単価", "d_value": _s("f_in_b4"), "db_col": "見積単価"})
+            cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
+            if box_mode == "1":
+                cmp_rows.append({"label": "運賃単価", "d_value": _s("soryo_7"), "db_col": "D運賃単価"})
+                cmp_rows.append({"label": "箱単価", "d_value": _s("soryo_12"), "db_col": "D箱単価"})
+                _tray_use = bool((s13n or "").strip() or (_s("soryo_13") or "").strip())
+                if _tray_use:
+                    cmp_rows.append({"label": "トレー単価", "d_value": _s("soryo_19"), "db_col": "Dトレー単価"})
+                cmp_rows.append({"label": "送料単価", "d_value": _s("f_in_b5"), "db_col": "__SHIPPING_UNIT__"})
+            elif box_mode == "2":
+                cmp_rows.append({"label": "運賃単価", "d_value": _s("soryo_23"), "db_col": "J運賃単価パレット"})
+                cmp_rows.append({"label": "箱単価", "d_value": _s("soryo_28"), "db_col": "J箱単価"})
+                _tray_use2 = bool((s29n or "").strip() or (_s("soryo_29") or "").strip())
+                if _tray_use2:
+                    cmp_rows.append({"label": "トレー単価", "d_value": _s("soryo_35"), "db_col": "Jトレー単価"})
+                cmp_rows.append({"label": "送料単価", "d_value": _s("f_in_b5"), "db_col": "__SHIPPING_UNIT__"})
+            cmp_rows.append({"label": "", "d_value": "", "db_col": ""})
+            cmp_rows.append({"label": "合計単価", "d_value": _s("f_in_b6"), "db_col": "__TOTAL_UNIT__"})
 
-        # 「比較表」シート: C17〜 項目列 / D列=画面値 / E列以降=履歴ロット値
-        if "比較表" in wb.sheetnames:
-            ws_cmp = wb["比較表"]
-            for _cc in range(4, 121):
+            if "比較表" in names:
+                ws_cmp = wb.sheets["比較表"]
                 for _rr in (1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15):
-                    _vclr = ws_cmp.cell(row=_rr, column=_cc)
-                    _vclr.value = None
-                    _vclr.number_format = "General"
-            for _rr in range(17, 400):
-                _cclr = ws_cmp.cell(row=_rr, column=3)
-                _cclr.value = None
-                _cclr.number_format = "General"
-            for _cc in range(4, 121):
-                for _rr in range(17, 400):
-                    _vclr = ws_cmp.cell(row=_rr, column=_cc)
-                    _vclr.value = None
-                    _vclr.number_format = "General"
-            for _top in cmp_top_rows:
-                _dcel = ws_cmp.cell(row=_top["row"], column=4)
-                _set_cmp_cell(_dcel, _top["d_value"], _top["fmt"])
-            _r_c = 17
-            for _row in cmp_rows:
-                _ccel = ws_cmp.cell(row=_r_c, column=3)
-                _ccel.value = None if _row["label"] == "" else str(_row["label"])
-                _ccel.number_format = "@"
-                _dcel = ws_cmp.cell(row=_r_c, column=4)
-                _set_cmp_cell(_dcel, _row["d_value"], _row.get("fmt", "#,##0.00"))
-                _r_c += 1
-
-            if est_5:
-                _cmp_start_col = 5
-                _cmp_clear_max_col = 120
-
-                conn_h = None
-                try:
-                    conn_h = get_connection()
-                    cur_h = conn_h.cursor()
-                    sql_h = (
-                        "SELECT * FROM (((((((t_原価見積履歴 "
-                        "LEFT JOIN t_原価見積情報 ON t_原価見積履歴.原価見積りID = t_原価見積情報.原価見積りID) "
-                        "LEFT JOIN t_原価見積材料 ON t_原価見積情報.ロットID = t_原価見積材料.ロットID) "
-                        "LEFT JOIN t_原価見積真鍮 ON t_原価見積情報.ロットID = t_原価見積真鍮.ロットID) "
-                        "LEFT JOIN t_原価見積加工管理 ON t_原価見積情報.ロットID = t_原価見積加工管理.ロットID) "
-                        "LEFT JOIN t_原価見積送料 ON t_原価見積情報.ロットID = t_原価見積送料.ロットID) "
-                        "LEFT JOIN t_原価見積計算チャージ ON t_原価見積情報.ロットID = t_原価見積計算チャージ.ロットID) "
-                        "LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード) "
-                        "LEFT JOIN t_客先マスタ ON t_原価見積履歴.客先コード = t_客先マスタ.コード "
-                        "WHERE t_原価見積履歴.原価見積りID = ? "
-                        "AND t_原価見積情報.使用フラグ <> 'Y' "
-                        "ORDER BY t_原価見積情報.ロットID ASC;"
+                    rng = ws_cmp.range((_rr, 4), (_rr, 120))
+                    rng.clear_contents()
+                    rng.number_format = "General"
+                rng_c = ws_cmp.range((17, 3), (399, 3))
+                rng_c.clear_contents()
+                rng_c.number_format = "General"
+                rng_v = ws_cmp.range((17, 4), (399, 120))
+                rng_v.clear_contents()
+                rng_v.number_format = "General"
+                for _top in cmp_top_rows:
+                    _set_cmp_cell(ws_cmp.range((_top["row"], 4)), _top["d_value"], _top["fmt"])
+                _r_c = 17
+                for _row in cmp_rows:
+                    _ccel = ws_cmp.range((_r_c, 3))
+                    _ccel.value = None if _row["label"] == "" else str(_row["label"])
+                    _ccel.number_format = "@"
+                    _set_cmp_cell(
+                        ws_cmp.range((_r_c, 4)),
+                        _row["d_value"],
+                        _row.get("fmt", "#,##0.00"),
                     )
-                    cur_h.execute(sql_h, [est_5])
-                    _lot_rows = cur_h.fetchall()
-                    _lot_cols = [d[0] for d in cur_h.description]
-                finally:
-                    if conn_h is not None:
-                        try:
-                            conn_h.close()
-                        except Exception:
-                            pass
+                    _r_c += 1
 
-                for _i, _row in enumerate(_lot_rows):
-                    _col = _cmp_start_col + _i
-                    if _col > _cmp_clear_max_col:
-                        break
-                    if not _row:
-                        continue
-                    _row_dict = {_lot_cols[_j]: _row[_j] for _j in range(min(len(_lot_cols), len(_row)))}
-                    for _top in cmp_top_rows:
-                        _tcel = ws_cmp.cell(row=_top["row"], column=_col)
-                        _tv = _db_text(_row_dict, _top["db_col"])
-                        _set_cmp_cell(_tcel, _tv, _top["fmt"])
-                    _r_v = 17
-                    for _cmp in cmp_rows:
-                        _vcel = ws_cmp.cell(row=_r_v, column=_col)
-                        _v = _db_text(_row_dict, _cmp["db_col"])
-                        _set_cmp_cell(_vcel, _v, _cmp.get("fmt", "#,##0.00"))
-                        _r_v += 1
-
-        # 原価見積初期費用（1件以上あるときのみ C51 と D〜G 列 51 行目から）
-        if est_5:
-            ic_rows = []
-            conn_ic = None
-            try:
-                conn_ic = get_connection()
-                cur_ic = conn_ic.cursor()
-                cur_ic.execute(
-                    "SELECT 品名, 数量, 単位, 金額 FROM t_原価見積初期費用 WHERE 原価見積りID = ?",
-                    [est_5],
-                )
-                ic_rows = cur_ic.fetchall()
-            finally:
-                if conn_ic is not None:
-                    try:
-                        conn_ic.close()
-                    except Exception:
-                        pass
+                if est_5:
+                    _cmp_start_col = 5
+                    _cmp_clear_max_col = 120
+                    for _i, _row in enumerate(_lot_rows):
+                        _col = _cmp_start_col + _i
+                        if _col > _cmp_clear_max_col:
+                            break
+                        if not _row:
+                            continue
+                        _row_dict = {_lot_cols[_j]: _row[_j] for _j in range(min(len(_lot_cols), len(_row)))}
+                        for _top in cmp_top_rows:
+                            _tv = _db_text(_row_dict, _top["db_col"])
+                            _set_cmp_cell(ws_cmp.range((_top["row"], _col)), _tv, _top["fmt"])
+                        _r_v = 17
+                        for _cmp in cmp_rows:
+                            _v = _db_text(_row_dict, _cmp["db_col"])
+                            _set_cmp_cell(
+                                ws_cmp.range((_r_v, _col)),
+                                _v,
+                                _cmp.get("fmt", "#,##0.00"),
+                            )
+                            _r_v += 1
 
             if ic_rows:
                 start_r = 51
@@ -4745,17 +4747,20 @@ def api_est_calc_export_xlsx(payload=None):
                     suryo = ic_row[1] if len(ic_row) > 1 else None
                     tani = "" if len(ic_row) < 3 or ic_row[2] is None else str(ic_row[2])
                     kingaku = ic_row[3] if len(ic_row) > 3 else None
-                    ws[f"D{r}"] = hinmei
+                    xwu.set_value(ws, f"D{r}", hinmei)
                     _set_efg(ws, "E", r, suryo)
-                    ws[f"F{r}"] = tani
+                    xwu.set_value(ws, f"F{r}", tani)
                     _set_efg(ws, "G", r, kingaku)
 
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
+        raw = xwu.export_bytes_from_template(
+            EXCEL_TEMPLATE_PATH,
+            _fill_est_book,
+            activate_sheet="原価見積りシート",
+            activate_cell="A1",
+        )
         return {
             "ok": True,
-            "_xlsx_bytes": output.getvalue(),
+            "_xlsx_bytes": raw,
             "_xlsx_name": download_name,
         }
     except Exception as e:
@@ -5539,6 +5544,56 @@ def api_search_delete_estimate(payload=None):
             except Exception:
                 pass
 
+
+def api_search_delete_quote(payload=None):
+    """見積り管理 編集モーダル: 見積りID に紐づく関連データを削除"""
+    data = payload or {}
+    quote_id = str(data.get("quote_id") or data.get("見積りID") or "").strip()
+    if not quote_id:
+        return {"error": "見積りIDが必要です"}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # 加工費ID 経由で紐づく梱包・表面処理を先に削除
+        cur.execute("SELECT ID FROM t_加工費 WHERE 見積りID = ?", (quote_id,))
+        proc_ids = []
+        for r in cur.fetchall():
+            if not r or r[0] is None:
+                continue
+            proc_ids.append(r[0])
+
+        for pid in proc_ids:
+            cur.execute("DELETE FROM t_梱包輸送費 WHERE 加工費ID = ?", (pid,))
+            cur.execute("DELETE FROM t_表面処理費 WHERE 加工費ID = ?", (pid,))
+
+        # 見積りID 一致の各テーブルを削除
+        cur.execute("DELETE FROM t_見積り履歴 WHERE 見積りID = ?", (quote_id,))
+        cur.execute("DELETE FROM t_材料費 WHERE 見積りID = ?", (quote_id,))
+        cur.execute("DELETE FROM t_真鍮材料 WHERE 見積りID = ?", (quote_id,))
+        cur.execute("DELETE FROM t_加工費 WHERE 見積りID = ?", (quote_id,))
+        cur.execute("DELETE FROM t_初期費用 WHERE 見積りID = ?", (quote_id,))
+        cur.execute("DELETE FROM t_諸条件 WHERE 見積りID = ?", (quote_id,))
+        cur.execute("DELETE FROM t_記載備考 WHERE 見積りID = ?", (quote_id,))
+
+        conn.commit()
+        return {"ok": True, "quote_id": quote_id}
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 def api_search_conditions(payload=None):
     """search.html からの条件指定検索API"""
     sales_id = ((payload or {}).get('sales_id') or '').strip()
@@ -5546,6 +5601,8 @@ def api_search_conditions(payload=None):
     part_no = ((payload or {}).get('part_no') or '').strip()
     part_name = ((payload or {}).get('part_name') or '').strip()
     estimate_id = ((payload or {}).get('estimate_id') or '').strip()
+    order_by = ((payload or {}).get("order_by") or "").strip()
+    order_dir = ((payload or {}).get("order_dir") or "").strip()
 
     # すべて未指定ならフロント側で弾く想定だが、念のためチェック
     if not any([sales_id, customer_code, part_no, part_name, estimate_id]):
@@ -5587,7 +5644,9 @@ def api_search_conditions(payload=None):
     if conditions:
         sql += " WHERE " + " AND ".join(conditions)
 
-    sql += " ORDER BY t_原価見積履歴.原価見積りID"
+    sql += _search_order_clause(
+        _COST_QUOTE_SEARCH_ORDER_MAP, order_by, order_dir, "t_原価見積履歴.原価見積りID"
+    )
 
     try:
         conn = get_connection()

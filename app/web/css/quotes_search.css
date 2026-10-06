@@ -36,8 +36,9 @@
 
 .search-main .search-form-grid {
   display: grid;
-  grid-template-columns: minmax(calc(320px * var(--ui-scale, 1)), calc(420px * var(--ui-scale, 1)));
+  grid-template-columns: repeat(2, minmax(calc(240px * var(--ui-scale, 1)), calc(320px * var(--ui-scale, 1))));
   gap: calc(10px * var(--ui-scale, 1));
+  align-items: end;
 }
 
 .search-main .search-form-item {
@@ -57,10 +58,20 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: calc(8px * var(--ui-scale, 1));
 }
 
 .search-new-btn {
-  margin-left: calc(100px * var(--ui-scale, 1));
+  margin-left: 0;
+}
+
+.search-actions .search-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(34px * var(--ui-scale, 1));
+  box-sizing: border-box;
 }
 
 .search-result-status {

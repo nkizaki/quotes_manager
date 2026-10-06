@@ -5,6 +5,8 @@
     "/api/bootstrap": "bootstrap",
     "/api/config/font-size": "set_font_size",
     "/api/config/font-size-get": "get_font_size",
+    "/api/config/search-prefs-get": "get_search_prefs",
+    "/api/config/search-prefs-set": "set_search_prefs",
     "/api/search/page": "get_search_page",
     "/api/est_calc/page": "get_est_calc_page",
     "/api/quote_calc/page": "get_quote_calc_page",
@@ -76,6 +78,7 @@
     "/api/register_estimate": "register_estimate",
     "/api/update_estimate_history": "update_estimate_history",
     "/api/search_delete_estimate": "search_delete_estimate",
+    "/api/search_delete_quote": "search_delete_quote",
     "/api/search": "api_search",
   };
 

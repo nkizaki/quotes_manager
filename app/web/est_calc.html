@@ -18,15 +18,7 @@
     <div class="search-header-inner ship-insp-sub-header-inner quotes-header-inner">
       <a href="cost_quotes.html" class="ship-insp-back-btn">戻る</a>
       <h1 class="search-header-title est-calc-header-title">原価見積り計算</h1>
-      <span class="search-header-version" id="app-version"></span>
-      <span id="app-dev-badge" hidden style="color: red; font-weight: bold;">開発モード</span>
-      <div class="quotes-header-actions">
-        <button type="button" class="est-reset-inputs-btn search-btn">入力欄の初期化</button>
-        <button type="button" class="est-download-btn search-btn">xlsx形式で見積書をダウンロード</button>
-        <button type="button" class="est-save-btn search-btn">見積り保存</button>
-        <button type="button" class="est-add-btn search-btn">見積り追加</button>
-        <button type="button" class="est-delete-btn search-btn">見積り削除</button>
-      </div>
+      <button type="button" class="est-delete-muted-btn est-reset-inputs-btn">入力欄の初期化</button>
     </div>
   </header>
   <div class="est-page-layout">
@@ -64,66 +56,80 @@
     </div>
 
     <div class="kihon-grid">
-      <!-- 1行目: est-1 品番, est-2 品名（文字列。数値の桁区切り・小数整形は est_calc.js で対象外） -->
-      <div class="kihon-item kihon-span-1-2">
+      <!-- 1行目: 操作ボタン -->
+      <div class="kihon-item kihon-col-1 kihon-row-1 kihon-action">
+        <button type="button" class="est-download-btn">見積書作成</button>
+      </div>
+      <div class="kihon-item kihon-col-2 kihon-row-1 kihon-action">
+        <button type="button" class="est-save-btn">見積り保存</button>
+      </div>
+      <div class="kihon-item kihon-col-3 kihon-row-1 kihon-action">
+        <button type="button" class="est-save-btn est-add-btn">見積り追加</button>
+      </div>
+      <div class="kihon-item kihon-col-4 kihon-row-1 kihon-action">
+        <button type="button" class="est-delete-btn">見積り削除</button>
+      </div>
+
+      <!-- 2行目: est-1 品番, est-2 品名（文字列。数値の桁区切り・小数整形は est_calc.js で対象外） -->
+      <div class="kihon-item kihon-span-1-2 kihon-row-2">
         <label for="est-1">品番</label>
         <input type="text" id="est-1" name="est_kihon_1" value="" placeholder="" inputmode="text" autocomplete="off" spellcheck="false">
       </div>
-      <div class="kihon-item kihon-span-3-4">
+      <div class="kihon-item kihon-span-3-4 kihon-row-2">
         <label for="est-2">品名</label>
         <input type="text" id="est-2" name="est_kihon_2" value="" placeholder="" inputmode="text" autocomplete="off" spellcheck="false">
       </div>
 
-      <!-- 2行目: est-3 客先名, est-4 営業担当 -->
-      <div class="kihon-item kihon-span-1-2 kihon-row-2">
+      <!-- 3行目: est-3 客先名, est-4 営業担当 -->
+      <div class="kihon-item kihon-span-1-2 kihon-row-3">
         <label for="est-3">客先名</label>
         <input type="text" id="est-3" name="est_kihon_3" value="" placeholder="">
       </div>
-      <div class="kihon-empty kihon-row-2 kihon-col-3"></div>
-      <div class="kihon-item kihon-col-4 kihon-row-2">
+      <div class="kihon-empty kihon-row-3 kihon-col-3"></div>
+      <div class="kihon-item kihon-col-4 kihon-row-3">
         <label for="est-4">営業担当</label>
         <input type="text" id="est-4" name="est_kihon_4" value="" placeholder="">
       </div>
 
-      <!-- 3行目: est-5 原価見積りID, est-6 使用中ロットID, est-7 ロット数 -->
-      <div class="kihon-item kihon-row-3">
+      <!-- 4行目: est-5 原価見積りID, est-6 使用中ロットID, est-7 ロット数 -->
+      <div class="kihon-item kihon-row-4">
         <label for="est-5">原価見積りID</label>
         <input type="text" id="est-5" name="est_kihon_5" value="" placeholder="">
       </div>
-      <div class="kihon-item kihon-row-3">
+      <div class="kihon-item kihon-row-4">
         <label for="est-6">使用中ロットID</label>
         <input type="text" id="est-6" name="est_kihon_6" value="" placeholder="">
       </div>
-      <div class="kihon-empty kihon-row-3 kihon-col-3"></div>
-      <div class="kihon-item kihon-row-3">
+      <div class="kihon-empty kihon-row-4 kihon-col-3"></div>
+      <div class="kihon-item kihon-row-4">
         <label for="est-7">ロット数</label>
         <input type="text" id="est-7" name="est_kihon_7" value="" placeholder="">
       </div>
 
-      <!-- 4行目: est-8 C/T, est-9〜est-10 日産数, est-11 日数 -->
-      <div class="kihon-item kihon-row-4">
+      <!-- 5行目: est-8 C/T, est-9〜est-10 日産数, est-11 日数 -->
+      <div class="kihon-item kihon-row-5">
         <label for="est-8">C/T</label>
         <input type="text" id="est-8" name="est_kihon_8" value="" placeholder="">
       </div>
-      <div class="kihon-item kihon-row-4">
+      <div class="kihon-item kihon-row-5">
         <label for="est-9">日産数</label>
         <input type="text" id="est-9" name="est_kihon_9" value="" placeholder="">
       </div>
-      <div class="kihon-item kihon-row-4">
+      <div class="kihon-item kihon-row-5">
         <label for="est-10">日産数</label>
         <input type="text" id="est-10" name="est_kihon_10" value="" placeholder="">
       </div>
-      <div class="kihon-item kihon-row-4">
+      <div class="kihon-item kihon-row-5">
         <label for="est-11">日数</label>
         <input type="text" id="est-11" name="est_kihon_11" value="" placeholder="">
       </div>
 
-      <!-- 5行目: est-12 補正用入力 -->
-      <div class="kihon-empty kihon-row-5 kihon-col-1"></div>
-      <div class="kihon-item kihon-row-5 kihon-span-2-3 kihon-hint-cell">
+      <!-- 6行目: est-12 補正用入力 -->
+      <div class="kihon-empty kihon-row-6 kihon-col-1"></div>
+      <div class="kihon-item kihon-row-6 kihon-span-2-3 kihon-hint-cell">
         <span class="kihon-hint-right" aria-hidden="true">1以下の時に補正(小数点以下2桁まで)→</span>
       </div>
-      <div class="kihon-item kihon-col-4 kihon-row-5">
+      <div class="kihon-item kihon-col-4 kihon-row-6">
         <label for="est-12"></label>
         <input type="text" id="est-12" name="est_kihon_12" value="" placeholder="">
       </div>

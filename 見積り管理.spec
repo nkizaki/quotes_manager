@@ -13,7 +13,7 @@ hiddenimports = [
     'win32api',
     'psycopg2',
     'psycopg2._psycopg',
-    'openpyxl',
+    'xlwings',
     'app',
     'app.api',
     'app.webview_app',
@@ -22,11 +22,12 @@ hiddenimports = [
     'app.pg_map',
     'app.name_maps',
     'app.quotes_service',
+    'app.excel_xlwings_util',
     'app.user_config',
     'loadenv',
 ]
 hiddenimports += collect_submodules('webview')
-hiddenimports += collect_submodules('openpyxl')
+hiddenimports += collect_submodules('xlwings')
 
 _webview_datas = collect_data_files('webview', subdir='js')
 _webview_binaries = []

@@ -36,8 +36,9 @@
 
 .search-main .search-form-grid {
   display: grid;
-  grid-template-columns: minmax(calc(320px * var(--ui-scale, 1)), calc(420px * var(--ui-scale, 1)));
+  grid-template-columns: repeat(2, minmax(calc(240px * var(--ui-scale, 1)), calc(320px * var(--ui-scale, 1))));
   gap: calc(10px * var(--ui-scale, 1));
+  align-items: end;
 }
 
 .search-main .search-form-item {
@@ -60,7 +61,7 @@
 }
 
 .search-new-btn {
-  margin-left: calc(100px * var(--ui-scale, 1));
+  margin-left: 0;
 }
 
 .search-result-status {

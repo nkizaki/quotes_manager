@@ -6,6 +6,7 @@
   const hinbanInput = document.getElementById('hinban');
   const hinmeiInput = document.getElementById('hinmei');
   const genkaIdInput = document.getElementById('genka-id');
+  const orderColSelect = document.getElementById('search-order-col');
   const searchBtn = document.getElementById('search-btn');
   const searchNewBtn = document.getElementById('search-new-btn');
   const searchLoading = document.getElementById('search-loading');
@@ -15,11 +16,16 @@
   const footerNew = document.getElementById('search-subwindow-footer-new');
   const footerEdit = document.getElementById('search-subwindow-footer-edit');
   const newSalesSelect = document.getElementById('new-sales-select');
+  const newRequestDateInput = document.getElementById('new-request-date');
   const newKanriNoInput = document.getElementById('new-kanri-no');
   const newCustomerSelect = document.getElementById('new-customer-select');
+  const newDepartmentInput = document.getElementById('new-department');
+  const newContactInput = document.getElementById('new-contact');
   const newHinbanInput = document.getElementById('new-hinban');
   const newHinmeiInput = document.getElementById('new-hinmei');
+  const newSubmissionDateInput = document.getElementById('new-submission-date');
   const newBikouInput = document.getElementById('new-bikou');
+  const newOnlyFields = document.querySelectorAll('.search-subwindow-new-only');
   const newRegisterBtn = document.getElementById('search-new-register-btn');
   const editSaveBtn = document.getElementById('search-edit-save-btn');
   const editDeleteBtn = document.getElementById('search-edit-delete-btn');
@@ -172,12 +178,19 @@
     }
   }
 
+  function setNewOnlyFieldsVisible(visible) {
+    newOnlyFields.forEach(function (el) {
+      el.hidden = !visible;
+    });
+  }
+
   function prepareSubwindowNew() {
     subwindowMode = 'new';
     editingEstimateId = '';
     if (subwindowTitleEl) subwindowTitleEl.textContent = '新規';
     if (footerNew) footerNew.hidden = false;
     if (footerEdit) footerEdit.hidden = true;
+    setNewOnlyFieldsVisible(true);
     resetNewForm();
   }
 
@@ -189,6 +202,11 @@
     if (subwindowTitleEl) subwindowTitleEl.textContent = '編集';
     if (footerNew) footerNew.hidden = true;
     if (footerEdit) footerEdit.hidden = false;
+    setNewOnlyFieldsVisible(false);
+    if (newRequestDateInput) newRequestDateInput.value = '';
+    if (newDepartmentInput) newDepartmentInput.value = '';
+    if (newContactInput) newContactInput.value = '';
+    if (newSubmissionDateInput) newSubmissionDateInput.value = '';
     fillFormFromSearchRow(row);
   }
 
@@ -333,10 +351,14 @@
 
   function resetNewForm() {
     if (newSalesSelect) newSalesSelect.value = '';
+    if (newRequestDateInput) newRequestDateInput.value = '';
     if (newKanriNoInput) newKanriNoInput.value = '';
     if (newCustomerSelect) newCustomerSelect.value = '';
+    if (newDepartmentInput) newDepartmentInput.value = '';
+    if (newContactInput) newContactInput.value = '';
     if (newHinbanInput) newHinbanInput.value = '';
     if (newHinmeiInput) newHinmeiInput.value = '';
+    if (newSubmissionDateInput) newSubmissionDateInput.value = '';
     if (newBikouInput) newBikouInput.value = '';
   }
 
@@ -494,7 +516,7 @@
       missing.push('品番');
     }
     if (missing.length > 0) {
-      alert('必須項目を入力してください。\n\n・' + missing.join('\n・'));
+      void showAlertModal('必須項目を入力してください。\n\n・' + missing.join('\n・'));
       return false;
     }
     return true;
@@ -543,12 +565,12 @@
         })
         .then(function (out) {
           if (!out.ok || out.data.error) {
-            alert(out.data.error || '登録に失敗しました');
+            void showAlertModal(out.data.error || '登録に失敗しました');
             return;
           }
           const row = out.data.row;
           if (!row || typeof row !== 'object') {
-            alert('登録は完了しましたが、検索結果用のデータを取得できませんでした。');
+            void showAlertModal('登録は完了しましたが、検索結果用のデータを取得できませんでした。');
             return;
           }
           cachedSearchRows = [row];
@@ -557,7 +579,7 @@
           openRegisterDone();
         })
         .catch(function (err) {
-          alert('通信エラー: ' + err.message);
+          void showAlertModal('通信エラー: ' + err.message);
         });
     });
   }
@@ -579,7 +601,7 @@
   function onEditSaveClick() {
     if (subwindowMode !== 'edit') return;
     if (!editingEstimateId) {
-      alert('原価見積りIDがありません');
+      void showAlertModal('原価見積りIDがありません');
       return;
     }
     if (!validateNewRegisterForm()) return;
@@ -599,7 +621,7 @@
       const eid = editingEstimateId;
       closeUpdateConfirm();
       if (!eid) {
-        alert('原価見積りIDがありません');
+        void showAlertModal('原価見積りIDがありません');
         return;
       }
 
@@ -633,12 +655,12 @@
         })
         .then(function (out) {
           if (!out.ok || out.data.error) {
-            alert(out.data.error || '更新に失敗しました');
+            void showAlertModal(out.data.error || '更新に失敗しました');
             return;
           }
           const row = out.data.row;
           if (!row || typeof row !== 'object') {
-            alert('更新は完了しましたが、検索結果用のデータを取得できませんでした。');
+            void showAlertModal('更新は完了しましたが、検索結果用のデータを取得できませんでした。');
             openUpdateDone();
             return;
           }
@@ -655,7 +677,7 @@
           openUpdateDone();
         })
         .catch(function (err) {
-          alert('通信エラー: ' + err.message);
+          void showAlertModal('通信エラー: ' + err.message);
         });
     });
   }
@@ -678,7 +700,7 @@
       const eid = editingEstimateId;
       closeDeleteConfirm();
       if (!eid) {
-        alert('原価見積りIDがありません');
+        void showAlertModal('原価見積りIDがありません');
         return;
       }
       fetch('/api/search_delete_estimate', {
@@ -701,13 +723,13 @@
         })
         .then(function (out) {
           if (!out.ok || out.data.error) {
-            alert(out.data.error || '削除に失敗しました');
+            void showAlertModal(out.data.error || '削除に失敗しました');
             return;
           }
           openDeleteDone();
         })
         .catch(function (err) {
-          alert('通信エラー: ' + err.message);
+          void showAlertModal('通信エラー: ' + err.message);
         });
     });
   }
@@ -726,7 +748,7 @@
     editDeleteBtn.addEventListener('click', function () {
       if (subwindowMode !== 'edit') return;
       if (!editingEstimateId) {
-        alert('原価見積りIDがありません');
+        void showAlertModal('原価見積りIDがありません');
         return;
       }
       openDeleteConfirm();
@@ -743,13 +765,68 @@
     resultMessage.textContent = text;
   }
 
+  function getOrderDir() {
+    const checked = document.querySelector('input[name="search-order-dir"]:checked');
+    return checked && checked.value === 'desc' ? 'desc' : 'asc';
+  }
+
+  function setOrderDir(dir) {
+    const value = dir === 'desc' ? 'desc' : 'asc';
+    document.querySelectorAll('input[name="search-order-dir"]').forEach(function (radio) {
+      radio.checked = radio.value === value;
+    });
+  }
+
+  function collectSearchPrefs() {
+    return {
+      sales_id: salesSelect ? salesSelect.value.trim() : '',
+      customer_code: customerSelect ? customerSelect.value.trim() : '',
+      part_no: hinbanInput ? hinbanInput.value.trim() : '',
+      part_name: hinmeiInput ? hinmeiInput.value.trim() : '',
+      estimate_id: genkaIdInput ? genkaIdInput.value.trim() : '',
+      order_by: orderColSelect ? (orderColSelect.value.trim() || '原価見積りID') : '原価見積りID',
+      order_dir: getOrderDir(),
+    };
+  }
+
+  function applySearchPrefs(prefs) {
+    if (!prefs || typeof prefs !== 'object') return;
+    if (salesSelect && prefs.sales_id != null) salesSelect.value = String(prefs.sales_id);
+    if (customerSelect && prefs.customer_code != null) {
+      customerSelect.value = String(prefs.customer_code);
+    }
+    if (hinbanInput && prefs.part_no != null) hinbanInput.value = String(prefs.part_no);
+    if (hinmeiInput && prefs.part_name != null) hinmeiInput.value = String(prefs.part_name);
+    if (genkaIdInput && prefs.estimate_id != null) genkaIdInput.value = String(prefs.estimate_id);
+    if (orderColSelect && prefs.order_by) {
+      orderColSelect.value = String(prefs.order_by);
+      if (orderColSelect.value !== String(prefs.order_by)) {
+        orderColSelect.value = '原価見積りID';
+      }
+    }
+    setOrderDir(prefs.order_dir);
+  }
+
+  function saveSearchPrefs() {
+    if (typeof window.quotesApi !== 'function') return Promise.resolve();
+    return window
+      .quotesApi('/api/config/search-prefs-set', {
+        kind: 'cost_quote',
+        prefs: collectSearchPrefs(),
+      })
+      .catch(function (err) {
+        console.error(err);
+      });
+  }
+
   /** 画面上部の条件で検索し直す（削除後の更新用。条件なしは 0 件表示） */
   function refreshSearchResults() {
-    const salesId = salesSelect.value.trim();
-    const customerCode = customerSelect.value.trim();
-    const partNo = hinbanInput.value.trim();
-    const partName = hinmeiInput.value.trim();
-    const estimateId = genkaIdInput.value.trim();
+    const prefs = collectSearchPrefs();
+    const salesId = prefs.sales_id;
+    const customerCode = prefs.customer_code;
+    const partNo = prefs.part_no;
+    const partName = prefs.part_name;
+    const estimateId = prefs.estimate_id;
 
     if (!salesId && !customerCode && !partNo && !partName && !estimateId) {
       cachedSearchRows = [];
@@ -765,6 +842,8 @@
     if (partNo) params.append('part_no', partNo);
     if (partName) params.append('part_name', partName);
     if (estimateId) params.append('estimate_id', estimateId);
+    params.append('order_by', prefs.order_by);
+    params.append('order_dir', prefs.order_dir);
 
     setResultMessage('検索結果：検索中...');
     setSearchLoading(true);
@@ -773,16 +852,17 @@
       .then(res => res.json())
       .then(data => {
         if (data.error) {
-          alert(data.error);
+          void showAlertModal(data.error);
           setResultMessage('検索結果：');
           return;
         }
         cachedSearchRows = data.rows ? data.rows.slice() : [];
         setResultMessage('検索結果：' + cachedSearchRows.length + ' 件');
         renderTable(cachedSearchRows);
+        void saveSearchPrefs();
       })
       .catch(err => {
-        alert('通信エラー: ' + err.message);
+        void showAlertModal('通信エラー: ' + err.message);
         setResultMessage('検索結果：');
       })
       .finally(function () {
@@ -792,13 +872,14 @@
 
   if (searchBtn) {
     searchBtn.addEventListener('click', function () {
-      const salesId = salesSelect.value.trim();
-      const customerCode = customerSelect.value.trim();
-      const partNo = hinbanInput.value.trim();
-      const partName = hinmeiInput.value.trim();
-      const estimateId = genkaIdInput.value.trim();
-
-      if (!salesId && !customerCode && !partNo && !partName && !estimateId) {
+      const prefs = collectSearchPrefs();
+      if (
+        !prefs.sales_id &&
+        !prefs.customer_code &&
+        !prefs.part_no &&
+        !prefs.part_name &&
+        !prefs.estimate_id
+      ) {
         void showAlertModal('条件を最低1つ指定してください');
         return;
       }
@@ -807,4 +888,19 @@
   }
 
   prepareSubwindowNew();
+
+  (async function restoreSearchPrefs() {
+    try {
+      if (typeof window.quotesApi !== 'function') return;
+      const prefsRes = await window.quotesApi('/api/config/search-prefs-get', {
+        kind: 'cost_quote',
+      });
+      if (prefsRes && prefsRes.has_prefs && prefsRes.prefs) {
+        applySearchPrefs(prefsRes.prefs);
+        refreshSearchResults();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  })();
 })();

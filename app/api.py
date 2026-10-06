@@ -8,7 +8,15 @@ from typing import Any
 import loadenv
 import webview
 from app.display_info import get_display_info
-from app.user_config import ensure_user_config, get_font_size_percent, set_font_size_percent
+from app.user_config import (
+    ensure_user_config,
+    get_font_size_percent,
+    get_last_save_folder,
+    get_search_prefs,
+    set_font_size_percent,
+    set_last_save_folder,
+    set_search_prefs,
+)
 from app import quotes_service as svc
 from app import quote_masters_service as qms
 
@@ -66,6 +74,29 @@ class Api:
         try:
             data = set_font_size_percent(payload.get("font_size_percent", payload.get("value")))
             return {"ok": True, "font_size_percent": data["font_size_percent"]}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    def get_search_prefs(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = payload or {}
+        kind = str(payload.get("kind") or "").strip()
+        try:
+            prefs = get_search_prefs(kind)
+            if prefs is None:
+                return {"ok": True, "has_prefs": False, "prefs": None}
+            return {"ok": True, "has_prefs": True, "prefs": prefs}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    def set_search_prefs(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = payload or {}
+        kind = str(payload.get("kind") or "").strip()
+        prefs = payload.get("prefs") if isinstance(payload.get("prefs"), dict) else payload
+        try:
+            result = set_search_prefs(kind, prefs)
+            if result.get("ok") is False:
+                return _json_safe(result)
+            return {"ok": True, "prefs": result.get("prefs")}
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
 
@@ -147,22 +178,32 @@ class Api:
             name = result.get("_xlsx_name") or "見積書.xlsx"
             if not raw:
                 return {"error": "見積書作成に失敗しました"}
-            if not webview.windows:
-                return {"ok": False, "error": "ウィンドウが初期化されていません。"}
-            window = webview.windows[0]
-            dest = window.create_file_dialog(
-                webview.SAVE_DIALOG,
-                save_filename=str(name),
-                file_types=("Excel Files (*.xlsx)",),
-            )
-            if not dest:
-                return {"ok": False, "cancelled": True}
-            path = dest[0] if isinstance(dest, (list, tuple)) else dest
-            with open(path, "wb") as f:
-                f.write(raw)
-            return {"ok": True, "path": str(path)}
+            return self._save_xlsx_with_dialog(raw, name)
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
+
+    def _save_xlsx_with_dialog(self, raw, name: str) -> dict[str, Any]:
+        """保存ダイアログ表示 → 書き込み → 最終保存フォルダを config.json に記録。"""
+        if not webview.windows:
+            return {"ok": False, "error": "ウィンドウが初期化されていません。"}
+        window = webview.windows[0]
+        directory = get_last_save_folder()
+        dest = window.create_file_dialog(
+            webview.SAVE_DIALOG,
+            directory=directory,
+            save_filename=str(name),
+            file_types=("Excel Files (*.xlsx)",),
+        )
+        if not dest:
+            return {"ok": False, "cancelled": True}
+        path = dest[0] if isinstance(dest, (list, tuple)) else dest
+        with open(path, "wb") as f:
+            f.write(raw)
+        try:
+            set_last_save_folder(path)
+        except Exception:
+            pass
+        return {"ok": True, "path": str(path)}
 
     def est_calc_set_lot(self, payload=None):
         return _call(svc.api_est_calc_set_lot, payload)
@@ -201,20 +242,7 @@ class Api:
             name = result.get("_xlsx_name") or "原価見積書.xlsx"
             if not raw:
                 return {"error": "Excel出力に失敗しました"}
-            if not webview.windows:
-                return {"ok": False, "error": "ウィンドウが初期化されていません。"}
-            window = webview.windows[0]
-            dest = window.create_file_dialog(
-                webview.SAVE_DIALOG,
-                save_filename=str(name),
-                file_types=("Excel Files (*.xlsx)",),
-            )
-            if not dest:
-                return {"ok": False, "cancelled": True}
-            path = dest[0] if isinstance(dest, (list, tuple)) else dest
-            with open(path, "wb") as f:
-                f.write(raw)
-            return {"ok": True, "path": str(path)}
+            return self._save_xlsx_with_dialog(raw, name)
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
 
@@ -331,6 +359,9 @@ class Api:
 
     def search_delete_estimate(self, payload=None):
         return _call(svc.api_search_delete_estimate, payload)
+
+    def search_delete_quote(self, payload=None):
+        return _call(svc.api_search_delete_quote, payload)
 
     def api_search(self, payload=None):
         return _call(svc.api_search, payload)
