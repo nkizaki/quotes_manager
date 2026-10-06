@@ -118,6 +118,7 @@
     "mat-6",
     "mat-10",
     "mat-15",
+    "br-2",
     "br-3",
     "br-4",
     "br-8",
@@ -1133,7 +1134,7 @@
     el.addEventListener("change", applyProc5ModeAndCosts);
   });
 
-  function sanitizeNumericInputValue(raw, allowDecimal) {
+  function sanitizeNumericInputValue(raw, allowDecimal, maxDecimalPlaces) {
     var cleaned;
     if (allowDecimal) {
       cleaned = String(raw || "").replace(/[^0-9.]/g, "");
@@ -1141,6 +1142,11 @@
       if (firstDot !== -1) {
         cleaned =
           cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+        if (maxDecimalPlaces != null && Number.isFinite(maxDecimalPlaces) && maxDecimalPlaces >= 0) {
+          cleaned =
+            cleaned.slice(0, firstDot + 1) +
+            cleaned.slice(firstDot + 1, firstDot + 1 + maxDecimalPlaces);
+        }
       }
     } else {
       cleaned = String(raw || "").replace(/[^0-9]/g, "");
@@ -1151,10 +1157,20 @@
   function bindNumericOnlyInput(inputEl, options) {
     if (!inputEl) return;
     var allowDecimal = !options || options.allowDecimal !== false;
-    var lastValidValue = sanitizeNumericInputValue(inputEl.value || "", allowDecimal);
+    var maxDecimalPlaces =
+      options && options.maxDecimalPlaces != null ? options.maxDecimalPlaces : null;
+    var lastValidValue = sanitizeNumericInputValue(
+      inputEl.value || "",
+      allowDecimal,
+      maxDecimalPlaces
+    );
     // ページ読込・setInputValue 後の基準ずれを防ぐ
     inputEl.addEventListener("focus", function () {
-      lastValidValue = sanitizeNumericInputValue(inputEl.value || "", allowDecimal);
+      lastValidValue = sanitizeNumericInputValue(
+        inputEl.value || "",
+        allowDecimal,
+        maxDecimalPlaces
+      );
     });
     inputEl.addEventListener("keydown", function (e) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1168,7 +1184,7 @@
       "input",
       function (e) {
         var raw = inputEl.value || "";
-        var cleaned = sanitizeNumericInputValue(raw, allowDecimal);
+        var cleaned = sanitizeNumericInputValue(raw, allowDecimal, maxDecimalPlaces);
         if (cleaned !== raw) inputEl.value = cleaned;
         if (cleaned === lastValidValue) {
           e.stopImmediatePropagation();
@@ -1185,7 +1201,16 @@
       var el = document.getElementById(id);
       if (!el || el.tagName !== "INPUT") return;
       var allowDecimal = !TEXTBOX_DISPLAY_NO_FRACTION_SET[id];
-      bindNumericOnlyInput(el, { allowDecimal: allowDecimal });
+      if (!allowDecimal) {
+        bindNumericOnlyInput(el, { allowDecimal: false });
+        return;
+      }
+      // 賃率など第3位表示の欄は入力も第3位まで。それ以外は第2位まで
+      var maxDecimalPlaces = TEXTBOX_DISPLAY_DECIMAL_3_SET[id] ? 3 : 2;
+      bindNumericOnlyInput(el, {
+        allowDecimal: true,
+        maxDecimalPlaces: maxDecimalPlaces,
+      });
     });
   }
 

@@ -459,9 +459,9 @@ body.quote-calc-page {
   z-index: 1;
 }
 
+/* font-size は quotes.css の #lot-table と同じ（th: 12px / td: 継承） */
 .quote-calc-page #qc-proc-table th,
 .quote-calc-page #qc-proc-table td {
-  font-size: calc(12px * var(--font-scale, 1));
   white-space: nowrap;
 }
 

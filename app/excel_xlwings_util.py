@@ -23,15 +23,22 @@ def set_value(ws, addr, value) -> None:
         rng.value = value
 
 
+def set_number_format(rng, number_format: str) -> None:
+    """NumberFormat 設定。結合セル等で失敗しても握りつぶす。"""
+    try:
+        rng.number_format = number_format
+    except Exception:
+        try:
+            rng[0, 0].number_format = number_format
+        except Exception:
+            pass
+
+
 def set_number(ws, addr, value, number_format: str | None = None) -> None:
     rng = ws.range(addr)
     rng.value = value
     if number_format is not None:
-        rng.number_format = number_format
-
-
-def clear_contents(ws, addr) -> None:
-    ws.range(addr).clear_contents()
+        set_number_format(rng, number_format)
 
 
 def export_bytes_from_template(

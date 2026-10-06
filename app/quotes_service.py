@@ -49,6 +49,31 @@ def _initial_cost_parse_long_for_save(raw, label_jp):
     except (InvalidOperation, ValueError, TypeError, OverflowError) as e:
         raise ValueError(f"{label_jp}の値が不正です") from e
 
+
+def _to_db_int(raw, *, empty=0):
+    """画面表示の小数（'1.00' 等）を DB integer 列向けに整数化する。"""
+    if raw is None:
+        return empty
+    s = str(raw).strip().replace(",", "")
+    if s == "":
+        return empty
+    try:
+        return int(Decimal(s).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    except (InvalidOperation, ValueError, TypeError, OverflowError):
+        return empty
+
+
+# t_原価見積真鍮 の integer 列に対応するフォームキー
+_EST_BRASS_INT_KEYS = frozenset({
+    "shinchuu_r1",  # RM区分
+    "shinchuu_r2",  # 重量計算区分
+    "br_2",         # N社価格
+    "br_3",         # 建値
+    "br_4",         # 増値
+    "br_7",         # スクラップベース
+})
+
+
 def _json_safe_cell_value(v):
     """pyodbc のセル値を jsonify 可能な型に変換する"""
     if v is None:
@@ -3365,6 +3390,8 @@ def api_est_calc_add_estimate_lot(payload=None):
 
             def _val(key):
                 v = data.get(key)
+                if key in _EST_BRASS_INT_KEYS:
+                    return _to_db_int(v)
                 if key in nz_zero_keys:
                     if v is None:
                         return "0"
@@ -3376,21 +3403,26 @@ def api_est_calc_add_estimate_lot(payload=None):
                     return ""
                 return str(v)
 
+            try:
+                lot_id_param = int(str(lot_id).strip())
+            except (ValueError, TypeError):
+                return {"error": "lot_id が不正です"}
+
             def _run_upsert(cur, table_name, pairs):
-                cur.execute(f"SELECT COUNT(*) FROM {table_name} WHERE [ロットID] = ?", [lot_id])
+                cur.execute(f"SELECT COUNT(*) FROM {table_name} WHERE [ロットID] = ?", [lot_id_param])
                 cnt_row = cur.fetchone()
                 exists = bool(cnt_row and cnt_row[0] and cnt_row[0] > 0)
 
                 if exists:
                     for col, key in pairs:
                         sql = f"UPDATE {table_name} SET [{col}] = ? WHERE [ロットID] = ?"
-                        params = [_val(key), lot_id]
+                        params = [_val(key), lot_id_param]
                         cur.execute(sql, params)
                 else:
                     cols = "[ロットID], " + ", ".join([f"[{col}]" for col, _ in pairs])
                     placeholders = ", ".join(["?"] * (len(pairs) + 1))
                     sql = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
-                    params = [lot_id] + [_val(k) for _, k in pairs]
+                    params = [lot_id_param] + [_val(k) for _, k in pairs]
                     cur.execute(sql, params)
 
             # t_原価見積情報
@@ -3711,6 +3743,8 @@ def api_est_calc_pre_export_save(payload=None):
 
     def _val(key):
         v = data.get(key)
+        if key in _EST_BRASS_INT_KEYS:
+            return _to_db_int(v)
         if key in nz_zero_keys:
             if v is None:
                 return "0"
@@ -3722,38 +3756,26 @@ def api_est_calc_pre_export_save(payload=None):
             return ""
         return str(v)
 
+    try:
+        lot_id_param = int(str(lot_id).strip())
+    except (ValueError, TypeError):
+        return {"error": "lot_id が不正です"}
+
     def _run_upsert(cur, table_name, pairs):
-        cur.execute(f"SELECT COUNT(*) FROM {table_name} WHERE [ロットID] = ?", [lot_id])
+        cur.execute(f"SELECT COUNT(*) FROM {table_name} WHERE [ロットID] = ?", [lot_id_param])
         cnt_row = cur.fetchone()
         exists = bool(cnt_row and cnt_row[0] and cnt_row[0] > 0)
 
-        # if exists:
-        #     set_clause = ", ".join([f"[{col}] = ?" for col, _ in pairs])
-        #     sql = f"UPDATE {table_name} SET {set_clause} WHERE [ロットID] = ?"
-        #     params = [_val(k) for _, k in pairs] + [lot_id]
-        #     cur.execute(sql, params)
-
-        # 検証用クエリ
         if exists:
-            for col, key in pairs:
-                sql = f"UPDATE {table_name} SET [{col}] = ? WHERE [ロットID] = ?"
-                params = [_val(key), lot_id]
-                try:
-                    cur.execute(sql, params)
-                except Exception as e:
-                    print(f"エラー: {e}")
-                    print(f"SQL: {sql}")
-                    print(f"Params: {params}")
-                    print(f"Table: {table_name}")
-                    print(f"Key: {key}")
-                    print(f"Value: {_val(key)}")
-                    print(f"Lot ID: {lot_id}")
-        
+            set_clause = ", ".join([f"[{col}] = ?" for col, _ in pairs])
+            sql = f"UPDATE {table_name} SET {set_clause} WHERE [ロットID] = ?"
+            params = [_val(k) for _, k in pairs] + [lot_id_param]
+            cur.execute(sql, params)
         else:
             cols = "[ロットID], " + ", ".join([f"[{col}]" for col, _ in pairs])
             placeholders = ", ".join(["?"] * (len(pairs) + 1))
             sql = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
-            params = [lot_id] + [_val(k) for _, k in pairs]
+            params = [lot_id_param] + [_val(k) for _, k in pairs]
             cur.execute(sql, params)
 
     conn = None
@@ -3813,7 +3835,7 @@ def api_est_calc_pre_export_save(payload=None):
         else:
             cur.execute(
                 "DELETE FROM t_原価見積真鍮 WHERE [ロットID] = ?",
-                [lot_id],
+                [lot_id_param],
             )
 
         # t_原価見積加工管理
@@ -4239,17 +4261,17 @@ def api_est_calc_export_xlsx(payload=None):
             conn_h = get_connection()
             cur_h = conn_h.cursor()
             sql_h = (
-                "SELECT * FROM (((((((t_原価見積履歴 "
-                "LEFT JOIN t_原価見積情報 ON t_原価見積履歴.原価見積りID = t_原価見積情報.原価見積りID) "
-                "LEFT JOIN t_原価見積材料 ON t_原価見積情報.ロットID = t_原価見積材料.ロットID) "
-                "LEFT JOIN t_原価見積真鍮 ON t_原価見積情報.ロットID = t_原価見積真鍮.ロットID) "
-                "LEFT JOIN t_原価見積加工管理 ON t_原価見積情報.ロットID = t_原価見積加工管理.ロットID) "
-                "LEFT JOIN t_原価見積送料 ON t_原価見積情報.ロットID = t_原価見積送料.ロットID) "
-                "LEFT JOIN t_原価見積計算チャージ ON t_原価見積情報.ロットID = t_原価見積計算チャージ.ロットID) "
-                "LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード) "
+                "SELECT * FROM t_原価見積履歴 "
+                "LEFT JOIN t_原価見積情報 ON t_原価見積履歴.原価見積りID = t_原価見積情報.原価見積りID "
+                "LEFT JOIN t_原価見積材料 ON t_原価見積情報.ロットID = t_原価見積材料.ロットID "
+                "LEFT JOIN t_原価見積真鍮 ON t_原価見積情報.ロットID = t_原価見積真鍮.ロットID "
+                "LEFT JOIN t_原価見積加工管理 ON t_原価見積情報.ロットID = t_原価見積加工管理.ロットID "
+                "LEFT JOIN t_原価見積送料 ON t_原価見積情報.ロットID = t_原価見積送料.ロットID "
+                "LEFT JOIN t_原価見積計算チャージ ON t_原価見積情報.ロットID = t_原価見積計算チャージ.ロットID "
+                "LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード "
                 "LEFT JOIN t_客先マスタ ON t_原価見積履歴.客先コード = t_客先マスタ.コード "
                 "WHERE t_原価見積履歴.原価見積りID = ? "
-                "AND t_原価見積情報.使用フラグ <> 'Y' "
+                "AND COALESCE(t_原価見積情報.使用フラグ, '') <> 'Y' "
                 "ORDER BY t_原価見積情報.ロットID ASC;"
             )
             cur_h.execute(sql_h, [est_5])
@@ -4308,7 +4330,7 @@ def api_est_calc_export_xlsx(payload=None):
             rows = []
 
             rows.append({
-                "label": f"切削({proc_5_name}",
+                "label": f"切削({proc_5_name})",
                 "cycle": _s("proc_6"),
                 "rate": _s("proc_7"),
                 "cost": _s("proc_8"),
@@ -4322,7 +4344,7 @@ def api_est_calc_export_xlsx(payload=None):
                 "cost_col": "刃工具原価",
             })
             rows.append({
-                "label": f"セット費(ガイド{'有' if guide_on else '無'}, {_s('proc_10')}H, 数量:{est_7}, 費用:{_s('proc_12')})",
+                "label": f"セット費(ガイド{'無' if guide_on else '有'}, {_s('proc_10')}H, 数量:{est_7}, 費用:{_s('proc_12')})",
                 "cycle": "",
                 "rate": "",
                 "cost": _s("proc_13"),
@@ -4470,8 +4492,12 @@ def api_est_calc_export_xlsx(payload=None):
                 xwu.set_value(ws, f"E{r}", None)
                 xwu.set_value(ws, f"F{r}", None)
                 xwu.set_value(ws, f"G{r}", None)
-            f_in_2_disp = _s("f_in_2")
-            xwu.set_value(ws, "D35", f"管理費(社内,{f_in_2_disp}%)")
+            
+            if _s("f_in_2"):
+                f_in_2_disp = _s("f_in_2")
+            else:
+                f_in_2_disp = '0'
+            xwu.set_value(ws, "D35", f"管理費(社内、{f_in_2_disp}%)")
             r_in = _rate_float_for_formula("f_in_2")
             xwu.set_value(ws, "G35", f"=ROUNDUP(G34*{r_in}/100,2)")
 
@@ -4507,9 +4533,6 @@ def api_est_calc_export_xlsx(payload=None):
             else:
                 xwu.set_value(ws, "G41", None)
 
-            for r in (44, 45, 46):
-                xwu.clear_contents(ws, f"A{r}:G{r}")
-            xwu.clear_contents(ws, "J29:M29")
             s8n = _s("soryo_8_name")
             s13n = _s("soryo_13_name")
             s29n = _s("soryo_29_name")
@@ -4517,7 +4540,7 @@ def api_est_calc_export_xlsx(payload=None):
             if box_mode == "1":
                 xwu.set_value(ws, "D44", f"運賃単価(入数：{_s('soryo_10')})")
                 _set_efg(ws, "G", 44, _s("soryo_7"))
-                xwu.set_value(ws, "A45", "梱包種類：段ボール")
+                xwu.set_value(ws, "A45", "梱包種類：段ボール(ヤマト)")
                 xwu.set_value(ws, "D45", f"箱単価({s8n or _s('soryo_8')})")
                 _set_efg(ws, "G", 45, _s("soryo_12"))
                 xwu.set_value(ws, "D46", f"トレー単価({s13n or _s('soryo_13')})")
@@ -4621,11 +4644,11 @@ def api_est_calc_export_xlsx(payload=None):
                 if number_format == "@":
                     _v = _txt(raw_val)
                     rng.value = None if _v == "" else _v
-                    rng.number_format = "@"
+                    xwu.set_number_format(rng, "@")
                     return
                 _n = _excel_num(raw_val)
                 rng.value = _n
-                rng.number_format = number_format
+                xwu.set_number_format(rng, number_format)
 
             cmp_top_rows = [
                 {"row": 1, "d_value": est_6, "db_col": "ロットID", "fmt": "@"},
@@ -4692,23 +4715,13 @@ def api_est_calc_export_xlsx(payload=None):
 
             if "比較表" in names:
                 ws_cmp = wb.sheets["比較表"]
-                for _rr in (1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15):
-                    rng = ws_cmp.range((_rr, 4), (_rr, 120))
-                    rng.clear_contents()
-                    rng.number_format = "General"
-                rng_c = ws_cmp.range((17, 3), (399, 3))
-                rng_c.clear_contents()
-                rng_c.number_format = "General"
-                rng_v = ws_cmp.range((17, 4), (399, 120))
-                rng_v.clear_contents()
-                rng_v.number_format = "General"
                 for _top in cmp_top_rows:
                     _set_cmp_cell(ws_cmp.range((_top["row"], 4)), _top["d_value"], _top["fmt"])
                 _r_c = 17
                 for _row in cmp_rows:
                     _ccel = ws_cmp.range((_r_c, 3))
                     _ccel.value = None if _row["label"] == "" else str(_row["label"])
-                    _ccel.number_format = "@"
+                    xwu.set_number_format(_ccel, "@")
                     _set_cmp_cell(
                         ws_cmp.range((_r_c, 4)),
                         _row["d_value"],
@@ -4718,10 +4731,10 @@ def api_est_calc_export_xlsx(payload=None):
 
                 if est_5:
                     _cmp_start_col = 5
-                    _cmp_clear_max_col = 120
+                    _cmp_max_col = 120
                     for _i, _row in enumerate(_lot_rows):
                         _col = _cmp_start_col + _i
-                        if _col > _cmp_clear_max_col:
+                        if _col > _cmp_max_col:
                             break
                         if not _row:
                             continue

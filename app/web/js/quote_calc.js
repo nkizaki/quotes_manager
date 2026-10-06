@@ -1143,6 +1143,7 @@
       "qc-mat-pieces-input",
       "qc-mat-gravity",
       "qc-mat-unit-price",
+      "qc-br-n-price",
       "qc-proc-lot",
       "qc-proc-ct",
       "qc-proc-daily-2",
@@ -1156,7 +1157,6 @@
       "qc-mat-cutoff",
       "qc-mat-yield",
       "qc-mat-cost-input",
-      "qc-br-n-price",
       "qc-br-unit-weight",
       "qc-br-scrap-w",
       "qc-br-scrap-base",
@@ -1175,10 +1175,7 @@
     integerIds.forEach(function (id) {
       bindNumericOnlyInput(document.getElementById(id), { allowDecimal: false });
     });
-    decimalIds.forEach(function (id) {
-      bindNumericOnlyInput(document.getElementById(id), { allowDecimal: true });
-    });
-    procDecimalIds.forEach(function (id) {
+    decimalIds.concat(procDecimalIds).forEach(function (id) {
       bindNumericOnlyInput(document.getElementById(id), {
         allowDecimal: true,
         maxDecimalPlaces: 2,
