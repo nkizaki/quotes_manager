@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import base64
+import os
+import subprocess
+import sys
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -182,8 +185,22 @@ class Api:
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
 
+    def _open_saved_file(self, path: str) -> None:
+        """保存したファイルを OS 既定アプリで開く（失敗しても握りつぶす）。"""
+        try:
+            if sys.platform.startswith("win"):
+                os.startfile(path)  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", path])
+            else:
+                subprocess.Popen(["xdg-open", path])
+        except Exception:
+            pass
+
+    _XLSX_FILE_IN_USE_MSG = "同じ名前のExcelが開かれているため\n保存に失敗しました"
+
     def _save_xlsx_with_dialog(self, raw, name: str) -> dict[str, Any]:
-        """保存ダイアログ表示 → 書き込み → 最終保存フォルダを config.json に記録。"""
+        """保存ダイアログ表示 → 書き込み → 最終保存フォルダを config.json に記録 → ファイルを開く。"""
         if not webview.windows:
             return {"ok": False, "error": "ウィンドウが初期化されていません。"}
         window = webview.windows[0]
@@ -197,13 +214,30 @@ class Api:
         if not dest:
             return {"ok": False, "cancelled": True}
         path = dest[0] if isinstance(dest, (list, tuple)) else dest
-        with open(path, "wb") as f:
-            f.write(raw)
+        path = str(path)
+        try:
+            with open(path, "wb") as f:
+                f.write(raw)
+        except PermissionError:
+            return {
+                "ok": False,
+                "error_code": "file_in_use",
+                "error": self._XLSX_FILE_IN_USE_MSG,
+            }
+        except OSError as exc:
+            if getattr(exc, "errno", None) == 13:
+                return {
+                    "ok": False,
+                    "error_code": "file_in_use",
+                    "error": self._XLSX_FILE_IN_USE_MSG,
+                }
+            raise
         try:
             set_last_save_folder(path)
         except Exception:
             pass
-        return {"ok": True, "path": str(path)}
+        self._open_saved_file(path)
+        return {"ok": True, "path": path}
 
     def est_calc_set_lot(self, payload=None):
         return _call(svc.api_est_calc_set_lot, payload)
@@ -335,6 +369,22 @@ class Api:
 
     def machine_charge_master_delete(self, payload=None):
         return _call(qms.api_machine_charge_master_delete, payload)
+
+    def cost_quote_margin_summary_export_xlsx(self, payload=None):
+        """粗利率集計 xlsx を生成し、保存ダイアログで書き出す。"""
+        try:
+            result = svc.api_cost_quote_margin_summary_export_xlsx(payload or {})
+            if not isinstance(result, dict) or result.get("error"):
+                return _json_safe(
+                    result if isinstance(result, dict) else {"error": "集計エクスポートに失敗しました"}
+                )
+            raw = result.get("_xlsx_bytes")
+            name = result.get("_xlsx_name") or "原価見積_粗利集計.xlsx"
+            if not raw:
+                return {"error": "集計エクスポートに失敗しました"}
+            return self._save_xlsx_with_dialog(raw, name)
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
 
     def search_conditions(self, payload=None):
         return _call(svc.api_search_conditions, payload)

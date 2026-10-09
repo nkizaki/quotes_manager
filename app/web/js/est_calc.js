@@ -325,6 +325,12 @@
       if (!el) return;
       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
         el.readOnly = true;
+        el.tabIndex = -1;
+        el.classList.add("dynamic-disabled");
+        var itemEl = el.closest(
+          ".kihon-item, .zairyo-item, .shinchuu-item, .kakou-item, .kensa-item, .soryo-card-item, .soryo-nittou-item, .soryo-plastic-item"
+        );
+        if (itemEl) itemEl.classList.add("field-disabled");
       }
     });
   }
@@ -370,7 +376,15 @@
 
   function setInputReadonlyWithBase(inputEl, disabledBySection) {
     if (!inputEl) return;
-    inputEl.readOnly = !!disabledBySection || !!alwaysReadonlySet[inputEl.id];
+    var blocked = !!disabledBySection || !!alwaysReadonlySet[inputEl.id];
+    inputEl.readOnly = blocked;
+    if (blocked) {
+      inputEl.tabIndex = -1;
+      inputEl.classList.add("dynamic-disabled");
+    } else {
+      if (inputEl.tabIndex < 0) inputEl.removeAttribute("tabindex");
+      inputEl.classList.remove("dynamic-disabled");
+    }
   }
 
   function setSectionDisabled(options) {
@@ -384,9 +398,10 @@
       var inputEl = document.getElementById(id);
       setInputReadonlyWithBase(inputEl, disabled);
       if (inputEl) {
-        inputEl.classList.toggle("dynamic-disabled", disabled);
+        var blocked = disabled || !!alwaysReadonlySet[inputEl.id];
+        inputEl.classList.toggle("dynamic-disabled", blocked);
         var itemEl = inputEl.closest(".kakou-item, .kensa-item, .soryo-card-item, .soryo-nittou-item, .soryo-plastic-item");
-        if (itemEl) itemEl.classList.toggle("field-disabled", disabled);
+        if (itemEl) itemEl.classList.toggle("field-disabled", blocked);
       }
     });
     selectIds.forEach(function (id) {
@@ -394,6 +409,8 @@
       if (el) {
         el.disabled = disabled;
         el.classList.toggle("dynamic-disabled", disabled);
+        if (disabled) el.tabIndex = -1;
+        else el.removeAttribute("tabindex");
         var itemEl = el.closest(".kakou-item, .kensa-item, .soryo-card-item, .soryo-nittou-item, .soryo-plastic-item");
         if (itemEl) itemEl.classList.toggle("field-disabled", disabled);
       }
@@ -428,10 +445,15 @@
 
     shinchuuInputs.forEach(function (inputEl) {
       setInputReadonlyWithBase(inputEl, !enabled);
+      inputEl.classList.toggle("dynamic-disabled", !enabled || !!alwaysReadonlySet[inputEl.id]);
+      var itemEl = inputEl.closest(".shinchuu-item");
+      if (itemEl) itemEl.classList.toggle("field-disabled", !enabled || !!alwaysReadonlySet[inputEl.id]);
     });
 
     shinchuuRadios.forEach(function (radioEl) {
       radioEl.disabled = !enabled;
+      if (!enabled) radioEl.tabIndex = -1;
+      else radioEl.removeAttribute("tabindex");
     });
 
     if (shinchuuGrid) {
@@ -465,12 +487,16 @@
     if (item6) item6.classList.remove("field-disabled");
     if (!isScrap) {
       br5.readOnly = false;
+      br5.removeAttribute("tabindex");
       br6.readOnly = true;
+      br6.tabIndex = -1;
       br6.classList.add("dynamic-disabled");
       if (item6) item6.classList.add("field-disabled");
     } else {
       br6.readOnly = false;
+      br6.removeAttribute("tabindex");
       br5.readOnly = true;
+      br5.tabIndex = -1;
       br5.classList.add("dynamic-disabled");
       if (item5) item5.classList.add("field-disabled");
     }
@@ -789,6 +815,8 @@
       setInputValue("soryo-26", "");
       b25.readOnly = true;
       b26.readOnly = true;
+      b25.tabIndex = -1;
+      b26.tabIndex = -1;
       b25.classList.add("dynamic-disabled");
       b26.classList.add("dynamic-disabled");
       b25.style.backgroundColor = "";
@@ -800,14 +828,14 @@
     } else {
       setInputReadonlyWithBase(b25, false);
       setInputReadonlyWithBase(b26, false);
-      b25.classList.remove("dynamic-disabled");
-      b26.classList.remove("dynamic-disabled");
+      b25.classList.toggle("dynamic-disabled", !!alwaysReadonlySet[b25.id]);
+      b26.classList.toggle("dynamic-disabled", !!alwaysReadonlySet[b26.id]);
       b25.style.backgroundColor = "";
       b26.style.backgroundColor = "";
       var item25b = b25.closest(".soryo-plastic-item");
       var item26b = b26.closest(".soryo-plastic-item");
-      if (item25b) item25b.classList.remove("field-disabled");
-      if (item26b) item26b.classList.remove("field-disabled");
+      if (item25b) item25b.classList.toggle("field-disabled", !!alwaysReadonlySet[b25.id]);
+      if (item26b) item26b.classList.toggle("field-disabled", !!alwaysReadonlySet[b26.id]);
     }
   }
 
@@ -1692,10 +1720,23 @@
     return n === null ? 0 : n;
   }
 
+  /**
+   * 単価系の切り上げ（既定: 小数第2位）。
+   * 1) 小数点第4位を四捨五入（小数第3位まで）
+   * 2) ×100 → +0.9 → 小数切り捨て → ÷100
+   * 例: 0.5→0.50 / 0.333…→0.34 / 0.166…→0.17
+   */
   function ceilToDecimals(x, places) {
-    var p = Math.pow(10, places);
-    // 浮動小数誤差で 0.01 だけ不正に繰り上がるのを防ぐ
-    return Math.ceil((x - 1e-9) * p) / p;
+    if (!Number.isFinite(x)) return x;
+    if (places !== 2) {
+      var p = Math.pow(10, places);
+      return Math.ceil((x - 1e-9) * p) / p;
+    }
+    // 小数第3位までに四捨五入（第4位を見て丸める）。整数千分率で後続演算し誤差を避ける
+    var thousandths = Math.round((x + 1e-9) * 1000);
+    // floor(thousandths/10 + 0.9) = floor((thousandths + 9) / 10)
+    var cents = Math.floor((thousandths + 9) / 10);
+    return cents / 100;
   }
 
   function roundToDecimals(x, places) {
@@ -2195,7 +2236,7 @@
 
   /**
    * サイクル×賃率で原価を自動計算する。
-   * 小数第3位で切り上げ（= 小数第2位まで）し、0.01 以下は 0.01 を下限にする。
+   * ceilToDecimals（第4位四捨五入→+0.9切り上げ）し、0.01 以下は 0.01 を下限にする。
    */
   function calcCostFromCycleAndRate(cycleId, rateId, costId, cbId) {
     if (cbId && !isCbChecked(cbId)) return false;
@@ -2779,15 +2820,7 @@
     payload.f_in_b4 = getValue("f-in-b4");
     payload.f_in_b5 = getValue("f-in-b5");
     payload.f_in_b6 = getValue("f-in-b6");
-    for (i = 1; i <= 10; i++) {
-      if (i === 3) {
-        payload.f_ch_3 = getValue("f-ch-4");
-      } else if (i === 4) {
-        payload.f_ch_4 = getValue("f-ch-3");
-      } else {
-        payload["f_ch_" + i] = getValue("f-ch-" + i);
-      }
-    }
+    for (i = 1; i <= 10; i++) payload["f_ch_" + i] = getValue("f-ch-" + i);
     return payload;
   }
 
@@ -2841,10 +2874,32 @@
           return;
         }
         if (!res.ok || (data && data.error && data.ok !== true)) {
-          throw new Error((data && data.error) || "Excel出力に失敗しました");
+          var err = new Error((data && data.error) || "Excel出力に失敗しました");
+          err.error_code = data && data.error_code;
+          throw err;
         }
       });
     });
+  }
+
+  function showXlsxFileInUseDialog() {
+    return new Promise(function (resolve) {
+      buildConfirmModal({
+        title: "確認",
+        message: "同じ名前のExcelが開かれているため\n保存に失敗しました",
+        buttons: [{ label: "はい", value: true, primary: true }],
+        onClose: function () {
+          resolve();
+        },
+      });
+    });
+  }
+
+  function isXlsxFileInUseError(err) {
+    if (!err) return false;
+    if (err.error_code === "file_in_use") return true;
+    var msg = String(err.message || err || "");
+    return msg.indexOf("Errno 13") >= 0 || msg.indexOf("同じ名前のExcel") >= 0;
   }
 
   if (resetInputsBtn) {
@@ -2874,7 +2929,10 @@
           return exportExcel();
         })
         .catch(function (err) {
-          alert("処理に失敗しました: " + err.message);
+          if (isXlsxFileInUseError(err)) {
+            return showXlsxFileInUseDialog();
+          }
+          alert("処理に失敗しました: " + (err && err.message ? err.message : String(err)));
         });
     });
   }
@@ -3152,73 +3210,8 @@
   formatAllRateTextBoxesTo3();
   applyConditionalTextboxBackgrounds();
 
-  /**
-   * Enter で Tab と同様に次の入力項目へ移動する。
-   * テキストエリア・ボタン・ダイアログ内は対象外。readonly / disabled は飛ばす。
-   */
-  function bindEnterMovesToNextField() {
-    document.addEventListener("keydown", function (e) {
-      if (e.key !== "Enter") return;
-      if (e.isComposing || e.keyCode === 229) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      var el = e.target;
-      if (!el || !el.tagName) return;
-      var tag = el.tagName;
-      if (tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
-      if (tag !== "INPUT" && tag !== "SELECT") return;
-      if (el.type === "button" || el.type === "submit" || el.type === "reset") return;
-      if (el.closest(".search-dialog-overlay, [role='alertdialog'], [role='dialog']")) return;
-
-      e.preventDefault();
-      var next = findNextEnterFocusTarget(el);
-      if (!next) return;
-      next.focus();
-      if (typeof next.select === "function" && next.tagName === "INPUT" && next.type === "text") {
-        try {
-          next.select();
-        } catch (err) {
-          /* ignore */
-        }
-      }
-    });
+  /* Enter / Tab: 入力可能な項目のみ（page_common.js） */
+  if (typeof window.quotesBindEditableFieldFocusNav === "function") {
+    window.quotesBindEditableFieldFocusNav();
   }
-
-  function isEnterFocusTarget(el) {
-    if (!el || el.disabled) return false;
-    if (el.tabIndex < 0) return false;
-    if (el.readOnly) return false;
-    var tag = el.tagName;
-    if (tag !== "INPUT" && tag !== "SELECT") return false;
-    if (el.type === "hidden" || el.type === "button" || el.type === "submit" || el.type === "reset") {
-      return false;
-    }
-    if (el.offsetParent === null && el.getClientRects().length === 0) return false;
-    if (el.closest("[hidden]")) return false;
-    return true;
-  }
-
-  function findNextEnterFocusTarget(current) {
-    var candidates = document.querySelectorAll("input, select");
-    var list = [];
-    for (var i = 0; i < candidates.length; i++) {
-      if (isEnterFocusTarget(candidates[i])) list.push(candidates[i]);
-    }
-    var idx = list.indexOf(current);
-    if (idx < 0) {
-      for (var j = 0; j < candidates.length; j++) {
-        if (candidates[j] === current) {
-          for (var k = j + 1; k < candidates.length; k++) {
-            if (isEnterFocusTarget(candidates[k])) return candidates[k];
-          }
-          return null;
-        }
-      }
-      return null;
-    }
-    if (idx + 1 < list.length) return list[idx + 1];
-    return null;
-  }
-
-  bindEnterMovesToNextField();
 })();

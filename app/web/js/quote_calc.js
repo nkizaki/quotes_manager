@@ -373,14 +373,19 @@
       var inputEl = document.getElementById(id);
       if (!inputEl) return;
       var alwaysReadonly = !!BRASS_ALWAYS_READONLY_IDS[id];
-      inputEl.readOnly = !enabled || alwaysReadonly;
-      inputEl.classList.toggle("dynamic-disabled", !enabled || alwaysReadonly);
+      var blocked = !enabled || alwaysReadonly;
+      inputEl.readOnly = blocked;
+      inputEl.classList.toggle("dynamic-disabled", blocked);
+      if (blocked) inputEl.tabIndex = -1;
+      else if (inputEl.tabIndex < 0) inputEl.removeAttribute("tabindex");
       var itemEl = inputEl.closest(".shinchuu-item");
-      if (itemEl) itemEl.classList.toggle("field-disabled", !enabled || alwaysReadonly);
+      if (itemEl) itemEl.classList.toggle("field-disabled", blocked);
     });
 
     document.querySelectorAll('input[name="qc_br_rm"], input[name="qc_br_scrap"]').forEach(function (radioEl) {
       radioEl.disabled = !enabled;
+      if (!enabled) radioEl.tabIndex = -1;
+      else radioEl.removeAttribute("tabindex");
     });
 
     if (shinchuuGrid) {
@@ -413,12 +418,16 @@
 
     if (!isScrap) {
       unitEl.readOnly = false;
+      unitEl.removeAttribute("tabindex");
       scrapEl.readOnly = true;
+      scrapEl.tabIndex = -1;
       scrapEl.classList.add("dynamic-disabled");
       if (itemScrap) itemScrap.classList.add("field-disabled");
     } else {
       scrapEl.readOnly = false;
+      scrapEl.removeAttribute("tabindex");
       unitEl.readOnly = true;
+      unitEl.tabIndex = -1;
       unitEl.classList.add("dynamic-disabled");
       if (itemUnit) itemUnit.classList.add("field-disabled");
     }
@@ -2680,83 +2689,15 @@
     });
   }
 
-  /**
-   * Enter で Tab と同様に次の入力項目へ移動する。
-   * テキストエリア・ボタン・ダイアログ内は対象外。readonly / disabled は飛ばす。
-   */
-  function bindEnterMovesToNextField() {
-    document.addEventListener("keydown", function (e) {
-      if (e.key !== "Enter") return;
-      if (e.isComposing || e.keyCode === 229) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      var el = e.target;
-      if (!el || !el.tagName) return;
-      var tag = el.tagName;
-      if (tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
-      if (tag !== "INPUT" && tag !== "SELECT") return;
-      if (el.type === "button" || el.type === "submit" || el.type === "reset") return;
-      // モーダル上では従来どおり（確定ボタン等を優先）
-      if (el.closest(".search-dialog-overlay, [role='alertdialog'], [role='dialog']")) return;
-
-      e.preventDefault();
-      var next = findNextEnterFocusTarget(el);
-      if (!next) return;
-      next.focus();
-      if (typeof next.select === "function" && next.tagName === "INPUT" && next.type === "text") {
-        try {
-          next.select();
-        } catch (err) {
-          /* ignore */
-        }
-      }
-    });
-  }
-
-  function isEnterFocusTarget(el) {
-    if (!el || el.disabled) return false;
-    if (el.tabIndex < 0) return false;
-    if (el.readOnly) return false;
-    var tag = el.tagName;
-    if (tag !== "INPUT" && tag !== "SELECT") return false;
-    if (el.type === "hidden" || el.type === "button" || el.type === "submit" || el.type === "reset") {
-      return false;
-    }
-    // 非表示は除外
-    if (el.offsetParent === null && el.getClientRects().length === 0) return false;
-    if (el.closest("[hidden]")) return false;
-    return true;
-  }
-
-  function findNextEnterFocusTarget(current) {
-    var candidates = document.querySelectorAll("input, select");
-    var list = [];
-    for (var i = 0; i < candidates.length; i++) {
-      if (isEnterFocusTarget(candidates[i])) list.push(candidates[i]);
-    }
-    var idx = list.indexOf(current);
-    if (idx < 0) {
-      // ラジオ等で current が候補外のとき、DOM 順で後ろから探す
-      for (var j = 0; j < candidates.length; j++) {
-        if (candidates[j] === current) {
-          for (var k = j + 1; k < candidates.length; k++) {
-            if (isEnterFocusTarget(candidates[k])) return candidates[k];
-          }
-          return null;
-        }
-      }
-      return null;
-    }
-    if (idx + 1 < list.length) return list[idx + 1];
-    return null;
-  }
-
   bindMaterialNumericInputs();
   bindMaterialCalcEvents();
   bindBrassCalcEvents();
   bindProcCalcEvents();
   updateProcFormButtonState("");
-  bindEnterMovesToNextField();
+  /* Enter / Tab: 入力可能な項目のみ（page_common.js） */
+  if (typeof window.quotesBindEditableFieldFocusNav === "function") {
+    window.quotesBindEditableFieldFocusNav();
+  }
 
   if (matSteelSelect) {
     // ページ読み込み時は反映しない。ユーザー変更時のみ実行（est_calc と同じ）
@@ -2826,10 +2767,17 @@
 
   function createDocErrorMessage(data) {
     var code = data && data.error_code;
+    if (code === "file_in_use") {
+      return "同じ名前のExcelが開かれているため\n保存に失敗しました";
+    }
     if (code === "no_quote") return "見積りが選択されていません";
     if (code === "no_material") return "材料費に入力がありません";
     if (code === "no_processing") return "加工費が入力されていません";
-    return (data && data.error) || "見積書作成に失敗しました";
+    var msg = (data && data.error) || "";
+    if (String(msg).indexOf("Errno 13") >= 0) {
+      return "同じ名前のExcelが開かれているため\n保存に失敗しました";
+    }
+    return msg || "見積書作成に失敗しました";
   }
 
   async function runCreateQuoteDocument() {

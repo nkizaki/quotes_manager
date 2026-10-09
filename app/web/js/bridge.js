@@ -72,6 +72,7 @@
     "/api/machine_charge_master/delete": "machine_charge_master_delete",
     "/api/search_conditions": "search_conditions",
     "/api/quote_search_conditions": "quote_search_conditions",
+    "/api/cost_quote/margin_summary_export_xlsx": "cost_quote_margin_summary_export_xlsx",
     "/api/register_quote": "register_quote",
     "/api/update_quote_history": "update_quote_history",
     "/api/results_summary": "results_summary",

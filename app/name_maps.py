@@ -176,6 +176,7 @@ COLUMN_NAME_MAP: dict[str, str] = {
     "使用フラグ": "use_flag",
     "使用箱切替": "box_usage_switch",
     "依頼日": "request_date",
+    "見積日": "quote_date",
     "個重": "piece_weight",
     "備考": "remarks",
     "備考1": "note_1",
@@ -368,7 +369,7 @@ COLUMN_NAME_MAP: dict[str, str] = {
 
 IMPORTANT_COLUMNS: dict[str, list[str]] = {
     "quote_history": ["quote_id", "management_no", "customer_code", "product_code"],
-    "cost_quote_history": ["cost_quote_id", "management_no", "customer_code", "product_code"],
+    "cost_quote_history": ["cost_quote_id", "sales_id", "quote_date", "management_no", "customer_code", "product_code"],
     "cost_quote_info": ["lot_id", "cost_quote_id", "lot_count"],
     "customers": ["code", "customer_name"],
     "sales_staff_master": ["code", "sales_representative"],

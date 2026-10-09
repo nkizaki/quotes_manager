@@ -58,10 +58,40 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: calc(10px * var(--ui-scale, 1));
 }
 
 .search-new-btn {
   margin-left: 0;
+}
+
+.aggregate-date-range {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--ui-scale, 1));
+  flex-wrap: wrap;
+}
+
+.aggregate-date-range input[type="date"] {
+  flex: 1 1 calc(120px * var(--ui-scale, 1));
+  min-width: 0;
+}
+
+.aggregate-date-sep {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary, #666);
+}
+
+#aggregate-subwindow-overlay .search-subwindow-panel {
+  width: calc(400px * var(--ui-scale, 1));
+}
+
+#aggregate-subwindow-overlay .search-subwindow-actions {
+  justify-content: flex-end;
+}
+
+#aggregate-export-btn.est-download-btn.search-btn {
+  min-width: calc(160px * var(--ui-scale, 1));
 }
 
 .search-result-status {

@@ -71,6 +71,7 @@
       </div>
       <div class="search-actions">
         <button type="button" id="search-new-btn" class="search-new-btn">新規見積り作成</button>
+        <button type="button" id="search-aggregate-btn" class="search-new-btn">集計</button>
       </div>
     </section>
 
@@ -125,9 +126,9 @@
                   <option value="">選択してください</option>
                 </select>
               </div>
-              <div class="search-form-item search-subwindow-new-only">
-                <label for="new-request-date">依頼日</label>
-                <input type="date" id="new-request-date" name="new_request_date" autocomplete="off">
+              <div class="search-form-item">
+                <label for="new-quote-date">見積日<span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="date" id="new-quote-date" name="new_quote_date" autocomplete="off" required>
               </div>
               <div class="search-form-item">
                 <label for="new-kanri-no">管理NO<span class="required-mark" aria-hidden="true">*</span></label>
@@ -139,14 +140,6 @@
                   <option value="">選択してください</option>
                 </select>
               </div>
-              <div class="search-form-item search-subwindow-new-only">
-                <label for="new-department">部署名</label>
-                <input type="text" id="new-department" name="new_department" value="" autocomplete="off">
-              </div>
-              <div class="search-form-item search-subwindow-new-only">
-                <label for="new-contact">担当者</label>
-                <input type="text" id="new-contact" name="new_contact" value="" autocomplete="off">
-              </div>
               <div class="search-form-item">
                 <label for="new-hinban">品番<span class="required-mark" aria-hidden="true">*</span></label>
                 <input type="text" id="new-hinban" name="new_hinban" value="" autocomplete="off">
@@ -154,10 +147,6 @@
               <div class="search-form-item">
                 <label for="new-hinmei">品名</label>
                 <input type="text" id="new-hinmei" name="new_hinmei" value="" autocomplete="off">
-              </div>
-              <div class="search-form-item search-subwindow-new-only">
-                <label for="new-submission-date">提出日</label>
-                <input type="date" id="new-submission-date" name="new_submission_date" autocomplete="off">
               </div>
             </div>
             <div class="search-form-item search-subwindow-bikou">
@@ -174,6 +163,59 @@
         <div id="search-subwindow-footer-edit" class="search-subwindow-footer-group" hidden>
           <button type="button" id="search-edit-save-btn" class="search-register-btn" form="search-new-form">変更</button>
           <button type="button" id="search-edit-delete-btn" class="search-delete-btn" form="search-new-form">削除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aggregate-subwindow-overlay" class="search-subwindow-overlay" aria-hidden="true" hidden>
+    <div class="search-subwindow-panel" role="dialog" aria-modal="true" aria-labelledby="aggregate-subwindow-title">
+      <div class="search-subwindow-head">
+        <span id="aggregate-subwindow-title" class="search-subwindow-title">集計</span>
+        <button type="button" id="aggregate-subwindow-close" class="search-subwindow-close" aria-label="閉じる">×</button>
+      </div>
+      <div class="search-subwindow-body">
+        <form id="aggregate-form" class="search-subwindow-form" novalidate>
+          <div class="search-subwindow-form-grid">
+            <div class="search-form-item">
+              <label for="agg-sales-select">担当者<span class="required-mark" aria-hidden="true">*</span></label>
+              <select id="agg-sales-select" name="agg_sales_code" autocomplete="off">
+                <option value="">未選択</option>
+              </select>
+            </div>
+            <div class="search-form-item">
+              <label for="agg-customer-select">客先名</label>
+              <select id="agg-customer-select" name="agg_customer_code" autocomplete="off">
+                <option value="">未選択</option>
+              </select>
+            </div>
+            <div class="search-form-item">
+              <label for="agg-date-from">期間指定</label>
+              <div class="aggregate-date-range">
+                <input type="date" id="agg-date-from" name="agg_date_from" autocomplete="off">
+                <span class="aggregate-date-sep" aria-hidden="true">～</span>
+                <input type="date" id="agg-date-to" name="agg_date_to" autocomplete="off">
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="search-subwindow-actions">
+        <button type="button" id="aggregate-export-btn" class="est-download-btn search-btn" form="aggregate-form">集計しエクスポート</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="aggregate-export-confirm-overlay" class="search-dialog-overlay" aria-hidden="true" hidden>
+    <div class="search-dialog-panel" role="alertdialog" aria-modal="true" aria-labelledby="aggregate-export-confirm-title">
+      <div class="search-dialog-head">
+        <span id="aggregate-export-confirm-title" class="search-dialog-title">確認</span>
+      </div>
+      <div class="search-dialog-body">
+        <p class="search-dialog-message">出力しますか？</p>
+        <div class="search-dialog-actions">
+          <button type="button" id="aggregate-export-confirm-yes" class="search-dialog-btn search-dialog-btn-primary">はい</button>
+          <button type="button" id="aggregate-export-confirm-no" class="search-dialog-btn">いいえ</button>
         </div>
       </div>
     </div>
@@ -274,7 +316,7 @@
       <div class="search-dialog-body">
         <p id="alert-message" class="search-dialog-message"></p>
         <div class="search-dialog-actions">
-          <button type="button" id="alert-ok" class="search-dialog-btn search-dialog-btn-primary">OK</button>
+          <button type="button" id="alert-ok" class="search-dialog-btn search-dialog-btn-primary">はい</button>
         </div>
       </div>
     </div>

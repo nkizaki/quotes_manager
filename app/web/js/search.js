@@ -9,23 +9,33 @@
   const orderColSelect = document.getElementById('search-order-col');
   const searchBtn = document.getElementById('search-btn');
   const searchNewBtn = document.getElementById('search-new-btn');
+  const searchAggregateBtn = document.getElementById('search-aggregate-btn');
   const searchLoading = document.getElementById('search-loading');
   const subOverlay = document.getElementById('search-subwindow-overlay');
   const subClose = document.getElementById('search-subwindow-close');
+  const aggOverlay = document.getElementById('aggregate-subwindow-overlay');
+  const aggClose = document.getElementById('aggregate-subwindow-close');
+  const aggSalesSelect = document.getElementById('agg-sales-select');
+  const aggCustomerSelect = document.getElementById('agg-customer-select');
+  const aggDateFromInput = document.getElementById('agg-date-from');
+  const aggDateToInput = document.getElementById('agg-date-to');
+  const aggregateExportBtn = document.getElementById('aggregate-export-btn');
+  const aggExportConfirmOverlay = document.getElementById('aggregate-export-confirm-overlay');
+  const aggExportConfirmYes = document.getElementById('aggregate-export-confirm-yes');
+  const aggExportConfirmNo = document.getElementById('aggregate-export-confirm-no');
+  const aggExportConfirmPanel = aggExportConfirmOverlay
+    ? aggExportConfirmOverlay.querySelector('.search-dialog-panel')
+    : null;
   const subwindowTitleEl = document.getElementById('search-subwindow-title');
   const footerNew = document.getElementById('search-subwindow-footer-new');
   const footerEdit = document.getElementById('search-subwindow-footer-edit');
   const newSalesSelect = document.getElementById('new-sales-select');
-  const newRequestDateInput = document.getElementById('new-request-date');
+  const newQuoteDateInput = document.getElementById('new-quote-date');
   const newKanriNoInput = document.getElementById('new-kanri-no');
   const newCustomerSelect = document.getElementById('new-customer-select');
-  const newDepartmentInput = document.getElementById('new-department');
-  const newContactInput = document.getElementById('new-contact');
   const newHinbanInput = document.getElementById('new-hinban');
   const newHinmeiInput = document.getElementById('new-hinmei');
-  const newSubmissionDateInput = document.getElementById('new-submission-date');
   const newBikouInput = document.getElementById('new-bikou');
-  const newOnlyFields = document.querySelectorAll('.search-subwindow-new-only');
   const newRegisterBtn = document.getElementById('search-new-register-btn');
   const editSaveBtn = document.getElementById('search-edit-save-btn');
   const editDeleteBtn = document.getElementById('search-edit-delete-btn');
@@ -155,9 +165,29 @@
     }
   }
 
+  function displayDateToInput(v) {
+    if (v === null || v === undefined || v === '') return '';
+    const s = String(v).trim();
+    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(s)) {
+      const p = s.split('/');
+      return (
+        p[0] +
+        '-' +
+        String(p[1]).padStart(2, '0') +
+        '-' +
+        String(p[2]).padStart(2, '0')
+      );
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    return '';
+  }
+
   function fillFormFromSearchRow(row) {
     selectOptionByVisibleText(newSalesSelect, row['営業担当']);
     selectOptionByVisibleText(newCustomerSelect, row['客先名']);
+    if (newQuoteDateInput) {
+      newQuoteDateInput.value = displayDateToInput(row['見積日']);
+    }
     if (newKanriNoInput) {
       const k = row['管理NO'];
       newKanriNoInput.value = k != null && k !== '' ? String(k) : '';
@@ -178,19 +208,12 @@
     }
   }
 
-  function setNewOnlyFieldsVisible(visible) {
-    newOnlyFields.forEach(function (el) {
-      el.hidden = !visible;
-    });
-  }
-
   function prepareSubwindowNew() {
     subwindowMode = 'new';
     editingEstimateId = '';
     if (subwindowTitleEl) subwindowTitleEl.textContent = '新規';
     if (footerNew) footerNew.hidden = false;
     if (footerEdit) footerEdit.hidden = true;
-    setNewOnlyFieldsVisible(true);
     resetNewForm();
   }
 
@@ -202,11 +225,6 @@
     if (subwindowTitleEl) subwindowTitleEl.textContent = '編集';
     if (footerNew) footerNew.hidden = true;
     if (footerEdit) footerEdit.hidden = false;
-    setNewOnlyFieldsVisible(false);
-    if (newRequestDateInput) newRequestDateInput.value = '';
-    if (newDepartmentInput) newDepartmentInput.value = '';
-    if (newContactInput) newContactInput.value = '';
-    if (newSubmissionDateInput) newSubmissionDateInput.value = '';
     fillFormFromSearchRow(row);
   }
 
@@ -324,6 +342,7 @@
         return;
       }
       if (alertTitle) alertTitle.textContent = title || '確認';
+      alertMessage.style.whiteSpace = 'pre-line';
       alertMessage.textContent = message == null ? '' : String(message);
       alertResolver = resolve;
       alertOverlay.hidden = false;
@@ -340,6 +359,16 @@
     });
   }
 
+  function isXlsxFileInUseError(result) {
+    if (!result) return false;
+    if (result.error_code === 'file_in_use') return true;
+    var msg = String(result.error || '');
+    return msg.indexOf('[Errno 13]') >= 0 || msg.indexOf('Errno 13') >= 0;
+  }
+
+  var XLSX_FILE_IN_USE_MSG =
+    '同じ名前のExcelが開かれているため\n保存に失敗しました';
+
   function closeAlertModal() {
     if (!alertOverlay) return;
     alertOverlay.hidden = true;
@@ -351,14 +380,11 @@
 
   function resetNewForm() {
     if (newSalesSelect) newSalesSelect.value = '';
-    if (newRequestDateInput) newRequestDateInput.value = '';
+    if (newQuoteDateInput) newQuoteDateInput.value = '';
     if (newKanriNoInput) newKanriNoInput.value = '';
     if (newCustomerSelect) newCustomerSelect.value = '';
-    if (newDepartmentInput) newDepartmentInput.value = '';
-    if (newContactInput) newContactInput.value = '';
     if (newHinbanInput) newHinbanInput.value = '';
     if (newHinmeiInput) newHinmeiInput.value = '';
-    if (newSubmissionDateInput) newSubmissionDateInput.value = '';
     if (newBikouInput) newBikouInput.value = '';
   }
 
@@ -370,6 +396,139 @@
   }
   if (subClose) {
     subClose.addEventListener('click', closeSearchSubwindow);
+  }
+
+  function resetAggregateForm() {
+    if (aggSalesSelect) aggSalesSelect.value = '';
+    if (aggCustomerSelect) aggCustomerSelect.value = '';
+    if (aggDateFromInput) aggDateFromInput.value = '';
+    if (aggDateToInput) aggDateToInput.value = '';
+  }
+
+  function openAggregateSubwindow() {
+    if (!aggOverlay) return;
+    resetAggregateForm();
+    aggOverlay.hidden = false;
+    aggOverlay.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeAggregateSubwindow() {
+    if (!aggOverlay) return;
+    aggOverlay.hidden = true;
+    aggOverlay.setAttribute('aria-hidden', 'true');
+  }
+
+  function openAggregateExportConfirm() {
+    if (!aggExportConfirmOverlay) return;
+    aggExportConfirmOverlay.hidden = false;
+    aggExportConfirmOverlay.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeAggregateExportConfirm() {
+    if (!aggExportConfirmOverlay) return;
+    aggExportConfirmOverlay.hidden = true;
+    aggExportConfirmOverlay.setAttribute('aria-hidden', 'true');
+  }
+
+  function collectAggregateExportPayload() {
+    const salesId = aggSalesSelect ? String(aggSalesSelect.value || '').trim() : '';
+    let salesName = '';
+    if (aggSalesSelect && aggSalesSelect.selectedIndex >= 0) {
+      const opt = aggSalesSelect.options[aggSalesSelect.selectedIndex];
+      salesName = opt ? String(opt.textContent || '').trim() : '';
+    }
+    const customerCode = aggCustomerSelect
+      ? String(aggCustomerSelect.value || '').trim()
+      : '';
+    return {
+      sales_id: salesId,
+      sales_name: salesName,
+      customer_code: customerCode,
+      date_from: aggDateFromInput ? String(aggDateFromInput.value || '').trim() : '',
+      date_to: aggDateToInput ? String(aggDateToInput.value || '').trim() : ''
+    };
+  }
+
+  async function runAggregateExport() {
+    const payload = collectAggregateExportPayload();
+    if (!payload.sales_id) {
+      await showAlertModal('担当者を選択してください', '確認');
+      return;
+    }
+    openAggregateExportConfirm();
+  }
+
+  async function executeAggregateExport() {
+    closeAggregateExportConfirm();
+    if (typeof window.quotesApi !== 'function') {
+      await showAlertModal('API が利用できません');
+      return;
+    }
+    const payload = collectAggregateExportPayload();
+    try {
+      const result = await window.quotesApi(
+        '/api/cost_quote/margin_summary_export_xlsx',
+        payload
+      );
+      if (result && result.cancelled) {
+        return;
+      }
+      if (!result || result.ok !== true) {
+        if (isXlsxFileInUseError(result)) {
+          await showAlertModal(XLSX_FILE_IN_USE_MSG, '確認');
+          return;
+        }
+        await showAlertModal(
+          (result && result.error) || '集計エクスポートに失敗しました'
+        );
+        return;
+      }
+      closeAggregateSubwindow();
+    } catch (err) {
+      var errMsg = err && err.message ? err.message : String(err);
+      if (String(errMsg).indexOf('Errno 13') >= 0) {
+        await showAlertModal(XLSX_FILE_IN_USE_MSG, '確認');
+        return;
+      }
+      await showAlertModal('通信エラー: ' + errMsg);
+    }
+  }
+
+  if (searchAggregateBtn) {
+    searchAggregateBtn.addEventListener('click', function () {
+      openAggregateSubwindow();
+    });
+  }
+  if (aggClose) {
+    aggClose.addEventListener('click', closeAggregateSubwindow);
+  }
+  if (aggOverlay) {
+    aggOverlay.addEventListener('click', function (e) {
+      if (e.target === aggOverlay) closeAggregateSubwindow();
+    });
+  }
+  if (aggregateExportBtn) {
+    aggregateExportBtn.addEventListener('click', function () {
+      void runAggregateExport();
+    });
+  }
+  if (aggExportConfirmYes) {
+    aggExportConfirmYes.addEventListener('click', function () {
+      void executeAggregateExport();
+    });
+  }
+  if (aggExportConfirmNo) {
+    aggExportConfirmNo.addEventListener('click', closeAggregateExportConfirm);
+  }
+  if (aggExportConfirmOverlay) {
+    aggExportConfirmOverlay.addEventListener('click', function (e) {
+      if (e.target === aggExportConfirmOverlay) closeAggregateExportConfirm();
+    });
+  }
+  if (aggExportConfirmPanel) {
+    aggExportConfirmPanel.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
   }
 
   if (resultTbody) {
@@ -496,6 +655,16 @@
       closeRegisterConfirm();
       return;
     }
+    if (aggExportConfirmOverlay && !aggExportConfirmOverlay.hidden) {
+      e.preventDefault();
+      closeAggregateExportConfirm();
+      return;
+    }
+    if (aggOverlay && !aggOverlay.hidden) {
+      e.preventDefault();
+      closeAggregateSubwindow();
+      return;
+    }
     if (subOverlay && !subOverlay.hidden) {
       closeSearchSubwindow();
     }
@@ -505,6 +674,9 @@
     const missing = [];
     if (!newSalesSelect || !String(newSalesSelect.value || '').trim()) {
       missing.push('営業担当');
+    }
+    if (!newQuoteDateInput || !String(newQuoteDateInput.value || '').trim()) {
+      missing.push('見積日');
     }
     if (!newKanriNoInput || !String(newKanriNoInput.value || '').trim()) {
       missing.push('管理NO');
@@ -522,6 +694,24 @@
     return true;
   }
 
+  function collectEstimateFormPayload(extra) {
+    const payload = {
+      sales_id: newSalesSelect ? newSalesSelect.value.trim() : '',
+      quote_date: newQuoteDateInput ? newQuoteDateInput.value.trim() : '',
+      kanri_no: newKanriNoInput ? newKanriNoInput.value.trim() : '',
+      customer_code: newCustomerSelect ? newCustomerSelect.value.trim() : '',
+      part_no: newHinbanInput ? newHinbanInput.value.trim() : '',
+      part_name: newHinmeiInput ? newHinmeiInput.value.trim() : '',
+      bikou: newBikouInput ? newBikouInput.value.trim() : ''
+    };
+    if (extra && typeof extra === 'object') {
+      Object.keys(extra).forEach(function (k) {
+        payload[k] = extra[k];
+      });
+    }
+    return payload;
+  }
+
   function finishRegisterDoneOk() {
     closeRegisterDone();
     closeSearchSubwindow();
@@ -534,14 +724,7 @@
 
   if (registerConfirmYes) {
     registerConfirmYes.addEventListener('click', function () {
-      const payload = {
-        sales_id: newSalesSelect ? newSalesSelect.value.trim() : '',
-        kanri_no: newKanriNoInput ? newKanriNoInput.value.trim() : '',
-        customer_code: newCustomerSelect ? newCustomerSelect.value.trim() : '',
-        part_no: newHinbanInput ? newHinbanInput.value.trim() : '',
-        part_name: newHinmeiInput ? newHinmeiInput.value.trim() : '',
-        bikou: newBikouInput ? newBikouInput.value.trim() : ''
-      };
+      const payload = collectEstimateFormPayload();
 
       closeRegisterConfirm();
 
@@ -625,15 +808,7 @@
         return;
       }
 
-      const payload = {
-        estimate_id: eid,
-        sales_id: newSalesSelect ? newSalesSelect.value.trim() : '',
-        kanri_no: newKanriNoInput ? newKanriNoInput.value.trim() : '',
-        customer_code: newCustomerSelect ? newCustomerSelect.value.trim() : '',
-        part_no: newHinbanInput ? newHinbanInput.value.trim() : '',
-        part_name: newHinmeiInput ? newHinmeiInput.value.trim() : '',
-        bikou: newBikouInput ? newBikouInput.value.trim() : ''
-      };
+      const payload = collectEstimateFormPayload({ estimate_id: eid });
 
       fetch('/api/update_estimate_history', {
         method: 'POST',

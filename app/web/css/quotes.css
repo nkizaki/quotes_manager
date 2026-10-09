@@ -102,6 +102,13 @@ body.quotes-placeholder-page {
   box-sizing: border-box;
 }
 
+/* 戻るボタンはヘッダー右端（ロゴ・タイトルの後） */
+.ship-insp-sub-header-inner > .ship-insp-back-btn,
+.quotes-header-inner > .ship-insp-back-btn {
+  order: 100;
+  margin-left: auto !important;
+}
+
 .quotes-header-actions {
   margin-left: auto;
   display: inline-flex;
@@ -165,27 +172,15 @@ input[readonly],
   background-color: var(--input-readonly-bg, #f0f0f0);
 }
 
-#est-1[readonly],
-#est-2[readonly],
-#est-3[readonly],
-#est-4[readonly],
-#est-5[readonly],
-#est-6[readonly] {
-  background-color: var(--ui-surface-low, #f2f4f4);
-}
-
-#est-1,
-#est-2,
-#est-3,
-#est-4,
-#est-5,
-#est-6,
-#proc-6,
-#proc-9,
-#proc-6[readonly],
-#proc-9:disabled,
-#proc-6.dynamic-disabled,
-#proc-9.dynamic-disabled {
+/* 基本情報の常時入力不可は他項目と同じグレー（白強制はしない） */
+#est-1:not([readonly]):not(.dynamic-disabled),
+#est-2:not([readonly]):not(.dynamic-disabled),
+#est-3:not([readonly]):not(.dynamic-disabled),
+#est-4:not([readonly]):not(.dynamic-disabled),
+#est-5:not([readonly]):not(.dynamic-disabled),
+#est-6:not([readonly]):not(.dynamic-disabled),
+#proc-6:not([readonly]):not(.dynamic-disabled),
+#proc-9:not(:disabled):not(.dynamic-disabled) {
   background: var(--color-surface) !important;
   color: var(--color-text);
 }
@@ -200,14 +195,8 @@ select.dynamic-disabled,
 .soryo-plastic-grid.soryo-plastic-disabled input[type="text"],
 .soryo-plastic-grid.soryo-plastic-disabled select {
   background-color: var(--state-disabled-bg, #d8d8d8) !important;
-  color: var(--state-disabled-text, #9e9e9e);
-}
-
-.shinchuu-grid.shinchuu-disabled .shinchuu-item label,
-.shinchuu-grid.shinchuu-disabled .shinchuu-item .est-radio-item label,
-.shinchuu-grid.shinchuu-disabled .shinchuu-item .est-checkbox-item label,
-.field-disabled label {
-  color: var(--state-disabled-text, #9e9e9e);
+  /* 文字色はデフォルト（本文色）のまま */
+  color: inherit;
 }
 
 /* 原価見積り: 基本情報・材料費・真鍮・右側単価計算 — 入力可=#ffffff / 入力不可=#d8d8d8 */
@@ -233,11 +222,27 @@ select.dynamic-disabled,
 .est-calc-page .shinchuu-item select[disabled],
 .est-calc-page .shinchuu-grid.shinchuu-disabled .shinchuu-item input[type="text"],
 .est-calc-page .shinchuu-grid.shinchuu-disabled .shinchuu-item input[type="number"],
+.est-calc-page .soryo-card-item input[readonly],
+.est-calc-page .soryo-card-item input.dynamic-disabled,
+.est-calc-page .soryo-card-item select.dynamic-disabled,
+.est-calc-page .soryo-card-item select[disabled],
+.est-calc-page .soryo-nittou-item input[readonly],
+.est-calc-page .soryo-nittou-item input.dynamic-disabled,
+.est-calc-page .soryo-plastic-item input[readonly],
+.est-calc-page .soryo-plastic-item input.dynamic-disabled,
+.est-calc-page .soryo-plastic-item select.dynamic-disabled,
+.est-calc-page .soryo-plastic-item select[disabled],
+.est-calc-page .soryo-card-grid.soryo-card-disabled input[type="text"],
+.est-calc-page .soryo-card-grid.soryo-card-disabled select,
+.est-calc-page .soryo-nittou-grid.soryo-nittou-disabled input[type="text"],
+.est-calc-page .soryo-plastic-grid.soryo-plastic-disabled input[type="text"],
+.est-calc-page .soryo-plastic-grid.soryo-plastic-disabled select,
 .est-calc-page .floating-window input[readonly],
 .est-calc-page .floating-window input.dynamic-disabled,
 .est-calc-page .floating-window select.dynamic-disabled,
 .est-calc-page .floating-window select[disabled] {
   background-color: #d8d8d8 !important;
+  color: inherit;
 }
 
 /* 手動材料費のみ強調（入力可） */

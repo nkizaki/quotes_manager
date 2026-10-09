@@ -2453,6 +2453,12 @@ EXCEL_TEMPLATE_PATH = os.path.join(
     "原価見積書原本.xlsx",
 )
 
+MARGIN_SUMMARY_EXCEL_TEMPLATE_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "exceltemplates",
+    "粗利率集計テンプレート.xlsx",
+)
+
 def get_est_calc_page(payload=None):
     """原価見積りID を元に詳細情報を取得して est_calc.html に表示"""
     est_1 = est_2 = est_3 = est_4 = ""
@@ -2933,8 +2939,8 @@ def get_est_calc_page(payload=None):
                 f_in_b4 = _rec_str(rec, "見積単価")
                 f_ch_1 = _rec_str(rec, "チャージ材料費")
                 f_ch_2 = _rec_str(rec, "チャージ刃工具費")
-                f_ch_3 = _rec_str(rec, "チャージ社外管理費")
-                f_ch_4 = _rec_str(rec, "チャージ表面処理費")
+                f_ch_3 = _rec_str(rec, "チャージ表面処理費")
+                f_ch_4 = _rec_str(rec, "チャージ社外管理費")
                 f_ch_5 = _rec_str(rec, "チャージ検査費")
                 f_ch_6 = _rec_str(rec, "チャージ梱包費")
                 f_ch_7 = _rec_str(rec, "機械チャージ")
@@ -3621,8 +3627,8 @@ def api_est_calc_add_estimate_lot(payload=None):
                 ("見積単価", "f_in_b4"),
                 ("チャージ材料費", "f_ch_1"),
                 ("チャージ刃工具費", "f_ch_2"),
-                ("チャージ社外管理費", "f_ch_3"),
-                ("チャージ表面処理費", "f_ch_4"),
+                ("チャージ表面処理費", "f_ch_3"),
+                ("チャージ社外管理費", "f_ch_4"),
                 ("チャージ検査費", "f_ch_5"),
                 ("チャージ梱包費", "f_ch_6"),
                 ("機械チャージ", "f_ch_7"),
@@ -3984,8 +3990,8 @@ def api_est_calc_pre_export_save(payload=None):
             ("見積単価", "f_in_b4"),
             ("チャージ材料費", "f_ch_1"),
             ("チャージ刃工具費", "f_ch_2"),
-            ("チャージ社外管理費", "f_ch_3"),
-            ("チャージ表面処理費", "f_ch_4"),
+            ("チャージ表面処理費", "f_ch_3"),
+            ("チャージ社外管理費", "f_ch_4"),
             ("チャージ検査費", "f_ch_5"),
             ("チャージ梱包費", "f_ch_6"),
             ("機械チャージ", "f_ch_7"),
@@ -4655,8 +4661,8 @@ def api_est_calc_export_xlsx(payload=None):
                 {"row": 3, "d_value": est_7, "db_col": "ロット数", "fmt": "#,##0"},
                 {"row": 4, "d_value": _s("f_ch_1"), "db_col": "チャージ材料費", "fmt": "#,##0.00"},
                 {"row": 5, "d_value": _s("f_ch_2"), "db_col": "チャージ刃工具費", "fmt": "#,##0.00"},
-                {"row": 6, "d_value": _s("f_ch_4"), "db_col": "チャージ表面処理費", "fmt": "#,##0.00"},
-                {"row": 7, "d_value": _s("f_ch_3"), "db_col": "チャージ社外管理費", "fmt": "#,##0.00"},
+                {"row": 6, "d_value": _s("f_ch_3"), "db_col": "チャージ表面処理費", "fmt": "#,##0.00"},
+                {"row": 7, "d_value": _s("f_ch_4"), "db_col": "チャージ社外管理費", "fmt": "#,##0.00"},
                 {"row": 8, "d_value": _s("f_ch_5"), "db_col": "チャージ検査費", "fmt": "#,##0.00"},
                 {"row": 9, "d_value": _s("f_ch_6"), "db_col": "チャージ梱包費", "fmt": "#,##0.00"},
                 {"row": 11, "d_value": _s("f_ch_7"), "db_col": "機械チャージ", "fmt": "#,##0.00"},
@@ -4789,7 +4795,7 @@ def get_search_page(payload=None):
 
         # 営業担当（表示用: 営業担当, 絞り込み用: コード）
         cur.execute(
-            "SELECT 営業担当, コード FROM t_営業マスタ WHERE 表示フラグ = 'Y'"
+            "SELECT 営業担当, コード FROM t_営業マスタ WHERE 表示フラグ = 'Y' ORDER BY 営業担当 ASC"
         )
         rows = cur.fetchall()
         sales_list = [
@@ -5357,16 +5363,24 @@ def _normalize_estimate_row_keys(d):
     return out
 
 def _estimate_row_for_search_ui(col_names, r):
-    """検索画面・登録直後表示用の 7 キー dict（ドライバの列名差を吸収）"""
+    """検索画面・登録直後表示用の dict（ドライバの列名差を吸収）。見積日は編集モーダル用。"""
     if r is None:
         return None
     raw = dict(zip(col_names, r))
     norm = _normalize_estimate_row_keys(raw)
-    if all(k in norm for k in _ESTIMATE_SEARCH_UI_KEYS):
-        return {k: norm[k] for k in _ESTIMATE_SEARCH_UI_KEYS}
-    if len(r) >= len(_ESTIMATE_SEARCH_UI_KEYS):
-        return {k: r[i] for i, k in enumerate(_ESTIMATE_SEARCH_UI_KEYS)}
-    return norm
+    out = {}
+    for k in _ESTIMATE_SEARCH_UI_KEYS:
+        out[k] = norm.get(k)
+    if "見積日" in norm:
+        out["見積日"] = _format_search_date(norm.get("見積日"))
+    elif all(k in norm for k in _ESTIMATE_SEARCH_UI_KEYS):
+        pass
+    elif len(r) >= len(_ESTIMATE_SEARCH_UI_KEYS):
+        out = {k: r[i] for i, k in enumerate(_ESTIMATE_SEARCH_UI_KEYS)}
+        if len(r) > len(_ESTIMATE_SEARCH_UI_KEYS):
+            # SELECT 末尾に見積日がある場合
+            out["見積日"] = _format_search_date(r[len(_ESTIMATE_SEARCH_UI_KEYS)])
+    return out
 
 def _json_safe_estimate_row(d):
     """pyodbc 行 dict を jsonify 可能な型にそろえる"""
@@ -5399,7 +5413,8 @@ def _fetch_estimate_row_for_search(cur, estimate_id):
         "t_客先マスタ.客先名, "
         "t_原価見積履歴.品番, "
         "t_原価見積履歴.品名, "
-        "t_原価見積履歴.備考 "
+        "t_原価見積履歴.備考, "
+        "t_原価見積履歴.見積日 "
         "FROM ((t_原価見積履歴 LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード) "
         "LEFT JOIN t_客先マスタ ON t_原価見積履歴.客先コード = t_客先マスタ.コード) "
         "WHERE t_原価見積履歴.原価見積りID = ?"
@@ -5425,15 +5440,23 @@ def api_register_estimate(payload=None):
 
     if not sales_id or not kanri_no or not customer_code or not part_no:
         return {"error": "必須項目が不足しています"}
+    if not (data.get("quote_date") or "").strip():
+        return {"error": "見積日は必須です"}
+    try:
+        quote_date = _parse_optional_date_input(data.get("quote_date"))
+    except ValueError as e:
+        return {"error": str(e)}
+    if quote_date is None:
+        return {"error": "見積日は必須です"}
 
     part_name_val = part_name if part_name else None
     bikou_val = _bikou_newlines_to_crlf(bikou) if bikou else None
 
     insert_sql = (
-        "INSERT INTO t_原価見積履歴 (営業ID, 管理NO, 客先コード, 品番, 品名, 備考) "
-        "VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO t_原価見積履歴 (営業ID, 見積日, 管理NO, 客先コード, 品番, 品名, 備考) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
-    params = (sales_id, kanri_no, customer_code, part_no, part_name_val, bikou_val)
+    params = (sales_id, quote_date, kanri_no, customer_code, part_no, part_name_val, bikou_val)
 
     try:
         conn = get_connection()
@@ -5475,16 +5498,33 @@ def api_update_estimate_history(payload=None):
         return {"error": "原価見積りIDが必要です"}
     if not sales_id or not kanri_no or not customer_code or not part_no:
         return {"error": "必須項目が不足しています"}
+    if not (data.get("quote_date") or "").strip():
+        return {"error": "見積日は必須です"}
+    try:
+        quote_date = _parse_optional_date_input(data.get("quote_date"))
+    except ValueError as e:
+        return {"error": str(e)}
+    if quote_date is None:
+        return {"error": "見積日は必須です"}
 
     part_name_val = part_name if part_name else None
     bikou_val = _bikou_newlines_to_crlf(bikou) if bikou else None
 
     update_sql = (
         "UPDATE t_原価見積履歴 SET "
-        "営業ID = ?, 管理NO = ?, 客先コード = ?, 品番 = ?, 品名 = ?, 備考 = ? "
+        "営業ID = ?, 見積日 = ?, 管理NO = ?, 客先コード = ?, 品番 = ?, 品名 = ?, 備考 = ? "
         "WHERE 原価見積りID = ?"
     )
-    params = (sales_id, kanri_no, customer_code, part_no, part_name_val, bikou_val, estimate_id)
+    params = (
+        sales_id,
+        quote_date,
+        kanri_no,
+        customer_code,
+        part_no,
+        part_name_val,
+        bikou_val,
+        estimate_id,
+    )
 
     try:
         conn = get_connection()
@@ -5607,6 +5647,187 @@ def api_search_delete_quote(payload=None):
             except Exception:
                 pass
 
+def _parse_html_date(raw):
+    """input[type=date] の yyyy-mm-dd を date に。空・不正は None。"""
+    s = (raw or "").strip()
+    if not s:
+        return None
+    try:
+        return datetime.strptime(s[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def api_cost_quote_margin_summary_export_xlsx(payload=None):
+    """粗利率集計テンプレートへ書き込み、xlsx バイトを返却する。"""
+    data = payload or {}
+    sales_id = str(data.get("sales_id") or "").strip()
+    sales_name = str(data.get("sales_name") or "").strip()
+    customer_code = str(data.get("customer_code") or "").strip() or None
+
+    if not sales_id:
+        return {"error": "担当者を選択してください"}
+
+    d_from = _parse_html_date(data.get("date_from"))
+    d_to = _parse_html_date(data.get("date_to"))
+    date_from = None
+    date_to = None
+    if d_from is not None and d_to is not None:
+        if d_from == d_to:
+            date_from = d_from
+            date_to = None
+        elif d_from < d_to:
+            date_from, date_to = d_from, d_to
+        else:
+            date_from, date_to = d_to, d_from
+    elif d_from is not None:
+        date_from = d_from
+    elif d_to is not None:
+        date_from = d_to
+
+    where_sql = "WHERE t_原価見積履歴.営業ID = ?"
+    params = [sales_id]
+    if customer_code is not None:
+        where_sql += " AND t_原価見積履歴.客先コード = ?"
+        params.append(customer_code)
+    if date_from is not None and date_to is not None:
+        where_sql += " AND t_原価見積履歴.見積日 BETWEEN ? AND ?"
+        params.extend([date_from, date_to])
+    elif date_from is not None:
+        where_sql += " AND t_原価見積履歴.見積日 = ?"
+        params.append(date_from)
+
+    sql = (
+        "SELECT "
+        "t_原価見積履歴.原価見積りID, "
+        "t_客先マスタ.客先名, "
+        "t_原価見積履歴.品番, "
+        "t_原価見積履歴.品名, "
+        "t_原価見積情報.ロット数, "
+        "t_原価見積計算チャージ.見積単価, "
+        "t_原価見積計算チャージ.粗利率 "
+        "FROM t_原価見積履歴 "
+        "LEFT JOIN t_原価見積情報 "
+        "ON t_原価見積履歴.原価見積りID = t_原価見積情報.原価見積りID "
+        "LEFT JOIN t_原価見積計算チャージ "
+        "ON t_原価見積情報.ロットID = t_原価見積計算チャージ.ロットID "
+        "LEFT JOIN t_客先マスタ "
+        "ON t_原価見積履歴.客先コード = t_客先マスタ.コード "
+        f"{where_sql} "
+        "ORDER BY t_客先マスタ.客先名 ASC, t_原価見積履歴.品番 ASC, t_原価見積情報.ロット数 DESC"
+    )
+
+    if not os.path.exists(MARGIN_SUMMARY_EXCEL_TEMPLATE_PATH):
+        return {"error": f"テンプレートが見つかりません: {MARGIN_SUMMARY_EXCEL_TEMPLATE_PATH}"}
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        rows = cur.fetchall() or []
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    def _to_num(val):
+        if val is None:
+            return None
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            return val
+        t = str(val).strip().replace(",", "").replace("%", "")
+        if not t:
+            return None
+        try:
+            n = float(t)
+            if abs(n - round(n)) < 1e-9:
+                return int(round(n))
+            return n
+        except ValueError:
+            return None
+
+    def _rate_display(val):
+        if val is None:
+            return ""
+        t = str(val).strip()
+        if not t:
+            return ""
+        if t.endswith("%"):
+            return t
+        n = _to_num(val)
+        if n is None:
+            return t + "%"
+        if isinstance(n, int):
+            return f"{n}%"
+        s = f"{n:.2f}".rstrip("0").rstrip(".")
+        return s + "%"
+
+    if date_from is not None and date_to is not None:
+        period_text = f"{date_from.strftime('%Y/%m/%d')} ～ {date_to.strftime('%Y/%m/%d')}"
+        period_file = f"{date_from.strftime('%Y%m%d')}-{date_to.strftime('%Y%m%d')}"
+    elif date_from is not None:
+        period_text = date_from.strftime("%Y/%m/%d")
+        period_file = date_from.strftime("%Y%m%d")
+    else:
+        period_text = ""
+        period_file = ""
+
+    sales_id_part = _sanitize_filename_part(sales_id)
+    if period_file:
+        download_name = f"原価見積_粗利集計_{sales_id_part}_{period_file}.xlsx"
+    else:
+        download_name = f"原価見積_粗利集計_{sales_id_part}.xlsx"
+
+    def fill_workbook(wb):
+        names = xwu.sheet_names(wb)
+        ws = wb.sheets[names[0]] if names else wb.sheets[0]
+        xwu.set_value(ws, "B2", sales_name)
+        xwu.set_value(ws, "B3", period_text)
+        xwu.set_value(ws, "B4", f"{len(rows)} 件")
+
+        table = []
+        for row in rows:
+            estimate_id = row[0]
+            customer_name = "" if row[1] is None else str(row[1])
+            part_no = "" if row[2] is None else str(row[2])
+            part_name = "" if row[3] is None else str(row[3])
+            lot_qty = _to_num(row[4])
+            unit_price = _to_num(row[5])
+            rate_text = _rate_display(row[6])
+            table.append([
+                estimate_id if estimate_id is not None else "",
+                customer_name,
+                part_no,
+                part_name,
+                lot_qty,
+                unit_price,
+                rate_text,
+            ])
+
+        if table:
+            ws.range("A7").value = table
+            last_row = 6 + len(table)
+            xwu.set_number_format(ws.range(f"E7:E{last_row}"), "#,##0")
+            xwu.set_number_format(ws.range(f"F7:F{last_row}"), "#,##0.00")
+
+    try:
+        raw = xwu.export_bytes_from_template(
+            MARGIN_SUMMARY_EXCEL_TEMPLATE_PATH,
+            fill_workbook,
+            activate_sheet=None,
+            activate_cell="A1",
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+    return {"ok": True, "_xlsx_bytes": raw, "_xlsx_name": download_name}
+
+
 def api_search_conditions(payload=None):
     """search.html からの条件指定検索API"""
     sales_id = ((payload or {}).get('sales_id') or '').strip()
@@ -5629,7 +5850,8 @@ def api_search_conditions(payload=None):
         "t_客先マスタ.客先名, "
         "t_原価見積履歴.品番, "
         "t_原価見積履歴.品名, "
-        "t_原価見積履歴.備考 "
+        "t_原価見積履歴.備考, "
+        "t_原価見積履歴.見積日 "
         "FROM ((t_原価見積履歴 LEFT JOIN t_営業マスタ ON t_原価見積履歴.営業ID = t_営業マスタ.コード) "
         "LEFT JOIN t_客先マスタ ON t_原価見積履歴.客先コード = t_客先マスタ.コード)"
     )

@@ -417,16 +417,6 @@ body.est-calc-page {
   background-color: var(--state-disabled-bg) !important;
 }
 
-.shinchuu-grid.shinchuu-disabled .shinchuu-item label,
-.shinchuu-grid.shinchuu-disabled .shinchuu-item .est-radio-item label,
-.shinchuu-grid.shinchuu-disabled .shinchuu-item .est-checkbox-item label {
-  color: var(--state-disabled-text);
-}
-
-.field-disabled label {
-  color: var(--state-disabled-text);
-}
-
 input.dynamic-disabled,
 select.dynamic-disabled,
 .soryo-card-grid.soryo-card-disabled input[type="text"],
@@ -435,7 +425,7 @@ select.dynamic-disabled,
 .soryo-plastic-grid.soryo-plastic-disabled input[type="text"],
 .soryo-plastic-grid.soryo-plastic-disabled select {
   background-color: var(--state-disabled-bg) !important;
-  color: var(--state-disabled-text);
+  color: inherit;
 }
 
 /* 加工費・管理費・検査 */

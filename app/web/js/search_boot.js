@@ -31,6 +31,14 @@
     fillSelect("customer-select", data.customer_list);
     fillSelect("new-sales-select", data.sales_list);
     fillSelect("new-customer-select", data.customer_list);
+    var salesSorted = (data.sales_list || []).slice().sort(function (a, b) {
+      return String(a.name || "").localeCompare(String(b.name || ""), "ja");
+    });
+    var customersByName = (data.customer_list || []).slice().sort(function (a, b) {
+      return String(a.name || "").localeCompare(String(b.name || ""), "ja");
+    });
+    fillSelect("agg-sales-select", salesSorted);
+    fillSelect("agg-customer-select", customersByName);
     await new Promise(function (resolve, reject) {
       var s = document.createElement("script");
       s.src = "js/search.js";
