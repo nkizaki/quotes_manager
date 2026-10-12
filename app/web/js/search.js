@@ -433,7 +433,7 @@
   function collectAggregateExportPayload() {
     const salesId = aggSalesSelect ? String(aggSalesSelect.value || '').trim() : '';
     let salesName = '';
-    if (aggSalesSelect && aggSalesSelect.selectedIndex >= 0) {
+    if (salesId && aggSalesSelect && aggSalesSelect.selectedIndex >= 0) {
       const opt = aggSalesSelect.options[aggSalesSelect.selectedIndex];
       salesName = opt ? String(opt.textContent || '').trim() : '';
     }
@@ -450,11 +450,6 @@
   }
 
   async function runAggregateExport() {
-    const payload = collectAggregateExportPayload();
-    if (!payload.sales_id) {
-      await showAlertModal('担当者を選択してください', '確認');
-      return;
-    }
     openAggregateExportConfirm();
   }
 

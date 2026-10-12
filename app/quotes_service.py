@@ -5661,12 +5661,11 @@ def _parse_html_date(raw):
 def api_cost_quote_margin_summary_export_xlsx(payload=None):
     """粗利率集計テンプレートへ書き込み、xlsx バイトを返却する。"""
     data = payload or {}
-    sales_id = str(data.get("sales_id") or "").strip()
+    sales_id = str(data.get("sales_id") or "").strip() or None
     sales_name = str(data.get("sales_name") or "").strip()
     customer_code = str(data.get("customer_code") or "").strip() or None
-
-    if not sales_id:
-        return {"error": "担当者を選択してください"}
+    if sales_id is None:
+        sales_name = "指定なし"
 
     d_from = _parse_html_date(data.get("date_from"))
     d_to = _parse_html_date(data.get("date_to"))
@@ -5685,17 +5684,21 @@ def api_cost_quote_margin_summary_export_xlsx(payload=None):
     elif d_to is not None:
         date_from = d_to
 
-    where_sql = "WHERE t_原価見積履歴.営業ID = ?"
-    params = [sales_id]
+    where_parts = []
+    params = []
+    if sales_id is not None:
+        where_parts.append("t_原価見積履歴.営業ID = ?")
+        params.append(sales_id)
     if customer_code is not None:
-        where_sql += " AND t_原価見積履歴.客先コード = ?"
+        where_parts.append("t_原価見積履歴.客先コード = ?")
         params.append(customer_code)
     if date_from is not None and date_to is not None:
-        where_sql += " AND t_原価見積履歴.見積日 BETWEEN ? AND ?"
+        where_parts.append("t_原価見積履歴.見積日 BETWEEN ? AND ?")
         params.extend([date_from, date_to])
     elif date_from is not None:
-        where_sql += " AND t_原価見積履歴.見積日 = ?"
+        where_parts.append("t_原価見積履歴.見積日 = ?")
         params.append(date_from)
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
     sql = (
         "SELECT "
@@ -5792,14 +5795,15 @@ def api_cost_quote_margin_summary_export_xlsx(payload=None):
         period_text = date_from.strftime("%Y/%m/%d")
         period_file = date_from.strftime("%Y%m%d")
     else:
-        period_text = ""
+        period_text = "指定なし"
         period_file = ""
 
-    sales_id_part = _sanitize_filename_part(sales_id)
+    name_parts = ["原価見積_粗利集計"]
+    if sales_id is not None:
+        name_parts.append(_sanitize_filename_part(sales_id))
     if period_file:
-        download_name = f"原価見積_粗利集計_{sales_id_part}_{period_file}.xlsx"
-    else:
-        download_name = f"原価見積_粗利集計_{sales_id_part}.xlsx"
+        name_parts.append(period_file)
+    download_name = "_".join(name_parts) + ".xlsx"
 
     def fill_workbook(wb):
         names = xwu.sheet_names(wb)
