@@ -119,7 +119,7 @@ body.quotes-placeholder-page {
 
 /* ----- 入力欄 ----- */
 .search-page input[type="text"],
-.search-page input[type="number"]:not(.font-size-setting__input),
+.search-page input[type="number"],
 .search-page input:not([type]),
 .search-page select,
 .search-page textarea,
@@ -148,7 +148,7 @@ body.quotes-placeholder-page {
   box-sizing: border-box;
 }
 
-.search-page input:not(.font-size-setting__input):focus,
+.search-page input:focus,
 .search-page select:focus,
 .search-page textarea:focus,
 .est-calc-page input:focus,

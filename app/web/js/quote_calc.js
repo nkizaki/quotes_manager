@@ -236,9 +236,6 @@
       "qc-proc-tool-per",
       "qc-proc-total",
       "qc-proc-insp-amt",
-      "qc-proc-insp-per",
-      "qc-proc-profit-rate",
-      "qc-proc-profit",
       "qc-proc-overhead",
       "qc-proc-material-cost",
     ].forEach(function (id) {
@@ -273,9 +270,6 @@
     setVal("qc-proc-tool-cost", row["刃工具費"]);
     setVal("qc-proc-tool-per", row["刃個別"]);
     setVal("qc-proc-insp-amt", row["検査費"]);
-    setVal("qc-proc-insp-per", row["検個別"]);
-    setVal("qc-proc-profit-rate", formatProfitRateForDisplay(row["利益率"]));
-    setVal("qc-proc-profit", row["利益"]);
     setVal("qc-proc-overhead", row["管理費"]);
     setVal("qc-proc-material-cost", row["材料費"]);
 
@@ -313,9 +307,6 @@
       cutting_tool_cost: getVal("qc-proc-tool-cost").trim(),
       cutting_tool_cost_per_piece: getVal("qc-proc-tool-per").trim(),
       inspection_cost: getVal("qc-proc-insp-amt").trim(),
-      inspection_cost_per_piece: getVal("qc-proc-insp-per").trim(),
-      profit_rate: getVal("qc-proc-profit-rate").trim(),
-      profit: getVal("qc-proc-profit").trim(),
       overhead_cost: getVal("qc-proc-overhead").trim(),
       processing_material_cost: getVal("qc-proc-material-cost").trim(),
     };
@@ -1175,9 +1166,6 @@
       "qc-proc-days-2",
       "qc-proc-cost-2",
       "qc-proc-tool-per",
-      "qc-proc-insp-per",
-      "qc-proc-profit-rate",
-      "qc-proc-profit",
       "qc-proc-overhead",
       "qc-proc-material-cost",
     ];
@@ -1385,27 +1373,17 @@
   }
 
   /** @returns {boolean} */
-  function recalcProcInspPer() {
-    setVal("qc-proc-insp-per", "");
+  function recalcProcOverhead() {
+    setVal("qc-proc-overhead", "");
     var inspAmt = parseNum(getVal("qc-proc-insp-amt"));
     var daily2 = parseNum(getVal("qc-proc-daily-2"));
     if (inspAmt === null || daily2 === null || daily2 <= 0) return false;
     var x = inspAmt / daily2;
     if (!Number.isFinite(x)) return false;
-    setVal("qc-proc-insp-per", formatNumberForDisplay(roundToDecimals(x, 2), 2));
-    return true;
-  }
-
-  function recalcProcOverhead() {
-    setVal("qc-proc-overhead", "");
-    var inspPer = parseNum(getVal("qc-proc-insp-per"));
-    var profit = parseNum(getVal("qc-proc-profit"));
-    if (inspPer === null || profit === null) return false;
-    var x = inspPer + profit;
-    if (!Number.isFinite(x)) return false;
     setVal("qc-proc-overhead", formatNumberForDisplay(roundToDecimals(x, 2), 2));
     return true;
   }
+
 
   function syncProcMaterialCostFromMat() {
     setVal("qc-proc-material-cost", getVal("qc-mat-cost-input"));
@@ -1421,19 +1399,11 @@
     recalcProcCost1();
     recalcProcToolPer();
     recalcProcTotal();
-    if (!recalcProcInspPer()) {
-      setVal("qc-proc-overhead", "");
-    } else {
-      recalcProcOverhead();
-    }
+    recalcProcOverhead();
   }
 
   function runProcChainFromDaily2() {
     recalcProcDays1();
-    if (!recalcProcInspPer()) {
-      setVal("qc-proc-overhead", "");
-      return;
-    }
     recalcProcOverhead();
   }
 
@@ -1452,14 +1422,6 @@
   }
 
   function runProcChainFromInspAmt() {
-    if (!recalcProcInspPer()) {
-      setVal("qc-proc-overhead", "");
-      return;
-    }
-    recalcProcOverhead();
-  }
-
-  function runProcChainFromInspPerOrProfit() {
     recalcProcOverhead();
   }
 
@@ -1517,12 +1479,6 @@
       inspAmt.addEventListener("input", runProcChainFromInspAmt);
       inspAmt.addEventListener("change", runProcChainFromInspAmt);
     }
-    ["qc-proc-insp-per", "qc-proc-profit"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener("input", runProcChainFromInspPerOrProfit);
-      el.addEventListener("change", runProcChainFromInspPerOrProfit);
-    });
   }
 
   function applyPage(data) {

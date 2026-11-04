@@ -616,50 +616,6 @@ button.search-btn {
   letter-spacing: 0;
 }
 
-.font-size-setting {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: calc(6px * var(--ui-scale, 1));
-  flex-shrink: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--scaled-font-sm);
-  white-space: nowrap;
-}
-
-.font-size-setting__label,
-.font-size-setting__unit {
-  font-size: var(--scaled-font-sm);
-}
-
-.font-size-setting__input,
-.search-page .font-size-setting__input,
-input.font-size-setting__input[type="number"] {
-  width: calc(64px * var(--ui-scale, 1));
-  height: calc(32px * var(--ui-scale, 1));
-  box-sizing: border-box;
-  padding: calc(4px * var(--ui-scale, 1)) calc(6px * var(--ui-scale, 1));
-  border: 1px solid var(--color-border);
-  border-radius: calc(4px * var(--ui-scale, 1));
-  font-size: var(--scaled-font-sm);
-  font-family: inherit;
-  line-height: 1.2;
-  text-align: right;
-  color: var(--color-text);
-  background: var(--color-surface);
-}
-
-.font-size-setting__input:focus,
-.search-page .font-size-setting__input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-ring);
-}
-
-.font-size-setting__unit {
-  min-width: 1em;
-}
-
 .search-header-version {
   display: inline-flex;
   align-items: center;

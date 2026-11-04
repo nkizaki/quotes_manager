@@ -23,9 +23,14 @@
   --est-grid-shoki-hiyou-col-width: calc(120px * var(--ui-scale, 1));
 }
 
-body.est-calc-page {
+/* design.css の search-page（overflow-x:hidden / min-width:0 !important）を上書きし、拡大時は横スクロール */
+body.search-page.est-calc-page {
   padding-bottom: calc(10px * var(--ui-scale, 1));
-  min-width: calc(var(--est-left-margin-dynamic) + var(--est-main-width) + var(--est-main-sidebar-gap) + var(--est-sidebar-width) + var(--est-right-margin));
+  overflow-x: auto;
+  min-width: calc(
+    var(--est-left-margin-dynamic) + var(--est-main-width) + var(--est-main-sidebar-gap) +
+      var(--est-sidebar-width) + var(--est-right-margin)
+  ) !important;
 }
 
 /* 原価見積り計算ページ ヘッダー */
@@ -38,6 +43,7 @@ body.est-calc-page {
   z-index: 200;
   box-sizing: border-box;
   width: 100%;
+  min-width: 100%;
   /* padding / min-height / 背景は quotes.css のヘッダー最終定義を使用 */
 }
 .est-page-layout {
@@ -47,6 +53,10 @@ body.est-calc-page {
   margin-top: calc(10px * var(--ui-scale, 1));
   padding-right: var(--est-right-margin);
   box-sizing: border-box;
+  min-width: calc(
+    var(--est-left-margin-dynamic) + var(--est-main-width) + var(--est-main-sidebar-gap) +
+      var(--est-sidebar-width) + var(--est-right-margin)
+  );
 }
 .est-layout {
   display: flex;

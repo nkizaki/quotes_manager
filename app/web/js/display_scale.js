@@ -60,13 +60,9 @@
     }
   }
 
-  function setFontSizePercent(percent, options) {
+  function setFontSizePercent(percent) {
     fontSizePercent = normalizeFontSizePercent(percent);
     applyDisplayScale();
-    var input = document.getElementById("font-size-percent-input");
-    if (input && !(options && options.skipInputSync)) {
-      input.value = String(fontSizePercent);
-    }
     return fontSizePercent;
   }
 
@@ -84,9 +80,71 @@
         (boot.display && boot.display.work_area_height) || window.innerHeight;
     }
     applyDisplayScale();
-    var input = document.getElementById("font-size-percent-input");
-    if (input) input.value = String(fontSizePercent);
   }
+
+  var FONT_SIZE_API = "/api/config/font-size";
+  var ZOOM_STEP = 10;
+  var wheelAccum = 0;
+  var saveTimer = null;
+
+  function scheduleFontSizeSave() {
+    if (saveTimer) window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(function () {
+      saveTimer = null;
+      if (typeof window.quotesApi !== "function") return;
+      window
+        .quotesApi(FONT_SIZE_API, { font_size_percent: fontSizePercent })
+        .catch(function () {
+          /* 表示は既に反映済み */
+        });
+    }, 400);
+  }
+
+  function zoomBy(deltaPercent) {
+    setFontSizePercent(fontSizePercent + deltaPercent);
+    scheduleFontSizeSave();
+  }
+
+  document.addEventListener(
+    "wheel",
+    function (e) {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      var dy = e.deltaY;
+      if (e.deltaMode === 1) dy *= 40;
+      else if (e.deltaMode === 2) dy *= 800;
+      wheelAccum += dy;
+      if (Math.abs(wheelAccum) < 40) return;
+      var direction = wheelAccum > 0 ? -1 : 1;
+      wheelAccum = 0;
+      zoomBy(direction * ZOOM_STEP);
+    },
+    { capture: true, passive: false }
+  );
+
+  document.addEventListener(
+    "keydown",
+    function (e) {
+      if (!e.ctrlKey || e.altKey || e.metaKey) return;
+      var key = e.key;
+      if (key === "0") {
+        e.preventDefault();
+        setFontSizePercent(100);
+        scheduleFontSizeSave();
+        return;
+      }
+      if (key === "+" || key === "=" || key === "Add") {
+        e.preventDefault();
+        zoomBy(ZOOM_STEP);
+        return;
+      }
+      if (key === "-" || key === "_" || key === "Subtract") {
+        e.preventDefault();
+        zoomBy(-ZOOM_STEP);
+      }
+    },
+    true
+  );
 
   window.applyDisplayBootstrap = applyDisplayBootstrap;
   window.setFontSizePercent = setFontSizePercent;

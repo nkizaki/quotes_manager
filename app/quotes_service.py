@@ -509,7 +509,7 @@ def delete_quote_calc_material(payload=None):
 
 _QUOTE_PROC_LIST_SQL = (
     "SELECT ID, ロット数, サイクルタイム AS \"C/T\", 日産数, 日数, 機械, チャージ, 加工費, "
-    "刃工具費, 刃工具費個別 AS 刃個別, 検査費, 検査費個別 AS 検個別, 利益率, 利益, 管理費, 材料費 "
+    "刃工具費, 刃工具費個別 AS 刃個別, 検査費, 管理費, 材料費 "
     "FROM t_加工費 WHERE 見積りID = ? ORDER BY ロット数 ASC, ID DESC"
 )
 
@@ -574,9 +574,6 @@ def save_quote_calc_processing(payload=None):
         ("刃工具費", "cutting_tool_cost"),
         ("刃工具費個別", "cutting_tool_cost_per_piece"),
         ("検査費", "inspection_cost"),
-        ("検査費個別", "inspection_cost_per_piece"),
-        ("利益率", "profit_rate"),
-        ("利益", "profit"),
         ("管理費", "overhead_cost"),
         ("材料費", "processing_material_cost"),
     ]
@@ -593,9 +590,6 @@ def save_quote_calc_processing(payload=None):
         "days_correction",
         "processing_cost_input",
         "cutting_tool_cost_per_piece",
-        "inspection_cost_per_piece",
-        "profit_rate",
-        "profit",
         "overhead_cost",
         "processing_material_cost",
     }
@@ -605,16 +599,6 @@ def save_quote_calc_processing(payload=None):
         if key == "machine":
             s = "" if v is None else str(v).strip()
             return s if s != "" else None
-
-        if key == "profit_rate":
-            # 画面% → DB小数。空は NULL（"" を double に渡さない）
-            normalized = normalize_yield_rate_for_db(v)
-            if normalized is None or str(normalized).strip() == "":
-                return None
-            try:
-                return float(normalized)
-            except (ValueError, TypeError):
-                return None
 
         if v is None:
             return None

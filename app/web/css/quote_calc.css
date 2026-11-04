@@ -75,9 +75,11 @@ html:has(body.quote-calc-page) {
   }
 }
 
-body.quote-calc-page {
+/* design.css の search-page（overflow-x:hidden / min-width:0 !important）を上書きし、拡大時は横スクロール */
+body.search-page.quote-calc-page {
   margin: 0;
-  min-width: 0;
+  overflow-x: auto;
+  min-width: calc(var(--qc-main-max-width) + 32px * var(--ui-scale, 1)) !important;
 }
 
 .quote-calc-page .quote-calc-header,
@@ -85,13 +87,15 @@ body.quote-calc-page {
   position: sticky;
   top: 0;
   z-index: 200;
+  min-width: 100%;
 }
 
 .quote-calc-page-layout {
   margin: calc(10px * var(--ui-scale, 1)) auto;
   padding: 0 calc(16px * var(--ui-scale, 1)) calc(16px * var(--ui-scale, 1));
-  max-width: var(--qc-main-max-width);
-  width: 100%;
+  width: var(--qc-main-max-width);
+  min-width: var(--qc-main-max-width);
+  max-width: none;
   box-sizing: border-box;
 }
 
@@ -99,14 +103,16 @@ body.quote-calc-page {
   margin-left: 0;
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .quote-calc-page .main-section {
   width: 100%;
   min-width: 0;
-  max-width: 100%;
+  max-width: none;
   box-sizing: border-box;
   margin-bottom: calc(12px * var(--ui-scale, 1));
+  overflow: visible;
 }
 
 /* ----- 基本情報 ----- */
@@ -115,7 +121,8 @@ body.quote-calc-page {
   grid-template-columns: repeat(7, var(--qc-grid-kihon-col-width));
   gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
-  max-width: 100%;
+  width: max-content;
+  max-width: none;
 }
 
 .quote-calc-fixed-section .quote-calc-kihon-item {
@@ -259,8 +266,8 @@ body.quote-calc-page {
   grid-template-rows: repeat(2, auto);
   gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
-  max-width: 100%;
-  width: 100%;
+  width: max-content;
+  max-width: none;
   box-sizing: border-box;
 }
 
@@ -331,8 +338,8 @@ body.quote-calc-page {
   grid-template-rows: repeat(2, auto);
   gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
-  max-width: 100%;
-  width: 100%;
+  width: max-content;
+  max-width: none;
   box-sizing: border-box;
 }
 
@@ -390,8 +397,8 @@ body.quote-calc-page {
   grid-template-rows: repeat(3, auto);
   gap: calc(8px * var(--ui-scale, 1)) calc(12px * var(--ui-scale, 1));
   align-items: end;
-  max-width: 100%;
-  width: 100%;
+  width: max-content;
+  max-width: none;
   box-sizing: border-box;
 }
 
