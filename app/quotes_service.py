@@ -23,11 +23,28 @@ def _rec_str(rec, key):
         return ""
     return str(v)
 
-def _initial_cost_display_str(key, v):
-    """初期費用テーブル表示用。数量・単価・金額は long（整数・小数なし）。"""
+def _money_display_str(v):
+    """単価・金額表示用（小数第2位まで。末尾の 0 は省略）。"""
     if v is None:
         return ""
-    if key in ("数量", "単価", "金額"):
+    s = str(v).strip().replace(",", "")
+    if s == "":
+        return ""
+    try:
+        d = Decimal(s).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, ValueError, TypeError, OverflowError):
+        return str(v).strip()
+    text = format(d, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
+
+def _initial_cost_display_str(key, v):
+    """初期費用テーブル表示用。数量は整数、単価・金額は小数第2位まで。"""
+    if v is None:
+        return ""
+    if key == "数量":
         s = str(v).strip().replace(",", "")
         if s == "":
             return ""
@@ -35,19 +52,41 @@ def _initial_cost_display_str(key, v):
             return str(int(Decimal(s)))
         except (InvalidOperation, ValueError, TypeError, OverflowError):
             return str(v).strip()
+    if key in ("単価", "金額"):
+        return _money_display_str(v)
     return str(v)
 
 def _initial_cost_parse_long_for_save(raw, label_jp):
-    """登録・更新用: 数量・単価・金額を long として解釈"""
+    """登録・更新用: 数量を整数として解釈"""
     if raw is None:
         raise ValueError(f"{label_jp}が入力されていません")
     s = str(raw).replace(",", "").strip()
     if s == "":
         raise ValueError(f"{label_jp}が入力されていません")
     try:
-        return int(Decimal(s))
+        d = Decimal(s)
     except (InvalidOperation, ValueError, TypeError, OverflowError) as e:
         raise ValueError(f"{label_jp}の値が不正です") from e
+    if d != d.to_integral_value():
+        raise ValueError(f"{label_jp}は整数で入力してください")
+    return int(d)
+
+
+def _money_2dp_for_save(raw, label_jp):
+    """登録・更新用: 単価・金額を小数第2位までとして解釈"""
+    if raw is None:
+        raise ValueError(f"{label_jp}が入力されていません")
+    s = str(raw).replace(",", "").strip()
+    if s == "":
+        raise ValueError(f"{label_jp}が入力されていません")
+    try:
+        d = Decimal(s)
+    except (InvalidOperation, ValueError, TypeError, OverflowError) as e:
+        raise ValueError(f"{label_jp}の値が不正です") from e
+    exp = d.as_tuple().exponent
+    if isinstance(exp, int) and exp < -2:
+        raise ValueError(f"{label_jp}は小数第2位までです")
+    return d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def _to_db_int(raw, *, empty=0):
@@ -969,7 +1008,9 @@ def _quote_packaging_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
     col_names = [c[0] for c in (cur.description or [])]
     rows: list[dict] = []
     for r in cur.fetchall():
-        row = {k: _json_safe_cell_value(v) for k, v in zip(col_names, r)}
+        row = {}
+        for k, v in zip(col_names, r):
+            row[k] = _money_display_str(v) if k == "単価" else _json_safe_cell_value(v)
         rows.append(row)
     return rows
 
@@ -978,21 +1019,25 @@ def _quote_surface_rows_for_api(cur, processing_cost_id: str) -> list[dict]:
     col_names = [c[0] for c in (cur.description or [])]
     rows: list[dict] = []
     for r in cur.fetchall():
-        row = {k: _json_safe_cell_value(v) for k, v in zip(col_names, r)}
+        row = {}
+        for k, v in zip(col_names, r):
+            row[k] = _money_display_str(v) if k == "単価" else _json_safe_cell_value(v)
         rows.append(row)
     return rows
 
 def _quote_surface_total(rows: list[dict]) -> str:
-    total = 0
+    total = Decimal("0")
     for row in rows:
         raw = row.get("単価")
         if raw is None or str(raw).strip() == "":
             continue
         try:
-            total += int(Decimal(str(raw).replace(",", "").strip()))
+            total += Decimal(str(raw).replace(",", "").strip())
         except (InvalidOperation, ValueError, TypeError, OverflowError):
             continue
-    return str(total) if total else ""
+    if total == 0:
+        return ""
+    return _money_display_str(total)
 
 def api_quote_calc_packaging_list(payload=None):
     """梱包輸送費: 加工費ID に紐づく一覧"""
@@ -1030,7 +1075,9 @@ def api_quote_calc_packaging_row(payload=None):
             conn.close()
             return {"error": "該当データが見つかりません"}
         col_names = [c[0] for c in (cur.description or [])]
-        out = {k: _json_safe_cell_value(v) for k, v in zip(col_names, row)}
+        out = {}
+        for k, v in zip(col_names, row):
+            out[k] = _money_display_str(v) if k == "単価" else _json_safe_cell_value(v)
         conn.close()
         return {"ok": True, "row": out}
     except Exception as e:
@@ -1055,7 +1102,7 @@ def api_quote_calc_packaging_save(payload=None):
     if packaging_spec not in ("(未指定)", "ビニール", "トレー"):
         return {"error": "梱包を選択してください"}
     try:
-        unit_price = _initial_cost_parse_long_for_save(unit_price_raw, "金額")
+        unit_price = _money_2dp_for_save(unit_price_raw, "金額")
     except ValueError as e:
         return {"error": str(e)}
 
@@ -1173,7 +1220,7 @@ def api_quote_calc_initial_cost_save(payload=None):
 
     try:
         suryo = _initial_cost_parse_long_for_save(data.get("数量"), "数量")
-        tanka = _initial_cost_parse_long_for_save(data.get("単価"), "単価")
+        tanka = _money_2dp_for_save(data.get("単価"), "単価")
         kingaku_raw = data.get("金額")
         kingaku_s = (
             str(kingaku_raw).replace(",", "").strip()
@@ -1181,9 +1228,9 @@ def api_quote_calc_initial_cost_save(payload=None):
             else ""
         )
         if kingaku_s == "":
-            kingaku = suryo * tanka
+            kingaku = (Decimal(suryo) * tanka).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         else:
-            kingaku = _initial_cost_parse_long_for_save(kingaku_raw, "金額")
+            kingaku = _money_2dp_for_save(kingaku_raw, "金額")
     except ValueError as e:
         return {"error": str(e)}
 
@@ -1300,7 +1347,9 @@ def api_quote_calc_surface_row(payload=None):
             conn.close()
             return {"error": "該当データが見つかりません"}
         col_names = [c[0] for c in (cur.description or [])]
-        out = {k: _json_safe_cell_value(v) for k, v in zip(col_names, row)}
+        out = {}
+        for k, v in zip(col_names, row):
+            out[k] = _money_display_str(v) if k == "単価" else _json_safe_cell_value(v)
         conn.close()
         return {"ok": True, "row": out}
     except Exception as e:
@@ -1324,7 +1373,7 @@ def api_quote_calc_surface_save(payload=None):
     if not treatment_name:
         return {"error": "表面処理名を選択してください"}
     try:
-        unit_price = _initial_cost_parse_long_for_save(data.get("単価"), "単価")
+        unit_price = _money_2dp_for_save(data.get("単価"), "単価")
     except ValueError as e:
         return {"error": str(e)}
 
@@ -4079,7 +4128,7 @@ def api_est_calc_initial_cost_save(payload=None):
 
     try:
         suryo = _initial_cost_parse_long_for_save(data.get("数量"), "数量")
-        tanka = _initial_cost_parse_long_for_save(data.get("単価"), "単価")
+        tanka = _money_2dp_for_save(data.get("単価"), "単価")
         kingaku_raw = data.get("金額")
         kingaku_s = (
             str(kingaku_raw).replace(",", "").strip()
@@ -4087,9 +4136,9 @@ def api_est_calc_initial_cost_save(payload=None):
             else ""
         )
         if kingaku_s == "":
-            kingaku = suryo * tanka
+            kingaku = (Decimal(suryo) * tanka).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         else:
-            kingaku = _initial_cost_parse_long_for_save(kingaku_raw, "金額")
+            kingaku = _money_2dp_for_save(kingaku_raw, "金額")
     except ValueError as e:
         return {"error": str(e)}
 

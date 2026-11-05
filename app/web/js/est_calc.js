@@ -138,8 +138,6 @@
     "soryo-33",
     "soryo-36",
     "shoki-hiyou-suryo",
-    "shoki-hiyou-tanka",
-    "shoki-hiyou-kingaku",
   ];
 
   /** (2b) 小数点以下なし＋カンマなし（見積番号・ロット等） */
@@ -201,6 +199,8 @@
       "est-9",
       "est-10",
       "est-11",
+      "shoki-hiyou-tanka",
+      "shoki-hiyou-kingaku",
     ]);
     var procSkip = { 2: true, 5: true, 9: true, 14: true, 24: true, 32: true, 34: true, 36: true };
     var matSkip = { 2: true, 4: true };
@@ -1244,7 +1244,7 @@
 
   bindNumericOnlyInputsFromConfig();
 
-  /** 初期費用: 数量・単価が両方入力済みなら金額を 数量×単価（整数）で上書き（金額は手入力も可・再計算時に上書き） */
+  /** 初期費用: 数量・単価が両方入力済みなら金額を 数量×単価（小数第2位）で上書き（金額は手入力も可・再計算時に上書き） */
   function updateShokiHiyouKingakuFromQtyUnitPrice() {
     var qEl = document.getElementById("shoki-hiyou-suryo");
     var pEl = document.getElementById("shoki-hiyou-tanka");
@@ -1253,12 +1253,12 @@
     var qs = (qEl.value || "").replace(/,/g, "").trim();
     var ps = (pEl.value || "").replace(/,/g, "").trim();
     if (qs === "" || ps === "") return;
-    var qi = Math.trunc(Number(qs));
-    var pi = Math.trunc(Number(ps));
-    if (!Number.isFinite(qi) || !Number.isFinite(pi)) return;
-    var prod = qi * pi;
+    var qn = Number(qs);
+    var pn = Number(ps);
+    if (!Number.isFinite(qn) || !Number.isFinite(pn)) return;
+    var prod = qn * pn;
     if (!Number.isFinite(prod)) return;
-    kEl.value = formatNumberForDisplay(prod, 0);
+    kEl.value = formatNumberForDisplay(prod, 2);
   }
 
   function syncShokiHiyouDeleteButtonDisabled() {

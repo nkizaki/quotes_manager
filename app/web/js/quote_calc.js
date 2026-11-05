@@ -1178,6 +1178,20 @@
         maxDecimalPlaces: 2,
       });
     });
+    [
+      "qc-pkg-amount",
+      "qc-init-price",
+      "qc-init-amount",
+      "qc-surf-price",
+    ].forEach(function (id) {
+      bindNumericOnlyInput(document.getElementById(id), {
+        allowDecimal: true,
+        maxDecimalPlaces: 2,
+      });
+    });
+    bindNumericOnlyInput(document.getElementById("qc-init-qty"), {
+      allowDecimal: false,
+    });
   }
 
   function isBlankField(id) {
@@ -2037,10 +2051,10 @@
     var q = (qtyEl.value || "").replace(/,/g, "").trim();
     var p = (priceEl.value || "").replace(/,/g, "").trim();
     if (q === "" || p === "") return;
-    var qi = parseInt(q, 10);
-    var pi = parseInt(p, 10);
-    if (isNaN(qi) || isNaN(pi)) return;
-    amtEl.value = String(qi * pi);
+    var qn = parseNum(q);
+    var pn = parseNum(p);
+    if (qn === null || pn === null) return;
+    amtEl.value = formatNumberForDisplay(qn * pn, 2, false);
   }
 
   if (pkgLotSelect) {
