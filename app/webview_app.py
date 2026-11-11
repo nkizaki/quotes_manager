@@ -68,7 +68,38 @@ def _on_gui_ready(window, icon_path: Path) -> None:
         pass
 
 
+def _exe_launch_path() -> str:
+    """起動元の実行ファイルパス（frozen時は exe、開発時はスクリプト）。"""
+    if getattr(sys, "frozen", False):
+        return str(sys.executable or "")
+    return str(sys.argv[0] if sys.argv else "")
+
+
+def _is_network_unc_path(path: str) -> bool:
+    """UNC パス（\\\\server\\share...）かどうか。"""
+    normalized = path.replace("/", "\\")
+    return normalized.startswith("\\\\")
+
+
+def _show_startup_error(message: str) -> None:
+    if sys.platform == "win32":
+        try:
+            ctypes.windll.user32.MessageBoxW(0, message, "見積り管理", 0x10)
+            return
+        except Exception:
+            pass
+    print(message, file=sys.stderr)
+
+
 def run() -> None:
+    launch_path = _exe_launch_path()
+    if getattr(sys, "frozen", False) and _is_network_unc_path(launch_path):
+        _show_startup_error(
+            "ネットワークファイル上からの起動はできません。\n"
+            "デスクトップ等にコピーしてから起動してください。"
+        )
+        sys.exit(1)
+
     os.environ["QUOTES_MANAGER_LAUNCHER"] = "1"
     os.chdir(app_root())
 
