@@ -106,8 +106,8 @@ class Api:
     def get_search_page(self, payload=None):
         return _call(svc.get_search_page, payload)
 
-    def get_est_calc_page(self, payload=None):
-        return _call(svc.get_est_calc_page, payload)
+    def get_cost_quotes_calc_page(self, payload=None):
+        return _call(svc.get_cost_quotes_calc_page, payload)
 
     def get_quote_calc_page(self, payload=None):
         return _call(svc.get_quote_calc_page, payload) # 見積り計算ページを取得
@@ -239,37 +239,37 @@ class Api:
         self._open_saved_file(path)
         return {"ok": True, "path": path}
 
-    def est_calc_set_lot(self, payload=None):
-        return _call(svc.api_est_calc_set_lot, payload)
+    def cost_quotes_calc_set_lot(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_set_lot, payload)
 
-    def est_calc_clear_usage_flag(self, payload=None):
-        return _call(svc.api_est_calc_clear_usage_flag, payload)
+    def cost_quotes_calc_clear_usage_flag(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_clear_usage_flag, payload)
 
-    def est_calc_add_estimate_lot(self, payload=None):
-        return _call(svc.api_est_calc_add_estimate_lot, payload)
+    def cost_quotes_calc_add_estimate_lot(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_add_estimate_lot, payload)
 
-    def est_calc_delete_estimate_lot(self, payload=None):
-        return _call(svc.api_est_calc_delete_estimate_lot, payload)
+    def cost_quotes_calc_delete_estimate_lot(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_delete_estimate_lot, payload)
 
-    def est_calc_pre_export_save(self, payload=None):
-        return _call(svc.api_est_calc_pre_export_save, payload)
+    def cost_quotes_calc_pre_export_save(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_pre_export_save, payload)
 
-    def est_calc_shipping_by_region_size(self, payload=None):
-        return _call(svc.api_est_calc_shipping_by_region_size, payload)
+    def cost_quotes_calc_shipping_by_region_size(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_shipping_by_region_size, payload)
 
-    def est_calc_initial_cost_row(self, payload=None):
-        return _call(svc.api_est_calc_initial_cost_row, payload)
+    def cost_quotes_calc_initial_cost_row(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_initial_cost_row, payload)
 
-    def est_calc_initial_cost_save(self, payload=None):
-        return _call(svc.api_est_calc_initial_cost_save, payload)
+    def cost_quotes_calc_initial_cost_save(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_initial_cost_save, payload)
 
-    def est_calc_initial_cost_delete(self, payload=None):
-        return _call(svc.api_est_calc_initial_cost_delete, payload)
+    def cost_quotes_calc_initial_cost_delete(self, payload=None):
+        return _call(svc.api_cost_quotes_calc_initial_cost_delete, payload)
 
-    def est_calc_export_xlsx(self, payload=None):
+    def cost_quotes_calc_export_xlsx(self, payload=None):
         """原価見積書 xlsx を生成し、保存ダイアログで書き出す。"""
         try:
-            result = svc.api_est_calc_export_xlsx(payload or {})
+            result = svc.api_cost_quotes_calc_export_xlsx(payload or {})
             if not isinstance(result, dict) or result.get("error"):
                 return _json_safe(result if isinstance(result, dict) else {"error": "Excel出力に失敗しました"})
             raw = result.get("_xlsx_bytes")

@@ -1402,7 +1402,7 @@
       var estimateId = getActiveEstimateId();
       if (!rowId || !estimateId) return;
       var url =
-        "/api/est_calc/initial_cost_row?estimate_id=" +
+        "/api/cost_quotes_calc/initial_cost_row?estimate_id=" +
         encodeURIComponent(estimateId) +
         "&id=" +
         encodeURIComponent(rowId);
@@ -1487,7 +1487,7 @@
     }
 
     var url =
-      "/api/est_calc/shipping_by_region_size?reg=" +
+      "/api/cost_quotes_calc/shipping_by_region_size?reg=" +
       encodeURIComponent(reg) +
       "&size_name=" +
       encodeURIComponent(sizeName);
@@ -2826,7 +2826,7 @@
 
   function runPreExportSave() {
     var payload = buildSavePayload();
-    return fetch("/api/est_calc/pre_export_save", {
+    return fetch("/api/cost_quotes_calc/pre_export_save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -2864,7 +2864,7 @@
     payload.soryo_13_name = getSelectedTextById("soryo-13");
     payload.soryo_29_name = getSelectedTextById("soryo-29");
 
-    return fetch("/api/est_calc/export_xlsx", {
+    return fetch("/api/cost_quotes_calc/export_xlsx", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -2951,7 +2951,7 @@
     )
       .then(function (choice) {
         if (choice !== "yes") return;
-        return fetch("/api/est_calc/clear_usage_flag", {
+        return fetch("/api/cost_quotes_calc/clear_usage_flag", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ estimate_id: activeEstimateId }),
@@ -2973,7 +2973,7 @@
         var copyData = copyChoice === "yes";
         var payload = buildSavePayload();
         payload.copy_data = copyData;
-        return fetch("/api/est_calc/add_estimate_lot", {
+        return fetch("/api/cost_quotes_calc/add_estimate_lot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -2984,7 +2984,7 @@
           .then(function (data) {
             if (data && data.error) throw new Error(data.error);
             window.location.href =
-              "est_calc.html?estimate_id=" + encodeURIComponent(activeEstimateId);
+              "cost_quotes_calc.html?estimate_id=" + encodeURIComponent(activeEstimateId);
           });
       })
       .catch(function (err) {
@@ -3013,7 +3013,7 @@
         .then(function (choice) {
           if (choice !== "yes") return;
           var payload = shokiHiyouBuildSavePayload();
-          return fetch("/api/est_calc/initial_cost_save", {
+          return fetch("/api/cost_quotes_calc/initial_cost_save", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -3062,7 +3062,7 @@
       )
         .then(function (choice) {
           if (choice !== "yes") return;
-          return fetch("/api/est_calc/initial_cost_delete", {
+          return fetch("/api/cost_quotes_calc/initial_cost_delete", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ estimate_id: estimateId, id: idVal }),
@@ -3136,7 +3136,7 @@
             return showOkDialog("確認", "キャンセルしました");
           }
 
-          return fetch("/api/est_calc/delete_estimate_lot", {
+          return fetch("/api/cost_quotes_calc/delete_estimate_lot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -3156,7 +3156,7 @@
             })
             .then(function () {
               window.location.href =
-                "est_calc.html?estimate_id=" + encodeURIComponent(activeEstimateId);
+                "cost_quotes_calc.html?estimate_id=" + encodeURIComponent(activeEstimateId);
             });
         })
         .catch(function (err) {
@@ -3173,7 +3173,7 @@
     var activeEstimateId = getActiveEstimateId();
     if (!lotId || !activeEstimateId) return;
 
-    fetch("/api/est_calc/set_lot", {
+    fetch("/api/cost_quotes_calc/set_lot", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -3190,7 +3190,7 @@
           alert(data.error);
           return;
         }
-        window.location.href = "est_calc.html?estimate_id=" + encodeURIComponent(activeEstimateId);
+        window.location.href = "cost_quotes_calc.html?estimate_id=" + encodeURIComponent(activeEstimateId);
       })
       .catch(function (err) {
         alert("通信エラー: " + err.message);

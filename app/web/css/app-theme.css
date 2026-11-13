@@ -92,7 +92,7 @@
   /* 原価見積り: フォーカス時の太さは border ではなく inset で表現（レイアウトずれ防止） */
   --input-focus-inset-shadow: inset 0 calc(-1px * var(--ui-scale, 1)) 0 var(--input-focus-color);
 
-  /* しきい値ヒント（est_calc.js の applyConditionalTextboxBackgrounds が参照。通常レンジは背景をクリアして --input-bg を使う） */
+  /* しきい値ヒント（cost_quotes_calc.js の applyConditionalTextboxBackgrounds が参照。通常レンジは背景をクリアして --input-bg を使う） */
   /* proc-3 交換サイクル vs est-11 日数 */
   --input-hint-proc3-bad: #ff9999;
   --input-hint-proc3-caution: #ffcc99;

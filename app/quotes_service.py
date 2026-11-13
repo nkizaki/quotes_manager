@@ -485,7 +485,7 @@ def get_quote_calc_page(payload=None):
 
 
 def _quote_calc_detail_sql():
-    """est_calc で使用する詳細取得クエリ（1件用）"""
+    """cost_quotes_calc で使用する詳細取得クエリ（1件用）"""
     return (
         "SELECT * FROM ((("
         "t_見積り履歴 "
@@ -2492,8 +2492,8 @@ MARGIN_SUMMARY_EXCEL_TEMPLATE_PATH = os.path.join(
     "粗利率集計テンプレート.xlsx",
 )
 
-def get_est_calc_page(payload=None):
-    """原価見積りID を元に詳細情報を取得して est_calc.html に表示"""
+def get_cost_quotes_calc_page(payload=None):
+    """原価見積りID を元に詳細情報を取得して cost_quotes_calc.html に表示"""
     est_1 = est_2 = est_3 = est_4 = ""
     est_5 = est_6 = est_7 = est_8 = ""
     est_9 = est_10 = est_11 = est_12 = ""
@@ -2758,7 +2758,7 @@ def get_est_calc_page(payload=None):
             conn = get_connection()
             cur = conn.cursor()
 
-            cur.execute(_est_calc_detail_sql(), [estimate_id])
+            cur.execute(_cost_quotes_calc_detail_sql(), [estimate_id])
             rows = cur.fetchall()
 
             if len(rows) == 1:
@@ -3259,8 +3259,8 @@ def get_est_calc_page(payload=None):
         "initial_cost_rows": initial_cost_rows,
     }
 
-def _est_calc_detail_sql():
-    """est_calc で使用する詳細取得クエリ（1件用）"""
+def _cost_quotes_calc_detail_sql():
+    """cost_quotes_calc で使用する詳細取得クエリ（1件用）"""
     return (
         "SELECT * FROM ((((((("
         "t_原価見積履歴 "
@@ -3284,7 +3284,7 @@ def _est_calc_detail_sql():
         "AND t_原価見積情報.使用フラグ = 'Y';"
     )
 
-def _est_calc_detail_row_to_jsonable_dict(row, col_names):
+def _cost_quotes_calc_detail_row_to_jsonable_dict(row, col_names):
     """詳細クエリ1行を JSON 用 dict に変換（列名は cur.description と同一）"""
     return {k: _json_safe_cell_value(val) for k, val in zip(col_names, row)}
 
@@ -3299,7 +3299,7 @@ def _sanitize_filename_part(value, max_len=None):
         s = s[:max_len]
     return s
 
-def api_est_calc_set_lot(payload=None):
+def api_cost_quotes_calc_set_lot(payload=None):
     """ロットIDクリック時: 使用フラグを更新し、扱うデータを変更"""
     data = payload or {}
     estimate_id = (data.get('estimate_id') or '').strip()  # 原価見積りID (est_1)
@@ -3328,13 +3328,13 @@ def api_est_calc_set_lot(payload=None):
 
         conn.commit()
 
-        # 使用フラグ更新後、est_calc と同じ詳細取得クエリ（原価見積りID = estimate_id）
-        cur.execute(_est_calc_detail_sql(), [estimate_id])
+        # 使用フラグ更新後、cost_quotes_calc と同じ詳細取得クエリ（原価見積りID = estimate_id）
+        cur.execute(_cost_quotes_calc_detail_sql(), [estimate_id])
         detail_rows = cur.fetchall()
         col_names = [c[0] for c in cur.description] if cur.description else []
         detail = None
         if detail_rows:
-            detail = _est_calc_detail_row_to_jsonable_dict(detail_rows[0], col_names)
+            detail = _cost_quotes_calc_detail_row_to_jsonable_dict(detail_rows[0], col_names)
 
         return {"ok": True, "estimate_id": estimate_id, "detail": detail}
     except Exception as e:
@@ -3346,7 +3346,7 @@ def api_est_calc_set_lot(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_clear_usage_flag(payload=None):
+def api_cost_quotes_calc_clear_usage_flag(payload=None):
     """見積り追加(1段目)用: 指定見積りIDの使用フラグを全て空にする"""
     data = payload or {}
     estimate_id = (data.get("estimate_id") or "").strip()
@@ -3372,7 +3372,7 @@ def api_est_calc_clear_usage_flag(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_add_estimate_lot(payload=None):
+def api_cost_quotes_calc_add_estimate_lot(payload=None):
     """見積り追加(2段目)用: 新規ロットを作成し、コピー有無で各テーブルへ追加"""
     data = payload or {}
     estimate_id = (data.get("estimate_id") or "").strip()
@@ -3700,7 +3700,7 @@ def api_est_calc_add_estimate_lot(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_delete_estimate_lot(payload=None):
+def api_cost_quotes_calc_delete_estimate_lot(payload=None):
     """見積り削除: 指定ロットIDのデータを関連テーブルから削除し、当該原価見積りIDの初期費用も削除"""
     data = payload or {}
     estimate_id = (data.get("estimate_id") or "").strip()
@@ -3748,7 +3748,7 @@ def api_est_calc_delete_estimate_lot(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_pre_export_save(payload=None):
+def api_cost_quotes_calc_pre_export_save(payload=None):
     """Excel 出力前の保存処理"""
     data = payload or {}
     if "br_8" in data:
@@ -4044,7 +4044,7 @@ def api_est_calc_pre_export_save(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_shipping_by_region_size(payload=None):
+def api_cost_quotes_calc_shipping_by_region_size(payload=None):
     """地方ID + 梱包サイズ名から送料を取得する"""
     reg = ((payload or {}).get("reg") or "").strip()
     size_name = ((payload or {}).get("size_name") or "").strip()
@@ -4074,7 +4074,7 @@ def api_est_calc_shipping_by_region_size(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_initial_cost_row(payload=None):
+def api_cost_quotes_calc_initial_cost_row(payload=None):
     """初期費用: 行 ID と原価見積り ID で 1 件取得（フォーム反映用）"""
     estimate_id = ((payload or {}).get("estimate_id") or "").strip()
     row_id = ((payload or {}).get("id") or "").strip()
@@ -4111,7 +4111,7 @@ def api_est_calc_initial_cost_row(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_initial_cost_save(payload=None):
+def api_cost_quotes_calc_initial_cost_save(payload=None):
     """初期費用: 新規 INSERT または既存行 UPDATE"""
     data = payload or {}
     estimate_id = (data.get("estimate_id") or "").strip()
@@ -4182,7 +4182,7 @@ def api_est_calc_initial_cost_save(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_initial_cost_delete(payload=None):
+def api_cost_quotes_calc_initial_cost_delete(payload=None):
     """初期費用: 1 件削除"""
     data = payload or {}
     estimate_id = (data.get("estimate_id") or "").strip()
@@ -4222,7 +4222,7 @@ def api_est_calc_initial_cost_delete(payload=None):
             except Exception:
                 pass
 
-def api_est_calc_export_xlsx(payload=None):
+def api_cost_quotes_calc_export_xlsx(payload=None):
     """テンプレートExcelへ値を反映し、xlsx を返却する（xlwings）"""
     data = payload or {}
 

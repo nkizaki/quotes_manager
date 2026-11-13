@@ -204,17 +204,17 @@
 
   window.quotesEstCalcReady = (async function () {
     var estimateId = (new URLSearchParams(window.location.search).get("estimate_id") || "").trim();
-    var data = await window.quotesApi("/api/est_calc/page", { estimate_id: estimateId });
+    var data = await window.quotesApi("/api/cost_quotes_calc/page", { estimate_id: estimateId });
     if (data && data.error) {
       throw new Error(data.error);
     }
     applyPage(data || {});
     await new Promise(function (resolve, reject) {
       var s = document.createElement("script");
-      s.src = "js/est_calc.js";
+      s.src = "js/cost_quotes_calc.js";
       s.onload = resolve;
       s.onerror = function () {
-        reject(new Error("est_calc.js の読み込みに失敗しました"));
+        reject(new Error("cost_quotes_calc.js の読み込みに失敗しました"));
       };
       document.body.appendChild(s);
     });

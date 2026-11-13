@@ -351,6 +351,19 @@ body.search-page {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+.ship-insp-nav .search-btn--help {
+  margin-top: calc(12px * var(--ui-scale));
+  border: 1px solid var(--color-success) !important;
+  background: var(--color-success) !important;
+  color: #fff !important;
+}
+
+.ship-insp-nav .search-btn--help:hover,
+.ship-insp-nav .search-btn--help:active {
+  border-color: #0d9668 !important;
+  background: #0d9668 !important;
+}
+
 .insp-kanri-filter,
 .insp-gaikan-filter,
 .insp-suuchi-filter {

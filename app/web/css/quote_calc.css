@@ -1,7 +1,7 @@
 /**
  * quote_calc.css — 見積り計算（quote_calc.html）レイアウト・寸法
  *
- * 原価見積り計算（est_calc.css）とは独立。列数・列幅は --qc-grid-* で変更。
+ * 原価見積り計算（cost_quotes_calc.css）とは独立。列数・列幅は --qc-grid-* で変更。
  * 梱包輸送費・初期費用・表面処理費の入力幅は --qc-*-form-*、
  * テーブル列幅は --qc-*-table-col-*（HTML の colgroup と連動）。
  * 見た目は quotes.css を参照。

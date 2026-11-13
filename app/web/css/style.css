@@ -2,4 +2,4 @@
  * style.css — 後方互換（原価見積り計算レイアウトへ委譲）
  * 見た目は quotes.css を参照
  */
-@import url("est_calc.css");
+@import url("cost_quotes_calc.css");

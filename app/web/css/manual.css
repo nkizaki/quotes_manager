@@ -1,0 +1,241 @@
+/* sticky が効くよう、マニュアルページだけ overflow を緩める */
+body[data-page="manual"] {
+  overflow-x: clip;
+}
+
+body[data-page="manual"] .search-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+body[data-page="manual"] .search-main {
+  overflow-x: visible;
+}
+
+.manual-layout {
+  max-width: calc(1080px * var(--ui-scale));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.manual-meta {
+  margin: 0 0 calc(16px * var(--ui-scale));
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.manual-meta span + span::before {
+  content: " / ";
+}
+
+.manual-toc {
+  position: sticky;
+  top: calc(64px * var(--ui-scale));
+  z-index: 150;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8px * var(--ui-scale));
+  margin-bottom: calc(20px * var(--ui-scale));
+  padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.manual-toc-label {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(4px * var(--ui-scale)) calc(4px * var(--ui-scale)) calc(4px * var(--ui-scale)) 0;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.manual-toc a {
+  padding: calc(4px * var(--ui-scale)) calc(10px * var(--ui-scale));
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-hover);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.manual-toc a:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.manual-section {
+  scroll-margin-top: calc(128px * var(--ui-scale));
+  margin-bottom: calc(20px * var(--ui-scale));
+  padding: calc(20px * var(--ui-scale));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.manual-section h2 {
+  margin: 0 0 calc(8px * var(--ui-scale));
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.manual-section h3 {
+  margin: calc(20px * var(--ui-scale)) 0 calc(8px * var(--ui-scale));
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.manual-lead,
+.manual-note {
+  margin: 0 0 calc(12px * var(--ui-scale));
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.manual-figure {
+  margin: calc(12px * var(--ui-scale)) 0;
+}
+
+.manual-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-secondary);
+}
+
+.manual-figure figcaption {
+  margin-top: calc(6px * var(--ui-scale));
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+}
+
+.manual-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(12px * var(--ui-scale));
+  align-items: flex-start;
+}
+
+.manual-shots .manual-figure {
+  margin: 0;
+  flex: 1 1 calc(50% - 6px * var(--ui-scale));
+  min-width: 0;
+  max-width: calc(50% - 6px * var(--ui-scale));
+  box-sizing: border-box;
+}
+
+.manual-shots .manual-figure img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+/* 横並び画像: 高さ 800px 固定、間隔 8px × ui-scale */
+.manual-shots--match-first {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: calc(8px * var(--ui-scale));
+}
+
+.manual-shots--match-first .manual-figure {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(50% - 4px * var(--ui-scale));
+  display: flex;
+  flex-direction: column;
+}
+
+.manual-shots--match-first .manual-figure img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 800px;
+  object-fit: contain;
+  object-position: top left;
+}
+
+.manual-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.manual-table th,
+.manual-table td {
+  padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.55;
+}
+
+.manual-table th {
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.manual-table td:first-child {
+  width: 16%;
+  min-width: 7em;
+  font-weight: 600;
+}
+
+.manual-path {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+.manual-colors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: calc(6px * var(--ui-scale));
+}
+
+.manual-colors li {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--ui-scale));
+  font-size: 0.875rem;
+}
+
+.manual-swatch {
+  flex: 0 0 auto;
+  width: calc(36px * var(--ui-scale));
+  height: calc(18px * var(--ui-scale));
+  border: 1px solid var(--color-border);
+  border-radius: calc(3px * var(--ui-scale));
+}
+
+.manual-swatch--green { background: #b9f8bd; }
+.manual-swatch--yellow { background: #fff2b8; }
+.manual-swatch--red { background: #ffb7bd; }
+.manual-swatch--magenta { background: #ffdbff; }
+.manual-swatch--white { background: #fff; }
+
+.manual-steps {
+  margin: 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: calc(6px * var(--ui-scale));
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.manual-sublist {
+  margin: calc(4px * var(--ui-scale)) 0 0;
+  padding-left: 1.2em;
+}

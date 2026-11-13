@@ -689,7 +689,7 @@
     recalcPieceWeight();
   }
 
-  /* ----- 材料費 連動計算（est_calc.js 相当） ----- */
+  /* ----- 材料費 連動計算（cost_quotes_calc.js 相当） ----- */
 
   function reflectSteelSpecgravityToGravity() {
     if (!matSteelSelect) return;
@@ -2670,7 +2670,7 @@
   }
 
   if (matSteelSelect) {
-    // ページ読み込み時は反映しない。ユーザー変更時のみ実行（est_calc と同じ）
+    // ページ読み込み時は反映しない。ユーザー変更時のみ実行（cost_quotes_calc と同じ）
     matSteelSelect.addEventListener("change", function () {
       syncBrassFromMatSteel();
       reflectSteelSpecgravityToGravity();

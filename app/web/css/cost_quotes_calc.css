@@ -1,5 +1,5 @@
 /**
- * est_calc.css — 原価見積り計算（est_calc.html）専用レイアウト・寸法
+ * cost_quotes_calc.css — 原価見積り計算（cost_quotes_calc.html）専用レイアウト・寸法
  *
  * 見積り計算（quote_calc.html）とは独立。列数・列幅は --est-grid-* で変更。
  * 見た目は quotes.css を参照。

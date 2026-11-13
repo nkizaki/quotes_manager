@@ -12,7 +12,7 @@ from pathlib import Path
 
 CSS_DIR = Path(__file__).resolve().parents[1] / "app" / "web" / "css"
 TARGETS = [
-    "est_calc.css",
+    "cost_quotes_calc.css",
     "search.css",
     "quotes_search.css",
     "cost_quotes_search.css",

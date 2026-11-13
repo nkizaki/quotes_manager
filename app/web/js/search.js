@@ -111,7 +111,7 @@
     }
     resultTbody.innerHTML = rows.map((row, rowIdx) => {
       const estimateId = row['原価見積りID'];
-      const baseUrl = 'est_calc.html';
+      const baseUrl = 'cost_quotes_calc.html';
       const href = estimateId
         ? baseUrl + '?estimate_id=' + encodeURIComponent(String(estimateId))
         : baseUrl;
